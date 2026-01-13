@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/hord",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "The Vault Protocol - Cryptographic containment and capability management for AI agents",
   "main": "dist/index.js",
   "bin": {
