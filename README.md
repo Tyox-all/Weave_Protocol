@@ -1,6 +1,6 @@
 # Weave Security Suite
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
 [![GitHub stars](https://img.shields.io/github/stars/Tyox-all/Weave)](https://github.com/Tyox-all/Weave/stargazers)
 [![npm mund](https://img.shields.io/npm/v/@weave_protocol/mund)](https://www.npmjs.com/package/@weave_protocol/mund)
