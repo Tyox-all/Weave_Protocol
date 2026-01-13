@@ -17,7 +17,7 @@ Track intent from origin through every hop with cryptographic signatures.
 Detect when agents reinterpret, expand, or violate the original intent.
 
 ### Blockchain Anchoring
-Immutable proof on Solana (~$0.001) or Ethereum (~$2-10).
+Immutable proof on Solana (about $0.001) or Ethereum (about $2-10).
 
 ## Quick Start
 
