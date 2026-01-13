@@ -2,15 +2,15 @@
 
 **Vendor-Neutral Security for AI Agents**
 
-> "Standardizing agent interoperability is a big step. The real question is how identity, intent, and proof are enforced at execution time, not just exchanged."
-
 ## The Gap
 
-Protocols like **MCP**, **A2A**, and **UCP** standardize how AI agents communicate. They answer: *"How do agents talk?"*
+Protocols like MCP, A2A, and UCP standardize how AI agents communicate. They solve for interoperability—how agents talk to each other.
 
-They don't answer: *"How do we trust what they did?"*
+They don't solve for trust—how we verify what agents actually did.
 
-**Weave Security fills this gap.**
+When Agent A calls Agent B calls Agent C, who confirms the original intent was preserved? Who proves what happened at each step?
+
+Weave enforces identity, intent, and proof at execution time—not just at the handshake.
 
 ## The Suite
 
@@ -44,15 +44,18 @@ Thread identity and verification. Tracks intent through agent chains, detects dr
 ## Quick Start
 
 ```bash
-# Install
-npm install @weave-security/mund
-npm install @weave-security/hord  
-npm install @weave-security/domere
+# Clone
+git clone https://github.com/Tyox-all/Weave.git
+cd Weave
 
-# Or run as MCP servers
-npx @weave-security/mund
-npx @weave-security/hord
-npx @weave-security/domere
+# Install and run Mund
+cd mund && npm install && npm run build && npm start
+
+# Install and run Hord
+cd ../hord && npm install && npm run build && npm start
+
+# Install and run Dōmere
+cd ../domere && npm install && npm run build && npm start
 ```
 
 ## Claude Desktop Configuration
@@ -61,19 +64,41 @@ npx @weave-security/domere
 {
   "mcpServers": {
     "mund": {
-      "command": "npx",
-      "args": ["@weave-security/mund"]
+      "command": "node",
+      "args": ["/path/to/Weave/mund/dist/index.js"]
     },
     "hord": {
-      "command": "npx", 
-      "args": ["@weave-security/hord"]
+      "command": "node", 
+      "args": ["/path/to/Weave/hord/dist/index.js"]
     },
     "domere": {
-      "command": "npx",
-      "args": ["@weave-security/domere"]
+      "command": "node",
+      "args": ["/path/to/Weave/domere/dist/index.js"]
     }
   }
 }
+```
+
+## Repository Structure
+
+```
+Weave/
+├── mund/               # Guardian Protocol
+│   ├── src/
+│   ├── rules/
+│   └── package.json
+├── hord/               # Vault Protocol
+│   ├── src/
+│   └── package.json
+├── domere/             # Judge Protocol
+│   ├── src/
+│   └── package.json
+├── contracts/          # Smart Contracts
+│   ├── solana/
+│   └── ethereum/
+├── README.md
+├── LICENSE
+└── CONTRIBUTING.md
 ```
 
 ## Business Model
@@ -85,37 +110,19 @@ npx @weave-security/domere
 - All 48 MCP tools
 - Run anywhere, any cloud, any LLM
 
-**Paid (Blockchain Only):**
-- Solana anchoring: ~$0.001 + 5% protocol fee
-- Ethereum anchoring: ~$2-10 + 5% protocol fee
+**Paid (Blockchain Anchoring Only):**
+- Solana: ~$0.001 + protocol fee
+- Ethereum: ~$2-10 + protocol fee
 - You bring your own wallet
-- Protocol fees fund continued development
 
 ## Why Weave?
 
-| Others | Weave |
-|--------|-------|
+| Traditional | Weave |
+|-------------|-------|
 | Point identity (who is this?) | Thread identity (what has this done?) |
-| Exchange identity tokens | Enforce identity at execution |
-| Log what happened | Prove what happened (immutable) |
-| Vendor lock-in | Vendor neutral |
-| Hosted service | Self-hosted, open source |
-
-## Repository Structure
-
-```
-weave-security/
-├── README.md           # This file
-├── mund/               # Guardian Protocol
-│   ├── src/
-│   └── package.json
-├── hord/               # Vault Protocol
-│   ├── src/
-│   └── package.json
-└── domere/             # Judge Protocol
-    ├── src/
-    └── package.json
-```
+| Exchange tokens | Enforce at execution |
+| Internal logs | Immutable blockchain proof |
+| Vendor lock-in | Vendor neutral, open source |
 
 ## License
 
