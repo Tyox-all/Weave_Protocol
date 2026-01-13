@@ -38,7 +38,7 @@ export const DEFAULT_CONFIG: DomereConfig = {
   },
   
   anchoring: {
-    solana_rpc: 'https://api.mainnet-beta.solana.com',
+    solana_rpc: 'https://api.devnet.solana.com',
     solana_treasury: '9d7YccD7j9P6GRaHYMgZAYKdcuhLjTSvcKXS6nR5czZg',
     solana_program_id: 'BeCYVJYfbUu3k2TPGmh9VoGWeJwzm2hg2NdtnvbdBNCj',
     ethereum_rpc: 'https://mainnet.infura.io/v3/YOUR_KEY',
