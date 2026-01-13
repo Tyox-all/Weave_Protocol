@@ -45,7 +45,7 @@ export class MundService {
           break;
       }
       
-      if (typeResults?.issues?.length > 0) {
+      if (typeResults?.issues && typeResults.issues.length > 0) {
         results.push(...typeResults.issues);
       }
     }
