@@ -1,16 +1,26 @@
 {
   "name": "@weave_protocol/domere",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "The Judge Protocol - Thread identity, intent verification, and blockchain anchoring",
   "type": "module",
   "main": "dist/index.js",
-  "bin": { "domere": "./dist/index.js" },
+  "bin": {
+    "domere": "./dist/index.js"
+  },
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts"
   },
-  "keywords": ["ai", "security", "mcp", "blockchain", "solana", "ethereum", "intent-verification"],
+  "keywords": [
+    "ai",
+    "security",
+    "mcp",
+    "blockchain",
+    "solana",
+    "ethereum",
+    "intent-verification"
+  ],
   "license": "Apache-2.0",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^0.5.0"
@@ -20,5 +30,7 @@
     "typescript": "^5.3.0",
     "tsx": "^4.7.0"
   },
-  "engines": { "node": ">=18.0.0" }
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }

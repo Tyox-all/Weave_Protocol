@@ -2,7 +2,7 @@
 
 **Pattern Detection & Threat Scanning for AI Agents**
 
-Part of the [Weave Protocol Security Suite](https://github.com/Tyox-all/Weave) (Mund + Hord + Dōmere)
+Part of the [Weave Protocol Security Suite](https://github.com/Tyox-all/Weave-Protocol) (Mund + Hord + Dōmere)
 
 ## What It Does
 
@@ -126,6 +126,6 @@ Apache-2.0
 
 ## Links
 
-- [GitHub](https://github.com/Tyox-all/Weave)
+- [GitHub](https://github.com/Tyox-all/Weave-Protocol)
 - [Hord (Vault Protocol)](https://www.npmjs.com/package/@weave_protocol/hord)
 - [Dōmere (Judge Protocol)](https://www.npmjs.com/package/@weave_protocol/domere)

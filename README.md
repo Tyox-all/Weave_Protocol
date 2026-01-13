@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
-[![GitHub stars](https://img.shields.io/github/stars/Tyox-all/Weave)](https://github.com/Tyox-all/Weave/stargazers)
+[![GitHub stars](https://img.shields.io/github/stars/Tyox-all/Weave)](https://github.com/Tyox-all/Weave-Protocol/stargazers)
 [![npm mund](https://img.shields.io/npm/v/@weave_protocol/mund)](https://www.npmjs.com/package/@weave_protocol/mund)
 [![npm hord](https://img.shields.io/npm/v/@weave_protocol/hord)](https://www.npmjs.com/package/@weave_protocol/hord)
 [![npm domere](https://img.shields.io/npm/v/@weave_protocol/domere)](https://www.npmjs.com/package/@weave_protocol/domere)
@@ -53,7 +53,7 @@ Thread identity and verification. Tracks intent through agent chains, detects dr
 
 ```bash
 # Clone
-git clone https://github.com/Tyox-all/Weave.git
+git clone https://github.com/Tyox-all/Weave-Protocol.git
 cd Weave
 
 # Install and run Mund
