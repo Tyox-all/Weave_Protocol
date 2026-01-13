@@ -3,7 +3,7 @@
  * Constants and Default Configuration
  */
 
-import type {
+import {
   HordConfig,
   RedactionPolicy,
   RedactionStrategyType,

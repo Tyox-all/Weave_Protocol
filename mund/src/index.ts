@@ -49,12 +49,12 @@ function loadConfig(): MundConfig {
         channel: process.env.MUND_SLACK_CHANNEL,
         username: process.env.MUND_SLACK_USERNAME || 'Mund Guardian',
         icon_emoji: process.env.MUND_SLACK_EMOJI || ':eye:',
-        min_severity: (process.env.MUND_SLACK_MIN_SEVERITY as MundConfig['notifications']['slack']?.['min_severity']) || 'high'
+        min_severity: (process.env.MUND_SLACK_MIN_SEVERITY as any) || 'high'
       } : undefined,
       
       teams: process.env.MUND_TEAMS_WEBHOOK ? {
         webhook_url: process.env.MUND_TEAMS_WEBHOOK,
-        min_severity: (process.env.MUND_TEAMS_MIN_SEVERITY as MundConfig['notifications']['teams']?.['min_severity']) || 'high'
+        min_severity: (process.env.MUND_TEAMS_MIN_SEVERITY as any) || 'high'
       } : undefined,
       
       email: process.env.MUND_EMAIL_SMTP_HOST ? {
@@ -65,7 +65,7 @@ function loadConfig(): MundConfig {
         smtp_pass: process.env.MUND_EMAIL_SMTP_PASS,
         from_address: process.env.MUND_EMAIL_FROM || 'mund@localhost',
         to_addresses: (process.env.MUND_EMAIL_TO || '').split(',').filter(Boolean),
-        min_severity: (process.env.MUND_EMAIL_MIN_SEVERITY as MundConfig['notifications']['email']?.['min_severity']) || 'high'
+        min_severity: (process.env.MUND_EMAIL_MIN_SEVERITY as any) || 'high'
       } : undefined,
       
       webhooks: process.env.MUND_WEBHOOK_URL ? [{

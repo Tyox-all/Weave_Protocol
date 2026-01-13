@@ -4,7 +4,6 @@
  */
 
 import { 
-  DetectorType, 
   type DetectionRule, 
   type SecurityIssue, 
   type IAnalyzer,
@@ -13,11 +12,11 @@ import {
 
 export class InjectionDetector implements IAnalyzer {
   name = 'InjectionDetector';
-  type = DetectorType.INJECTION;
+  type = 'injection';
 
   async analyze(content: string, rules: DetectionRule[]): Promise<SecurityIssue[]> {
     const issues: SecurityIssue[] = [];
-    const injectionRules = rules.filter(r => r.type === DetectorType.INJECTION && r.enabled);
+    const injectionRules = rules.filter(r => r.type === 'injection' && r.enabled);
 
     // Normalize content for detection
     const normalizedContent = this.normalizeContent(content);
@@ -76,7 +75,6 @@ export class InjectionDetector implements IAnalyzer {
    */
   private heuristicAnalysis(content: string): SecurityIssue[] {
     const issues: SecurityIssue[] = [];
-    const contentLower = content.toLowerCase();
 
     // Check for role switching attempts
     const roleSwitchPatterns = [
@@ -93,7 +91,7 @@ export class InjectionDetector implements IAnalyzer {
         issues.push({
           rule_id: 'heuristic_role_switch',
           rule_name: 'Role Switching Attempt',
-          type: DetectorType.INJECTION,
+          type: 'injection',
           severity: 'high' as const,
           action: 'alert' as const,
           match: this.sanitizeMatch(match[0]),
@@ -116,7 +114,7 @@ export class InjectionDetector implements IAnalyzer {
         issues.push({
           rule_id: 'heuristic_markup_injection',
           rule_name: 'Markup Injection Attempt',
-          type: DetectorType.INJECTION,
+          type: 'injection',
           severity: 'medium' as const,
           action: 'alert' as const,
           match: this.sanitizeMatch(match[0]),
@@ -131,7 +129,7 @@ export class InjectionDetector implements IAnalyzer {
       issues.push({
         rule_id: 'heuristic_obfuscation',
         rule_name: 'Potential Obfuscation',
-        type: DetectorType.INJECTION,
+        type: 'injection',
         severity: 'low' as const,
         action: 'log' as const,
         match: `Special character ratio: ${(specialCharRatio * 100).toFixed(1)}%`,

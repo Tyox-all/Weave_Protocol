@@ -232,7 +232,7 @@ export interface CodeAnalysis {
 export interface DangerousPattern {
   pattern: string;
   description: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  severity: 'low' | 'medium' | 'high' | 'critical' | 'critical';
   line?: number;
   column?: number;
   recommendation: string;
@@ -274,7 +274,7 @@ export interface ManipulationIndicator {
   type: string;
   description: string;
   evidence: string;
-  severity: 'low' | 'medium' | 'high';
+  severity: 'low' | 'medium' | 'high' | 'critical';
 }
 
 export interface HiddenInstruction {

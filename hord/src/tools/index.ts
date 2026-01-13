@@ -623,7 +623,7 @@ function registerRedactionTools(server: McpServer, redactionEngine: RedactionEng
             ? { type: 'tokenize' as const, format_preserving: true }
             : { type: 'generalize' as const, level: 2 },
           reversible: r.reversible,
-        })),
+        })) as any,
       });
       
       return {

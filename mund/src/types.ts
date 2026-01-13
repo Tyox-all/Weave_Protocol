@@ -7,29 +7,12 @@
 // Severity and Action Types
 // ============================================================================
 
-export enum Severity {
-  CRITICAL = 'critical',
-  HIGH = 'high',
-  MEDIUM = 'medium',
-  LOW = 'low',
-  INFO = 'info'
-}
+export type Severity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 
-export enum ActionType {
-  ALERT = 'alert',
-  BLOCK = 'block',
-  LOG = 'log',
-  QUARANTINE = 'quarantine'
-}
+export type ActionType = 'alert' | 'block' | 'log' | 'quarantine' | 'redact' | 'none';
 
-export enum DetectorType {
-  SECRET = 'secret',
-  PII = 'pii',
-  CODE_PATTERN = 'code_pattern',
-  INJECTION = 'injection',
-  EXFILTRATION = 'exfiltration',
-  BEHAVIORAL = 'behavioral'
-}
+export type DetectorType = 'secret' | 'pii' | 'code_pattern' | 'injection' | 'exfiltration' | 'behavioral' | 'custom';
+
 
 // ============================================================================
 // Detection Rules
@@ -39,7 +22,7 @@ export interface DetectionRule {
   id: string;
   name: string;
   description?: string;
-  type: DetectorType;
+  type: string;
   pattern?: string;
   condition?: string;
   severity: Severity;
@@ -49,13 +32,13 @@ export interface DetectionRule {
 }
 
 export interface SecretRule extends DetectionRule {
-  type: DetectorType.SECRET;
+  type: 'secret';
   pattern: string;
   entropy_threshold?: number;
 }
 
 export interface BehavioralRule extends DetectionRule {
-  type: DetectorType.BEHAVIORAL;
+  type: 'behavioral';
   condition: string;
   time_window_seconds: number;
   threshold: number;
@@ -71,7 +54,7 @@ export interface SecurityEvent {
   rule_id: string;
   rule_name: string;
   severity: Severity;
-  type: DetectorType;
+  type: string;
   action_taken: ActionType;
   content_snippet: string;
   full_content_hash: string;
@@ -108,7 +91,7 @@ export interface ScanResult {
 export interface SecurityIssue {
   rule_id: string;
   rule_name: string;
-  type: DetectorType;
+  type: string;
   severity: Severity;
   action: ActionType;
   match: string;
@@ -254,7 +237,7 @@ export interface AddRuleInput {
   id: string;
   name: string;
   description?: string;
-  type: DetectorType;
+  type: string;
   pattern?: string;
   condition?: string;
   severity: Severity;
@@ -303,7 +286,7 @@ export interface IStorage {
 
 export interface IAnalyzer {
   name: string;
-  type: DetectorType;
+  type: string;
   analyze(content: string, rules: DetectionRule[]): Promise<SecurityIssue[]>;
 }
 

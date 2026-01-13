@@ -111,7 +111,7 @@ export class EthereumAnchorClient {
     value: string;
     gas_limit: number;
     chain_id: number;
-    estimated_cost: ReturnType<typeof this.estimateGas> extends Promise<infer T> ? T : never;
+    estimated_cost: any;
   }> {
     const anchorData = this.prepareAnchorData(request);
     const cost = await this.estimateGas();
@@ -205,7 +205,7 @@ export class EthereumAnchorClient {
   }): Promise<{
     to: string;
     data: string;
-    estimated_cost: ReturnType<typeof this.estimateGas> extends Promise<infer T> ? T : never;
+    estimated_cost: any;
   }> {
     // Encode function call: certifyPeriod(bytes32,bytes32,uint256,uint256,uint256,uint256)
     const functionSelector = '0x' + this.keccak256(

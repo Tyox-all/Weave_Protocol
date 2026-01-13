@@ -4,7 +4,6 @@
  */
 
 import { 
-  DetectorType, 
   type DetectionRule, 
   type SecurityIssue, 
   type IAnalyzer,
@@ -13,11 +12,11 @@ import {
 
 export class CodeAnalyzer implements IAnalyzer {
   name = 'CodeAnalyzer';
-  type = DetectorType.CODE_PATTERN;
+  type = 'code_pattern';
 
   async analyze(content: string, rules: DetectionRule[]): Promise<SecurityIssue[]> {
     const issues: SecurityIssue[] = [];
-    const codeRules = rules.filter(r => r.type === DetectorType.CODE_PATTERN && r.enabled);
+    const codeRules = rules.filter(r => r.type === 'code_pattern' && r.enabled);
 
     for (const rule of codeRules) {
       if (!rule.pattern) continue;
@@ -71,7 +70,7 @@ export class CodeAnalyzer implements IAnalyzer {
   /**
    * Get context-aware suggestion
    */
-  private getSuggestion(ruleId: string, match: string): string {
+  private getSuggestion(ruleId: string, _match: string): string {
     const suggestions: Record<string, string> = {
       shell_injection: 'Avoid using string interpolation in shell commands. Use parameterized commands or escape inputs properly.',
       sql_injection_pattern: 'Use parameterized queries or prepared statements instead of string concatenation for SQL.',

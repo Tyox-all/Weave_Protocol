@@ -102,7 +102,7 @@ export class SolanaAnchorClient {
     unsigned_transaction: string;  // Base64 encoded transaction
     message: string;               // Message to sign
     instructions: unknown[];       // Instruction data
-    estimated_cost: ReturnType<typeof this.estimateCost> extends Promise<infer T> ? T : never;
+    estimated_cost: any;
   }> {
     const data = this.prepareAnchorData(request);
     const cost = await this.estimateCost();

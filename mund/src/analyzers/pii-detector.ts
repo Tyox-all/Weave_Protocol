@@ -4,7 +4,6 @@
  */
 
 import { 
-  DetectorType, 
   type DetectionRule, 
   type SecurityIssue, 
   type IAnalyzer,
@@ -13,11 +12,11 @@ import {
 
 export class PIIDetector implements IAnalyzer {
   name = 'PIIDetector';
-  type = DetectorType.PII;
+  type = 'pii';
 
   async analyze(content: string, rules: DetectionRule[]): Promise<SecurityIssue[]> {
     const issues: SecurityIssue[] = [];
-    const piiRules = rules.filter(r => r.type === DetectorType.PII && r.enabled);
+    const piiRules = rules.filter(r => r.type === 'pii' && r.enabled);
 
     for (const rule of piiRules) {
       if (!rule.pattern) continue;

@@ -100,7 +100,7 @@ export class NLAnalyzer {
     if (indicators.length === 0) return 0;
     
     let score = 0;
-    const weights = { low: 0.1, medium: 0.25, high: 0.4 };
+    const weights = { low: 0.1, medium: 0.25, high: 0.4, critical: 0.5 };
     
     for (const indicator of indicators) {
       score += weights[indicator.severity] || 0.1;
@@ -341,14 +341,14 @@ export class NLAnalyzer {
     jailbreakScore: number,
     hiddenCount: number,
     overrideCount: number
-  ): 'low' | 'medium' | 'high' | 'critical' {
+  ): 'low' | 'medium' | 'high' {
     const combinedScore = 
       manipulationScore * 0.3 +
       jailbreakScore * 0.35 +
       Math.min(1, hiddenCount * 0.3) * 0.2 +
       Math.min(1, overrideCount * 0.25) * 0.15;
     
-    if (combinedScore > 0.7 || jailbreakScore > 0.6 || hiddenCount > 2) return 'critical';
+    if (combinedScore > 0.7 || jailbreakScore > 0.6 || hiddenCount > 2) return 'high';
     if (combinedScore > 0.4 || jailbreakScore > 0.3 || hiddenCount > 0) return 'high';
     if (combinedScore > 0.2 || overrideCount > 0) return 'medium';
     return 'low';

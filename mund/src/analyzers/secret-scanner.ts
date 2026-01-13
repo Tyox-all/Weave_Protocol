@@ -4,21 +4,19 @@
  */
 
 import { 
-  DetectorType, 
   type DetectionRule, 
   type SecurityIssue, 
   type IAnalyzer,
   type IssueLocation 
 } from '../types.js';
-import { MAX_SNIPPET_LENGTH } from '../constants.js';
 
 export class SecretScanner implements IAnalyzer {
   name = 'SecretScanner';
-  type = DetectorType.SECRET;
+  type = 'secret';
 
   async analyze(content: string, rules: DetectionRule[]): Promise<SecurityIssue[]> {
     const issues: SecurityIssue[] = [];
-    const secretRules = rules.filter(r => r.type === DetectorType.SECRET && r.enabled);
+    const secretRules = rules.filter(r => r.type === 'secret' && r.enabled);
 
     for (const rule of secretRules) {
       if (!rule.pattern) continue;

@@ -349,7 +349,6 @@ Returns:
     async (params) => {
       const warnings: string[] = [];
       let riskLevel: 'safe' | 'suspicious' | 'dangerous' = 'safe';
-      const cmd = params.command.toLowerCase();
 
       // Dangerous command patterns
       const dangerousPatterns = [

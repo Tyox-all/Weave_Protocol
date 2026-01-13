@@ -4,9 +4,6 @@
  */
 
 import { 
-  DetectorType, 
-  Severity,
-  ActionType,
   type DetectionRule, 
   type SecurityIssue, 
   type IAnalyzer,
@@ -16,11 +13,11 @@ import { DANGEROUS_URL_PATTERNS } from '../constants.js';
 
 export class ExfiltrationDetector implements IAnalyzer {
   name = 'ExfiltrationDetector';
-  type = DetectorType.EXFILTRATION;
+  type = 'exfiltration';
 
   async analyze(content: string, rules: DetectionRule[]): Promise<SecurityIssue[]> {
     const issues: SecurityIssue[] = [];
-    const exfilRules = rules.filter(r => r.type === DetectorType.EXFILTRATION && r.enabled);
+    const exfilRules = rules.filter(r => r.type === 'exfiltration' && r.enabled);
 
     // Pattern-based detection
     for (const rule of exfilRules) {
@@ -81,9 +78,9 @@ export class ExfiltrationDetector implements IAnalyzer {
           issues.push({
             rule_id: 'dangerous_url',
             rule_name: 'Dangerous URL Detected',
-            type: DetectorType.EXFILTRATION,
-            severity: Severity.HIGH,
-            action: ActionType.ALERT,
+            type: 'exfiltration',
+            severity: 'high',
+            action: 'alert',
             match: this.truncateURL(url),
             location,
             suggestion: 'This URL points to a service commonly used for data exfiltration. Verify the destination is legitimate.'
@@ -97,9 +94,9 @@ export class ExfiltrationDetector implements IAnalyzer {
         issues.push({
           rule_id: 'ip_based_url',
           rule_name: 'IP-Based URL',
-          type: DetectorType.EXFILTRATION,
-          severity: Severity.MEDIUM,
-          action: ActionType.ALERT,
+          type: 'exfiltration',
+          severity: 'medium',
+          action: 'alert',
           match: this.truncateURL(url),
           location,
           suggestion: 'IP-based URLs can bypass domain-based security controls. Verify this is a legitimate destination.'
@@ -111,9 +108,9 @@ export class ExfiltrationDetector implements IAnalyzer {
         issues.push({
           rule_id: 'data_url',
           rule_name: 'Data URL Detected',
-          type: DetectorType.EXFILTRATION,
-          severity: Severity.MEDIUM,
-          action: ActionType.ALERT,
+          type: 'exfiltration',
+          severity: 'medium',
+          action: 'alert',
           match: this.truncateURL(url),
           location,
           suggestion: 'Data URLs can encode and transfer arbitrary content. Review the embedded data.'
@@ -144,9 +141,9 @@ export class ExfiltrationDetector implements IAnalyzer {
         issues.push({
           rule_id: 'large_base64_block',
           rule_name: 'Large Base64 Block',
-          type: DetectorType.EXFILTRATION,
-          severity: Severity.MEDIUM,
-          action: ActionType.LOG,
+          type: 'exfiltration',
+          severity: 'medium',
+          action: 'log',
           match: `Base64 block (${encoded.length} chars)`,
           location,
           suggestion: 'Large base64 encoded blocks may contain exfiltrated data. Review the decoded content.'
@@ -163,9 +160,9 @@ export class ExfiltrationDetector implements IAnalyzer {
       issues.push({
         rule_id: 'large_hex_block',
         rule_name: 'Large Hex-Encoded Block',
-        type: DetectorType.EXFILTRATION,
-        severity: Severity.LOW,
-        action: ActionType.LOG,
+        type: 'exfiltration',
+        severity: 'low',
+        action: 'log',
         match: `Hex block (${encoded.length} chars)`,
         location,
         suggestion: 'Large hex-encoded blocks may contain encoded data. Review the decoded content.'
