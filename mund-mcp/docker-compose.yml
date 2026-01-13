@@ -1,0 +1,47 @@
+# Mund - The Guardian Protocol
+# Docker Compose configuration
+
+version: '3.8'
+
+services:
+  mund:
+    build: .
+    container_name: mund-mcp
+    ports:
+      - "3000:3000"
+    environment:
+      - MUND_PORT=3000
+      - MUND_HOST=0.0.0.0
+      - MUND_TRANSPORT=http
+      - MUND_STORAGE=memory
+      - MUND_BLOCK_MODE=alert
+      - MUND_LOG_LEVEL=info
+      # Uncomment and configure notifications:
+      # - MUND_SLACK_WEBHOOK=https://hooks.slack.com/services/...
+      # - MUND_TEAMS_WEBHOOK=https://outlook.office.com/webhook/...
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  # Optional: PostgreSQL for persistent storage
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: mund-postgres
+  #   environment:
+  #     - POSTGRES_USER=mund
+  #     - POSTGRES_PASSWORD=mund_secret
+  #     - POSTGRES_DB=mund
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   restart: unless-stopped
+
+# volumes:
+#   postgres_data:
+
+networks:
+  default:
+    name: mund-network

@@ -1,0 +1,189 @@
+# Mund Default Detection Rules
+# Version: 1.0
+# 
+# This file contains the default security detection rules for Mund.
+# You can customize these rules or create your own rule files.
+#
+# Rule Structure:
+#   id: Unique identifier (lowercase, alphanumeric, underscores)
+#   name: Human-readable name
+#   description: What this rule detects
+#   type: secret | pii | code_pattern | injection | exfiltration | behavioral
+#   pattern: Regular expression (use single quotes to avoid escaping)
+#   severity: critical | high | medium | low | info
+#   action: alert | block | log | quarantine
+#   enabled: true | false
+
+version: "1.0"
+name: "Mund Default Rules"
+
+secrets:
+  # Cloud Provider Keys
+  - id: aws_access_key_id
+    name: "AWS Access Key ID"
+    description: "Amazon Web Services access key identifier"
+    type: secret
+    pattern: '(?<![A-Z0-9])AKIA[0-9A-Z]{16}(?![A-Z0-9])'
+    severity: critical
+    action: alert
+    enabled: true
+
+  - id: github_token
+    name: "GitHub Token"
+    description: "GitHub personal access token"
+    type: secret
+    pattern: 'gh[pousr]_[A-Za-z0-9_]{36,}'
+    severity: critical
+    action: alert
+    enabled: true
+
+  - id: openai_api_key
+    name: "OpenAI API Key"
+    description: "OpenAI API key"
+    type: secret
+    pattern: 'sk-[A-Za-z0-9]{20}T3BlbkFJ[A-Za-z0-9]{20}'
+    severity: critical
+    action: alert
+    enabled: true
+
+  - id: anthropic_api_key
+    name: "Anthropic API Key"
+    description: "Anthropic Claude API key"
+    type: secret
+    pattern: 'sk-ant-[A-Za-z0-9_-]{90,}'
+    severity: critical
+    action: alert
+    enabled: true
+
+  # Google/Gemini Keys
+  - id: gemini_api_key
+    name: "Gemini API Key"
+    description: "Google Gemini API key"
+    type: secret
+    pattern: '(?i)(GEMINI_API_KEY|GOOGLE_API_KEY)[\s]*[=:][\s]*["\']?AIza[0-9A-Za-z_-]{35}["\']?'
+    severity: critical
+    action: alert
+    enabled: true
+
+  - id: firebase_api_key
+    name: "Firebase/Google API Key"
+    description: "Firebase or Google Cloud API key"
+    type: secret
+    pattern: 'AIza[0-9A-Za-z_-]{35}'
+    severity: high
+    action: alert
+    enabled: true
+
+  - id: gcp_service_account
+    name: "GCP Service Account"
+    description: "Google Cloud service account JSON key"
+    type: secret
+    pattern: '"type"\s*:\s*"service_account"'
+    severity: critical
+    action: alert
+    enabled: true
+
+  - id: private_key
+    name: "Private Key"
+    description: "RSA, EC, DSA, or OpenSSH private key"
+    type: secret
+    pattern: '-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----'
+    severity: critical
+    action: alert
+    enabled: true
+
+  - id: jwt_token
+    name: "JWT Token"
+    description: "JSON Web Token"
+    type: secret
+    pattern: 'eyJ[A-Za-z0-9_-]*\.eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*'
+    severity: high
+    action: alert
+    enabled: true
+
+pii:
+  - id: ssn_us
+    name: "US Social Security Number"
+    description: "US Social Security Number"
+    type: pii
+    pattern: '(?<!\d)\d{3}-\d{2}-\d{4}(?!\d)'
+    severity: high
+    action: alert
+    enabled: true
+
+  - id: credit_card
+    name: "Credit Card Number"
+    description: "Credit card number (major providers)"
+    type: pii
+    pattern: '(?<!\d)(4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13})(?!\d)'
+    severity: high
+    action: alert
+    enabled: true
+
+code_patterns:
+  - id: rm_rf
+    name: "Recursive Force Delete"
+    description: "Potentially dangerous rm -rf command"
+    type: code_pattern
+    pattern: 'rm\s+-[rf]{1,2}\s+(/|\$|~|\.\.|\*)'
+    severity: high
+    action: alert
+    enabled: true
+
+  - id: curl_bash
+    name: "Curl to Bash"
+    description: "Piping curl output to bash"
+    type: code_pattern
+    pattern: 'curl\s+.*\|\s*(ba)?sh'
+    severity: high
+    action: alert
+    enabled: true
+
+  - id: disable_ssl_verify
+    name: "SSL Verification Disabled"
+    description: "Code that disables SSL certificate verification"
+    type: code_pattern
+    pattern: '(?i)(verify\s*=\s*False|rejectUnauthorized\s*:\s*false)'
+    severity: medium
+    action: alert
+    enabled: true
+
+injection:
+  - id: prompt_injection_ignore
+    name: "Prompt Injection - Ignore Instructions"
+    description: "Attempts to make AI ignore previous instructions"
+    type: injection
+    pattern: '(?i)(ignore\s+(all\s+)?(previous|prior|above)\s+(instructions?|prompts?))'
+    severity: high
+    action: alert
+    enabled: true
+
+  - id: prompt_injection_jailbreak
+    name: "Prompt Injection - Jailbreak"
+    description: "Common jailbreak patterns"
+    type: injection
+    pattern: '(?i)(DAN\s+mode|do\s+anything\s+now|pretend\s+you\s+(are|have)\s+no\s+restrictions)'
+    severity: high
+    action: alert
+    enabled: true
+
+exfiltration:
+  - id: suspicious_webhook
+    name: "Suspicious Webhook URL"
+    description: "POST to known data capture services"
+    type: exfiltration
+    pattern: '(?i)(fetch|axios|request|http\.post).*\b(ngrok|webhook\.site|requestbin)\b'
+    severity: high
+    action: alert
+    enabled: true
+
+# Custom rules can be added below
+# custom:
+#   - id: my_custom_rule
+#     name: "My Custom Rule"
+#     description: "Detects my company's internal secrets"
+#     type: secret
+#     pattern: 'mycompany_[a-zA-Z0-9]{32}'
+#     severity: critical
+#     action: alert
+#     enabled: true
