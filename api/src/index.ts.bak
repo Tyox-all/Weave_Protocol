@@ -70,21 +70,29 @@ app.use('/api/v1/domere', domereRoutes);
 
 // OpenAI-compatible function calling endpoint
 app.post('/api/v1/functions/call', async (req: Request, res: Response) => {
-  const { function: fn, name, arguments: args } = req.body;
-  const funcName = fn || name;
-  
-  if (!funcName) {
-    return res.status(400).json({ error: 'function or name is required' });
-  }
+  const { function: fn, arguments: args } = req.body;
   
   try {
-    const { handleWeaveFunction } = await import('./adapters/openai.js');
-    const result = await handleWeaveFunction(funcName, args);
+    let result;
+    
+    // Route to appropriate service
+    if (fn.startsWith('mund_')) {
+      const { MundService } = await import('./services/mund.js');
+      result = await new MundService().call(fn, args);
+    } else if (fn.startsWith('hord_')) {
+      const { HordService } = await import('./services/hord.js');
+      result = await new HordService().call(fn, args);
+    } else if (fn.startsWith('domere_')) {
+      const { DomereService } = await import('./services/domere.js');
+      result = await new DomereService().call(fn, args);
+    } else {
+      return res.status(400).json({ error: `Unknown function: ${fn}` });
+    }
+    
     res.json({ result });
   } catch (error) {
     res.status(500).json({ error: String(error) });
   }
-});
 });
 
 // Get available functions (for OpenAI/Gemini function calling setup)
