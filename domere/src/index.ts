@@ -41,3 +41,8 @@ export * from './thread/index.js';
 export * from './language/index.js';
 export * from './anchoring/index.js';
 export * from './storage/index.js';
+
+// Enterprise Modules
+export * from "./audit/index.js";
+export * from "./handoff/index.js";
+export * from "./compliance/index.js";
