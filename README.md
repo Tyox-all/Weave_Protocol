@@ -4,7 +4,9 @@
 [![license](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![downloads](https://img.shields.io/npm/dm/@weave_protocol/domere.svg)](https://www.npmjs.com/package/@weave_protocol/domere)
 
-**Enterprise-grade security infrastructure for AI agents.** Weave Protocol provides defense-in-depth for autonomous AI systems through secret scanning, secure containment, intent verification, execution replay, multi-agent handoff, and compliance tracking.
+**Enterprise-grade security and orchestration infrastructure for AI agents.**
+
+Weave Protocol provides defense-in-depth for autonomous AI systems: secret scanning, secure containment, intent verification, execution replay, multi-agent coordination, and compliance tracking—all with blockchain anchoring for immutable audit trails.
 
 ## 📦 Packages
 
@@ -12,12 +14,85 @@
 |---------|-------------|---------|
 | **[@weave_protocol/mund](./mund)** | Guardian Protocol - Secret & threat scanning | `npm i @weave_protocol/mund` |
 | **[@weave_protocol/hord](./hord)** | Vault Protocol - Secure containment & sandboxing | `npm i @weave_protocol/hord` |
-| **[@weave_protocol/domere](./domere)** | Judge Protocol - Verification & blockchain anchoring | `npm i @weave_protocol/domere` |
+| **[@weave_protocol/domere](./domere)** | Judge Protocol - Verification, orchestration & compliance | `npm i @weave_protocol/domere` |
 | **[@weave_protocol/api](./api)** | Universal REST API for all protocols | `npm i @weave_protocol/api` |
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           WEAVE PROTOCOL SUITE                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌───────────────┐  ┌───────────────┐  ┌─────────────────────────────────┐  │
+│  │     MUND      │  │     HORD      │  │            DŌMERE               │  │
+│  │   Guardian    │  │     Vault     │  │             Judge               │  │
+│  ├───────────────┤  ├───────────────┤  ├─────────────────────────────────┤  │
+│  │ • Secrets     │  │ • Storage     │  │ VERIFICATION     ORCHESTRATION  │  │
+│  │ • PII         │  │ • Redaction   │  │ • Intent         • Scheduler    │  │
+│  │ • Injection   │  │ • Sandbox     │  │ • Replay         • Registry     │  │
+│  │ • Exfil       │  │ • Encrypt     │  │ • Handoff        • State Mgr    │  │
+│  │               │  │               │  │ • Compliance     • Orchestrator │  │
+│  │               │  │               │  │ • Anchoring                     │  │
+│  └───────────────┘  └───────────────┘  └─────────────────────────────────┘  │
+│         │                  │                          │                     │
+│         └──────────────────┴──────────────────────────┘                     │
+│                                   │                                         │
+│                    ┌──────────────▼──────────────┐                          │
+│                    │        ORCHESTRATOR         │                          │
+│                    │  (1 Orchestrator + N Agents) │                          │
+│                    └──────────────┬──────────────┘                          │
+│            ┌────┬────┬────┬────┬──┴──┬────┬────┬────┐                       │
+│            ▼    ▼    ▼    ▼    ▼     ▼    ▼    ▼    ▼                       │
+│          [A1] [A2] [A3] [A4] [A5]  [A6] [A7] [A8] [...]                     │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                           BLOCKCHAIN LAYER                                  │
+│                    ┌─────────────┬─────────────┐                            │
+│                    │   Solana    │  Ethereum   │                            │
+│                    │   Devnet    │   Mainnet   │                            │
+│                    └─────────────┴─────────────┘                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
 ## 🚀 Quick Start
 
-### Option 1: REST API (Recommended for any AI agent)
+### Option 1: Multi-Agent Orchestration
+
+```typescript
+import { Orchestrator } from '@weave_protocol/domere';
+
+// Create orchestrator for 10 agents
+const orch = new Orchestrator({ max_agents: 10 });
+await orch.start();
+
+// Register agents with capabilities
+for (let i = 0; i < 10; i++) {
+  await orch.registerAgent({
+    name: `agent-${i}`,
+    capabilities: ['research', 'analysis', 'coding'][i % 3],
+    max_concurrent_tasks: 3
+  });
+}
+
+// Submit tasks with dependencies
+const fetchTask = await orch.submitTask({
+  intent: 'Fetch Q3 financial data',
+  priority: 'high',
+  required_capabilities: ['research']
+});
+
+const analyzeTask = await orch.submitTask({
+  intent: 'Analyze Q3 trends',
+  dependencies: [fetchTask.id],  // Waits for fetch to complete
+  required_capabilities: ['analysis']
+});
+
+// Agents receive tasks via heartbeat
+const { tasks_to_run } = await orch.heartbeat('agent-0', []);
+```
+
+### Option 2: REST API (Any AI Agent)
 
 ```bash
 npm install @weave_protocol/api
@@ -25,50 +100,35 @@ npx weave-api
 # Server running on http://localhost:3000
 ```
 
-Any AI agent can call these endpoints:
-
 ```bash
 # Scan for secrets/threats
 curl -X POST http://localhost:3000/api/v1/mund/scan \
   -H "Content-Type: application/json" \
   -d '{"content": "AWS key: AKIAIOSFODNN7EXAMPLE"}'
 
-# Create secure vault
-curl -X POST http://localhost:3000/api/v1/hord/vaults \
-  -d '{"name": "secrets-vault"}'
-
 # Create verified thread
 curl -X POST http://localhost:3000/api/v1/domere/threads \
-  -d '{"origin_type": "agent", "origin_identity": "gpt-4", "intent": "Process user data"}'
-
-# OpenAI/Gemini compatible function call
-curl -X POST http://localhost:3000/api/v1/functions/call \
-  -d '{"name": "weave_scan_content", "arguments": {"content": "scan this"}}'
+  -d '{"origin_type": "agent", "origin_identity": "gpt-4", "intent": "Process data"}'
 ```
 
-### Option 2: Direct Package Usage
+### Option 3: Direct Package Usage
 
 ```typescript
 import { MundScanner } from '@weave_protocol/mund';
 import { HordVault } from '@weave_protocol/hord';
-import { DomereJudge } from '@weave_protocol/domere';
+import { ExecutionReplayManager, ComplianceManager } from '@weave_protocol/domere';
 
 // Scan for secrets
 const scanner = new MundScanner();
 const threats = await scanner.scan('API key: sk-1234567890abcdef');
-// → Detects OpenAI API key, severity: critical
 
 // Secure storage
 const vault = new HordVault();
 await vault.store('api-key', 'sk-1234...', { encryption: true });
 
-// Verify intent
-const judge = new DomereJudge();
-const thread = await judge.createThread({
-  origin_type: 'human',
-  origin_identity: 'user@example.com',
-  intent: 'Analyze sales data'
-});
+// Track execution
+const replay = new ExecutionReplayManager('encryption-key');
+await replay.recordAction({ thread_id: 'thr_1', agent_id: 'agent-1', ... });
 ```
 
 ---
@@ -122,55 +182,43 @@ await vault.store('openai-key', 'sk-...', { ttl: 3600 });
 // Redact sensitive data
 const safe = await vault.redact('My SSN is 123-45-6789');
 // → "My SSN is [REDACTED]"
-
-// Sandboxed execution
-const result = await vault.sandbox.execute('return 2 + 2', 'javascript');
-// → { success: true, result: 4 }
 ```
 
 ---
 
 ## ⚖️ Dōmere - Judge Protocol
 
-Intent verification, compliance, and blockchain anchoring.
+Intent verification, orchestration, compliance, and blockchain anchoring.
 
-**Features:**
-- 🎯 Intent tracking & drift detection
-- ⛓️ Blockchain anchoring (Solana & Ethereum)
-- 📋 SOC2/HIPAA compliance checkpoints
-- 🔄 Execution replay & audit trails
-- 🤝 Multi-agent handoff verification
-
-### Thread Management
+### 🎯 Intent Tracking & Drift Detection
 
 ```typescript
-import { DomereJudge } from '@weave_protocol/domere';
+import { ThreadManager } from '@weave_protocol/domere';
 
-const judge = new DomereJudge();
+const manager = new ThreadManager();
 
-// Create verified thread
-const thread = await judge.createThread({
+const thread = await manager.createThread({
   origin_type: 'human',
   origin_identity: 'user@company.com',
   intent: 'Generate quarterly report',
   constraints: ['read-only', 'no-external-api']
 });
 
-// Check for intent drift
-const drift = await judge.checkDrift(thread.id, 'Sending data to external API');
+// Check for drift
+const drift = await manager.checkDrift(thread.id, 'Sending data to external API');
 // → { drifted: true, reason: 'Violates no-external-api constraint' }
 ```
 
-### 🔄 Execution Replay (NEW)
+### 🔄 Execution Replay & Audit Trail
 
-Complete audit trail with cryptographic verification for forensic analysis.
+Complete forensic trail with cryptographic verification.
 
 ```typescript
 import { ExecutionReplayManager } from '@weave_protocol/domere';
 
 const replay = new ExecutionReplayManager('encryption-key');
 
-// Record every agent action
+// Record every action
 await replay.recordAction({
   thread_id: 'thr_xxx',
   agent_id: 'gpt-4-agent',
@@ -182,26 +230,16 @@ await replay.recordAction({
   latency_ms: 1250,
   cost_usd: 0.03,
   tokens_in: 500,
-  tokens_out: 1000,
-  model: 'gpt-4',
-  provider: 'openai'
+  tokens_out: 1000
 });
 
-// Get complete execution trail
+// Get tamper-proof trail
 const trail = await replay.getExecutionTrail('thr_xxx');
-console.log(trail.integrity_valid);  // true - chain is tamper-proof
+console.log(trail.integrity_valid);  // true
 console.log(trail.merkle_root);      // For blockchain anchoring
-
-// Generate audit report
-const report = await replay.generateAuditReport({
-  thread_id: 'thr_xxx',
-  start_time: new Date('2026-01-01'),
-  end_time: new Date('2026-01-31')
-});
-// → { total_actions: 150, total_cost_usd: 4.50, anomalies: [...] }
 ```
 
-### 🤝 Multi-Agent Handoff Verification (NEW)
+### 🤝 Multi-Agent Handoff Verification
 
 Secure delegation between AI agents with permission inheritance.
 
@@ -210,38 +248,26 @@ import { HandoffManager } from '@weave_protocol/domere';
 
 const handoff = new HandoffManager('signing-key', {
   max_delegation_depth: 5,
-  max_handoff_duration_ms: 3600000 // 1 hour
+  max_handoff_duration_ms: 3600000
 });
 
-// Agent A delegates to Agent B
+// Delegate from orchestrator to researcher
 const token = await handoff.createHandoff({
   thread_id: 'thr_xxx',
   from_agent: 'orchestrator',
   to_agent: 'researcher',
   delegated_intent: 'Find Q3 revenue data',
   constraints: ['read-only', 'internal-data-only'],
-  permissions: [
-    { resource: 'database', actions: ['read'] },
-    { resource: 'files', actions: ['read'] }
-  ],
+  permissions: [{ resource: 'database', actions: ['read'] }],
   max_actions: 10,
-  expires_in_ms: 300000 // 5 minutes
+  expires_in_ms: 300000
 });
 
-// Agent B verifies before acting
+// Researcher verifies before acting
 const verification = await handoff.verifyHandoff(token.token, 'researcher');
-if (verification.valid) {
-  console.log('Remaining actions:', verification.remaining_actions);
-  console.log('Constraints:', verification.constraints);
-}
-
-// Track delegation chain
-const chain = await handoff.getDelegationChain('thr_xxx');
-console.log('Delegation depth:', chain.depth);
-console.log('Chain integrity:', chain.integrity_valid);
 ```
 
-### 📋 Compliance Checkpoints - SOC2/HIPAA (NEW)
+### 📋 Compliance Checkpoints (SOC2/HIPAA)
 
 Automated compliance tracking and reporting.
 
@@ -260,110 +286,99 @@ await compliance.logPHIAccess({
   legal_basis: 'treatment'
 });
 
-// SOC2: Log access control event
-await compliance.logAccessControl({
-  thread_id: 'thr_xxx',
-  agent_id: 'admin-bot',
-  user_id: 'user_456',
-  resource: 'financial-reports',
-  action: 'grant',
-  success: true
-});
-
-// Generic compliance checkpoint
-await compliance.checkpoint({
-  thread_id: 'thr_xxx',
-  framework: 'SOC2',
-  control: 'CC6.1', // Logical Access Security
-  event_type: 'access',
-  event_description: 'User accessed sensitive data',
-  data_classification: 'confidential',
-  agent_id: 'data-agent',
-  sign: true
-});
-
 // Generate compliance report
 const report = await compliance.generateReport({
   framework: 'HIPAA',
   period_start: new Date('2026-01-01'),
-  period_end: new Date('2026-03-31'),
-  attester: 'Compliance Officer'
+  period_end: new Date('2026-03-31')
 });
-
-console.log('Compliance Score:', report.compliance_score);
-console.log('Open Violations:', report.open_violations);
-console.log('Control Coverage:', report.control_coverage);
+console.log('Score:', report.compliance_score);
 ```
 
-### ⛓️ Blockchain Anchoring
+### 📊 Task Scheduler (Multi-Agent)
 
-Immutable proof of AI agent actions on Solana and Ethereum.
+Priority queue with dependencies, retries, and load balancing.
 
 ```typescript
-import { SolanaAnchor, EthereumAnchor } from '@weave_protocol/domere';
+import { TaskScheduler } from '@weave_protocol/domere';
 
-// Solana (Devnet)
-const solana = new SolanaAnchor({
-  rpc_url: 'https://api.devnet.solana.com',
-  program_id: 'BeCYVJYfbUu3k2TPGmh9VoGWeJwzm2hg2NdtnvbdBNCj'
+const scheduler = new TaskScheduler();
+
+const task = await scheduler.createTask({
+  intent: 'Analyze Q3 data',
+  priority: 'high',
+  dependencies: ['fetch-data-task'],
+  constraints: {
+    required_capabilities: ['data-analysis'],
+    max_duration_ms: 300000
+  },
+  retry_policy: { max_retries: 3, backoff: 'exponential' }
 });
 
-await solana.anchorThread({
-  thread_id: 'thr_xxx',
-  merkle_root: trail.merkle_root,
-  hop_count: 5,
-  intent_hash: thread.intent_hash,
-  compliant: true
-});
-
-// Ethereum (Mainnet)
-const ethereum = new EthereumAnchor({
-  rpc_url: 'https://mainnet.infura.io/v3/YOUR_KEY',
-  contract_address: '0xAA8b52adD3CEce6269d14C6335a79df451543820'
-});
-
-await ethereum.anchorThread({ ... });
+const assignment = await scheduler.assignTask(task.id);
 ```
 
----
+### 🤖 Agent Registry (Health & Capabilities)
 
-## 🌐 REST API Endpoints
+Agent lifecycle, heartbeat monitoring, and failover.
 
-Start the server:
-```bash
-npm install @weave_protocol/api
-npm start
+```typescript
+import { AgentRegistry } from '@weave_protocol/domere';
+
+const registry = new AgentRegistry();
+
+const agent = await registry.register({
+  agent_id: 'agent-7',
+  capabilities: ['code-generation', 'testing'],
+  max_concurrent_tasks: 3
+});
+
+registry.onAgentDown((agent, activeTasks) => {
+  console.log(`Agent ${agent.id} down, reassigning tasks`);
+});
 ```
 
-### Mund (Scanning)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/mund/scan` | Scan content for threats |
-| POST | `/api/v1/mund/scan/secrets` | Scan for secrets only |
-| POST | `/api/v1/mund/scan/pii` | Scan for PII only |
-| POST | `/api/v1/mund/scan/injection` | Check for injection |
+### 🗃️ State Manager (Shared State with Locks)
 
-### Hord (Vault)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/hord/vaults` | Create vault |
-| GET | `/api/v1/hord/vaults` | List vaults |
-| POST | `/api/v1/hord/vaults/:id/secrets` | Store secret |
-| POST | `/api/v1/hord/redact` | Redact content |
+Distributed state with locking, branching, and conflict resolution.
 
-### Dōmere (Verification)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/domere/threads` | Create thread |
-| GET | `/api/v1/domere/threads/:id` | Get thread |
-| POST | `/api/v1/domere/threads/:id/verify` | Verify thread |
-| POST | `/api/v1/domere/drift/check` | Check intent drift |
+```typescript
+import { StateManager } from '@weave_protocol/domere';
 
-### OpenAI/Gemini Compatible
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/functions` | List available functions |
-| POST | `/api/v1/functions/call` | Call a function |
+const state = new StateManager({ conflict_resolution: 'last-write-wins' });
+
+// Lock before writing
+const lock = await state.acquireLock({ key: 'db', holder: 'agent-3' });
+if (lock.acquired) {
+  await state.set('db', { updated: true });
+  await state.releaseLock('db', 'agent-3');
+}
+
+// Git-style branching
+await state.createBranch('experiment');
+await state.set('config', newConfig, { branch: 'experiment' });
+await state.merge('experiment', 'main');
+```
+
+### 🎛️ Unified Orchestrator
+
+Single interface for multi-agent coordination.
+
+```typescript
+import { Orchestrator } from '@weave_protocol/domere';
+
+const orch = new Orchestrator({ max_agents: 10 });
+await orch.start();
+
+for (let i = 0; i < 10; i++) {
+  await orch.registerAgent({ name: `worker-${i}`, capabilities: ['general'] });
+}
+
+await orch.submitTask({ intent: 'Process batch', priority: 'high' });
+
+const stats = orch.getStats();
+console.log(`${stats.agents.ready}/${stats.agents.total} agents ready`);
+```
 
 ---
 
@@ -376,43 +391,51 @@ npm start
 
 ---
 
-## 🏗️ Architecture
+## 📊 Feature Matrix
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        AI Agent / LLM                           │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Weave Protocol API                           │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │
-│  │    Mund     │  │    Hord     │  │        Dōmere           │  │
-│  │  Guardian   │  │    Vault    │  │         Judge           │  │
-│  │             │  │             │  │  ┌───────────────────┐  │  │
-│  │ • Secrets   │  │ • Storage   │  │  │ Execution Replay  │  │  │
-│  │ • PII       │  │ • Redaction │  │  │ Handoff Verify    │  │  │
-│  │ • Injection │  │ • Sandbox   │  │  │ Compliance        │  │  │
-│  │ • Exfil     │  │ • Policies  │  │  │ Intent Tracking   │  │  │
-│  └─────────────┘  └─────────────┘  │  │ Blockchain Anchor │  │  │
-│                                     │  └───────────────────┘  │  │
-│                                     └─────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-                    ┌───────────────────────┐
-                    │   Blockchain Layer    │
-                    │  Solana  │  Ethereum  │
-                    └───────────────────────┘
-```
+| Feature | Mund | Hord | Dōmere |
+|---------|:----:|:----:|:------:|
+| Secret Detection | ✅ | | |
+| PII Detection | ✅ | | |
+| Injection Detection | ✅ | | |
+| Encrypted Storage | | ✅ | |
+| Redaction | | ✅ | |
+| Sandboxing | | ✅ | |
+| Intent Tracking | | | ✅ |
+| Drift Detection | | | ✅ |
+| Execution Replay | | | ✅ |
+| Multi-Agent Handoff | | | ✅ |
+| SOC2 Compliance | | | ✅ |
+| HIPAA Compliance | | | ✅ |
+| Task Scheduling | | | ✅ |
+| Agent Registry | | | ✅ |
+| Shared State/Locks | | | ✅ |
+| Blockchain Anchoring | | | ✅ |
+
+---
+
+## 🗺️ Roadmap
+
+### Current (v1.x)
+- ✅ Mund - Secret & threat scanning
+- ✅ Hord - Secure vault & sandbox
+- ✅ Dōmere - Verification & orchestration
+- ✅ REST API
+- ✅ Ethereum mainnet deployment
+- ✅ Solana devnet deployment
+
+### Next (v2.x) - Witan Protocol
+- 🔲 Consensus engine for multi-agent decisions
+- 🔲 Communication bus (agent-to-agent messaging)
+- 🔲 Advanced recovery & rollback
+- 🔲 Policy engine for governance
+- 🔲 Solana mainnet deployment
 
 ---
 
 ## 📄 License
 
 Apache 2.0 - See [LICENSE](LICENSE) for details.
-
-Use individually or together with the full Weave Protocol suite.
 
 ---
 
@@ -422,4 +445,4 @@ Contributions welcome! Please read our contributing guidelines before submitting
 
 ---
 
-Made with ❤️ for AI Safety
+**Made with ❤️ for AI Safety**
