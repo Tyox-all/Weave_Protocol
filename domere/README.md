@@ -23,7 +23,7 @@ Part of the [Weave Protocol Security Suite](https://github.com/Tyox-all/Weave_Pr
 npm install @weave_protocol/domere
 ```
 
-## 🚀 Quick Start: 16-Agent Orchestration
+## 🚀 Quick Start: Agent Orchestration - Default agent limit IS 10 (configure as needed).
 
 ```typescript
 import { Orchestrator } from '@weave_protocol/domere';
