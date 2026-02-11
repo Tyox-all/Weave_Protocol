@@ -81,7 +81,7 @@ curl -X POST http://localhost:3000/api/v1/domere/threads \
 | `SIGNING_KEY` | (required) | Secret key for signing |
 | `SOLANA_RPC_URL` | devnet | Solana RPC endpoint |
 | `ETHEREUM_RPC_URL` | - | Ethereum RPC endpoint |
-| `MAX_AGENTS` | 10 | Max agents for Witan |
+| `MAX_AGENTS` | 10 | Default agent limit (configure as needed) |
 | `DEFAULT_QUORUM` | 0.5 | Consensus quorum |
 | `DEFAULT_THRESHOLD` | 0.6 | Approval threshold |
 
