@@ -1,0 +1,26 @@
+{
+  "name": "@weave_protocol/witan",
+  "version": "1.0.0",
+  "description": "Council Protocol - Multi-agent consensus, communication, and governance for AI systems",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": ["ai", "agents", "consensus", "orchestration", "governance", "multi-agent", "voting"],
+  "author": "Weave Protocol",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Tyox-all/Weave_Protocol"
+  },
+  "dependencies": {
+    "@weave_protocol/domere": "^1.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
