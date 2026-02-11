@@ -25,17 +25,17 @@ Weave Protocol provides defense-in-depth for autonomous AI systems: secret scann
 │                           WEAVE PROTOCOL SUITE                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐  ┌─────────────┐  │
-│  │     MUND      │  │     HORD      │  │    DŌMERE     │  │    WITAN    │  │
-│  │   Guardian    │  │     Vault     │  │     Judge     │  │   Council   │  │
-│  ├───────────────┤  ├───────────────┤  ├───────────────┤  ├─────────────┤  │
-│  │ • Secrets     │  │ • Storage     │  │ • Intent      │  │ • Consensus │  │
-│  │ • PII         │  │ • Redaction   │  │ • Replay      │  │ • Comms Bus │  │
-│  │ • Injection   │  │ • Sandbox     │  │ • Handoff     │  │ • Policy    │  │
-│  │ • Exfil       │  │ • Encrypt     │  │ • Compliance  │  │ • Recovery  │  │
-│  │               │  │               │  │ • Scheduler   │  │ • Voting    │  │
-│  │               │  │               │  │ • Registry    │  │ • Channels  │  │
-│  └───────────────┘  └───────────────┘  └───────────────┘  └─────────────┘  │
+│  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐  ┌─────────────┐   │
+│  │     MUND      │  │     HORD      │  │    DŌMERE     │  │    WITAN    │   │
+│  │   Guardian    │  │     Vault     │  │     Judge     │  │   Council   │   │
+│  ├───────────────┤  ├───────────────┤  ├───────────────┤  ├─────────────┤   │
+│  │ • Secrets     │  │ • Storage     │  │ • Intent      │  │ • Consensus │   │
+│  │ • PII         │  │ • Redaction   │  │ • Replay      │  │ • Comms Bus │   │
+│  │ • Injection   │  │ • Sandbox     │  │ • Handoff     │  │ • Policy    │   │
+│  │ • Exfil       │  │ • Encrypt     │  │ • Compliance  │  │ • Recovery  │   │
+│  │               │  │               │  │ • Scheduler   │  │ • Voting    │   │
+│  │               │  │               │  │ • Registry    │  │ • Channels  │   │
+│  └───────────────┘  └───────────────┘  └───────────────┘  └─────────────┘   │
 │         │                  │                   │                 │          │
 │         └──────────────────┴───────────────────┴─────────────────┘          │
 │                                   │                                         │
