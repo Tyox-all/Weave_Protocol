@@ -40,3 +40,4 @@ temp/
 # Local config
 config.local.yaml
 rules/local/
+solana/

@@ -25,17 +25,17 @@ Weave Protocol provides defense-in-depth for autonomous AI systems: secret scann
 │                           WEAVE PROTOCOL SUITE                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐  ┌─────────────┐   │
-│  │     MUND      │  │     HORD      │  │    DŌMERE     │  │    WITAN    │   │
-│  │   Guardian    │  │     Vault     │  │     Judge     │  │   Council   │   │
-│  ├───────────────┤  ├───────────────┤  ├───────────────┤  ├─────────────┤   │
-│  │ • Secrets     │  │ • Storage     │  │ • Intent      │  │ • Consensus │   │
-│  │ • PII         │  │ • Redaction   │  │ • Replay      │  │ • Comms Bus │   │
-│  │ • Injection   │  │ • Sandbox     │  │ • Handoff     │  │ • Policy    │   │
-│  │ • Exfil       │  │ • Encrypt     │  │ • Compliance  │  │ • Recovery  │   │
-│  │               │  │               │  │ • Scheduler   │  │ • Voting    │   │
-│  │               │  │               │  │ • Registry    │  │ • Channels  │   │
-│  └───────────────┘  └───────────────┘  └───────────────┘  └─────────────┘   │
+│  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐  ┌─────────────┐  │
+│  │     MUND      │  │     HORD      │  │    DŌMERE     │  │    WITAN    │  │
+│  │   Guardian    │  │     Vault     │  │     Judge     │  │   Council   │  │
+│  ├───────────────┤  ├───────────────┤  ├───────────────┤  ├─────────────┤  │
+│  │ • Secrets     │  │ • Storage     │  │ • Intent      │  │ • Consensus │  │
+│  │ • PII         │  │ • Redaction   │  │ • Replay      │  │ • Comms Bus │  │
+│  │ • Injection   │  │ • Sandbox     │  │ • Handoff     │  │ • Policy    │  │
+│  │ • Exfil       │  │ • Encrypt     │  │ • Compliance  │  │ • Recovery  │  │
+│  │               │  │               │  │ • Scheduler   │  │ • Voting    │  │
+│  │               │  │               │  │ • Registry    │  │ • Channels  │  │
+│  └───────────────┘  └───────────────┘  └───────────────┘  └─────────────┘  │
 │         │                  │                   │                 │          │
 │         └──────────────────┴───────────────────┴─────────────────┘          │
 │                                   │                                         │
@@ -518,6 +518,7 @@ await recovery.commitTransaction(txn.id);
 
 | Chain | Network | Contract/Program | Explorer |
 |-------|---------|------------------|----------|
+| **Solana** | Mainnet | `6g7raTAHU2h331VKtfVtkS5pmuvR8vMYwjGsZF1CUj2o` | [View](https://solscan.io/account/6g7raTAHU2h331VKtfVtkS5pmuvR8vMYwjGsZF1CUj2o) |
 | **Solana** | Devnet | `BeCYVJYfbUu3k2TPGmh9VoGWeJwzm2hg2NdtnvbdBNCj` | [View](https://solscan.io/account/BeCYVJYfbUu3k2TPGmh9VoGWeJwzm2hg2NdtnvbdBNCj?cluster=devnet) |
 | **Ethereum** | Mainnet | `0xAA8b52adD3CEce6269d14C6335a79df451543820` | [View](https://etherscan.io/address/0xAA8b52adD3CEce6269d14C6335a79df451543820) |
 
@@ -559,13 +560,12 @@ await recovery.commitTransaction(txn.id);
 - ✅ Witan - Consensus, communication & governance
 - ✅ REST API
 - ✅ Ethereum mainnet deployment
-- ✅ Solana devnet deployment
+- ✅ Solana mainnet deployment
 
 ### Next (v2.x)
 - 🔲 MCP server integration
 - 🔲 Advanced agent coordination patterns
 - 🔲 Real-time monitoring dashboard
-- 🔲 Solana mainnet deployment
 - 🔲 Additional compliance frameworks (PCI-DSS, ISO27001)
 
 ---
