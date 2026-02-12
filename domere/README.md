@@ -327,6 +327,7 @@ await anchor.anchorThread({
 
 | Chain | Network | Address |
 |-------|---------|---------|
+| Solana | Mainnet | `6g7raTAHU2h331VKtfVtkS5pmuvR8vMYwjGsZF1CUj2o` |
 | Solana | Devnet | `BeCYVJYfbUu3k2TPGmh9VoGWeJwzm2hg2NdtnvbdBNCj` |
 | Ethereum | Mainnet | `0xAA8b52adD3CEce6269d14C6335a79df451543820` |
 
