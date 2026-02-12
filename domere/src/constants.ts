@@ -43,8 +43,6 @@ export const DEFAULT_CONFIG: DomereConfig = {
     solana_program_id: 'BeCYVJYfbUu3k2TPGmh9VoGWeJwzm2hg2NdtnvbdBNCj',
     solana_mainnet_rpc: 'https://api.mainnet-beta.solana.com',
     solana_mainnet_program_id: '6g7raTAHU2h331VKtfVtkS5pmuvR8vMYwjGsZF1CUj2o',
-    solana_mainnet_rpc: 'https://api.mainnet-beta.solana.com',
-    solana_mainnet_program_id: '6g7raTAHU2h331VKtfVtkS5pmuvR8vMYwjGsZF1CUj2o',
     ethereum_rpc: 'https://mainnet.infura.io/v3/YOUR_KEY',
     ethereum_contract: '0xAA8b52adD3CEce6269d14C6335a79df451543820',
     ethereum_treasury: '0x1425ce62Cd7680c4133CED3b33F85c4F4af27950',

@@ -673,6 +673,10 @@ export interface DomereConfig {
   anchoring: {
     solana_rpc: string;
     solana_program_id: string;
+    solana_mainnet_rpc: string;
+    solana_mainnet_program_id: string;
+    solana_mainnet_rpc: string;
+    solana_mainnet_program_id: string;
     solana_treasury: string;
     ethereum_rpc: string;
     ethereum_contract: string;
