@@ -38,14 +38,6 @@ export type PCIDSSControl = "REQ1" | "REQ2" | "REQ3" | "REQ4" | "REQ5" | "REQ6" 
 
 export type ISO27001Control = "A5" | "A6" | "A7" | "A8" | "A9" | "A10" | "A11" | "A12" | "A13" | "A14" | "A15" | "A16" | "A17" | "A18";
 
-export type PCIDSSControl =
-  | "REQ1" | "REQ2" | "REQ3" | "REQ4" | "REQ5" | "REQ6"
-  | "REQ7" | "REQ8" | "REQ9" | "REQ10" | "REQ11" | "REQ12";
-
-export type ISO27001Control =
-  | "A5" | "A6" | "A7" | "A8" | "A9" | "A10"
-  | "A11" | "A12" | "A13" | "A14" | "A15" | "A16" | "A17" | "A18";
-
 export interface ComplianceCheckpointRecord {
   id: string;
   thread_id: string;
@@ -657,8 +649,6 @@ export class ComplianceManager {
       retention_days: 365, // SOC2 requirement
       deletion_method: 'soft',
       legal_hold_exempt: true,
-    });
-  }
     });
     
     this.addRetentionPolicy({
