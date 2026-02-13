@@ -563,10 +563,10 @@ await recovery.commitTransaction(txn.id);
 - ✅ Solana mainnet deployment
 
 ### Next (v2.x)
-- 🔲 MCP server integration
-- 🔲 Advanced agent coordination patterns
-- 🔲 Real-time monitoring dashboard
-- 🔲 Additional compliance frameworks (PCI-DSS, ISO27001)
+- 🔲 MCP server integration <-- In testing! 🧪
+- 🔲 Advanced agent coordination patterns - <-- In progress 🤖
+- 🔲 Real-time monitoring dashboard - <-- In research 💹
+- 🔲 Additional compliance frameworks (PCI-DSS, ISO27001)  -✅ Added!
 
 ---
 
