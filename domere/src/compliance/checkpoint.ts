@@ -34,6 +34,18 @@ export type HIPAAControl =
   | 'BREACH_NOTIFICATION'
   | 'MINIMUM_NECESSARY';
 
+export type PCIDSSControl = "REQ1" | "REQ2" | "REQ3" | "REQ4" | "REQ5" | "REQ6" | "REQ7" | "REQ8" | "REQ9" | "REQ10" | "REQ11" | "REQ12";
+
+export type ISO27001Control = "A5" | "A6" | "A7" | "A8" | "A9" | "A10" | "A11" | "A12" | "A13" | "A14" | "A15" | "A16" | "A17" | "A18";
+
+export type PCIDSSControl =
+  | "REQ1" | "REQ2" | "REQ3" | "REQ4" | "REQ5" | "REQ6"
+  | "REQ7" | "REQ8" | "REQ9" | "REQ10" | "REQ11" | "REQ12";
+
+export type ISO27001Control =
+  | "A5" | "A6" | "A7" | "A8" | "A9" | "A10"
+  | "A11" | "A12" | "A13" | "A14" | "A15" | "A16" | "A17" | "A18";
+
 export interface ComplianceCheckpointRecord {
   id: string;
   thread_id: string;
@@ -533,6 +545,90 @@ export class ComplianceManager {
       sign: true,
     });
   }
+  /**
+   * PCI-DSS: Log cardholder data access
+   */
+  async logCardholderDataAccess(params: {
+    thread_id: string;
+    agent_id: string;
+    data_type: 'pan' | 'cvv' | 'pin' | 'track_data' | 'cardholder_name' | 'expiry';
+    action: 'access' | 'store' | 'transmit' | 'delete';
+    masked: boolean;
+    encrypted: boolean;
+    business_justification: string;
+  }): Promise<ComplianceCheckpointRecord> {
+    const control = params.action === 'store' ? 'REQ3' :
+                    params.action === 'transmit' ? 'REQ4' :
+                    params.action === 'access' ? 'REQ7' : 'REQ3';
+    const mitigations: string[] = [];
+    if (params.masked) mitigations.push('data_masking');
+    if (params.encrypted) mitigations.push('encryption');
+    return this.checkpoint({
+      thread_id: params.thread_id,
+      framework: 'PCI-DSS',
+      control,
+      event_type: params.action === 'transmit' ? 'transmission' : params.action === 'delete' ? 'deletion' : 'access',
+      event_description: `Cardholder data (${params.data_type}) ${params.action}: ${params.business_justification}`,
+      data_classification: 'restricted',
+      data_categories: ['cardholder_data', params.data_type],
+      agent_id: params.agent_id,
+      risk_level: params.data_type === 'cvv' || params.data_type === 'pin' ? 'critical' : 'high',
+      mitigations_applied: mitigations,
+      sign: true,
+    });
+  }
+
+  /**
+   * ISO27001: Log security incident
+   */
+  async logSecurityIncident(params: {
+    thread_id: string;
+    agent_id: string;
+    incident_id: string;
+    incident_type: 'breach' | 'malware' | 'unauthorized_access' | 'data_loss' | 'ddos' | 'phishing' | 'other';
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    status: 'detected' | 'investigating' | 'contained' | 'eradicated' | 'recovered' | 'closed';
+    affected_assets: string[];
+    description: string;
+  }): Promise<ComplianceCheckpointRecord> {
+    return this.checkpoint({
+      thread_id: params.thread_id,
+      framework: 'ISO27001',
+      control: 'A16',
+      event_type: params.incident_type === 'breach' ? 'disclosure' : 'audit',
+      event_description: `Security incident ${params.incident_id} (${params.incident_type}): ${params.status} - ${params.description}`,
+      data_classification: 'confidential',
+      data_categories: ['security_incident', params.incident_type],
+      agent_id: params.agent_id,
+      risk_level: params.severity,
+      sign: true,
+    });
+  }
+
+  /**
+   * ISO27001: Log asset management event
+   */
+  async logAssetEvent(params: {
+    thread_id: string;
+    agent_id: string;
+    asset_id: string;
+    asset_type: 'data' | 'software' | 'hardware' | 'service';
+    action: 'create' | 'modify' | 'transfer' | 'dispose' | 'classify';
+    classification: 'public' | 'internal' | 'confidential' | 'restricted';
+  }): Promise<ComplianceCheckpointRecord> {
+    return this.checkpoint({
+      thread_id: params.thread_id,
+      framework: 'ISO27001',
+      control: 'A8',
+      event_type: params.action === 'transfer' ? 'transmission' : 'modification',
+      event_description: `Asset ${params.asset_id} (${params.asset_type}): ${params.action} - classified as ${params.classification}`,
+      data_classification: params.classification,
+      data_categories: ['asset_management', params.asset_type],
+      agent_id: params.agent_id,
+      risk_level: params.classification === 'restricted' ? 'high' : params.classification === 'confidential' ? 'medium' : 'low',
+      sign: true,
+    });
+  }
   
   // ===========================================================================
   // Private Methods
@@ -562,7 +658,22 @@ export class ComplianceManager {
       deletion_method: 'soft',
       legal_hold_exempt: true,
     });
-  }
+    
+    this.addRetentionPolicy({
+      name: 'cardholder_retention',
+      data_categories: ['cardholder_data', 'pan', 'track_data'],
+      retention_days: 365,
+      deletion_method: 'hard',
+      legal_hold_exempt: false,
+    });
+    
+    this.addRetentionPolicy({
+      name: 'incident_retention',
+      data_categories: ['security_incident', 'breach'],
+      retention_days: 1095,
+      deletion_method: 'soft',
+      legal_hold_exempt: true,
+    });
   
   private assessRisk(params: { data_classification: string; event_type: string }): 'low' | 'medium' | 'high' | 'critical' {
     if (params.data_classification === 'phi' || params.data_classification === 'restricted') {

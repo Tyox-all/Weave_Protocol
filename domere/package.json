@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/domere",
-  "version": "1.2.7",
+  "version": "1.2.9",
   "description": "The Judge Protocol - Thread identity, intent verification, and blockchain anchoring",
   "type": "module",
   "main": "dist/index.js",
