@@ -14,7 +14,7 @@ Part of the [Weave Protocol Security Suite](https://github.com/Tyox-all/Weave_Pr
 |----------|----------|
 | **Verification** | Intent tracking, drift detection, execution replay, multi-agent handoff |
 | **Orchestration** | Task scheduler, agent registry, shared state with locks |
-| **Compliance** | SOC2 controls, HIPAA checkpoints, automated reporting |
+| **Compliance** | SOC2, HIPAA, PCI-DSS, ISO27001 checkpoints & reporting |
 | **Blockchain** | Solana & Ethereum anchoring for immutable audit trails |
 
 ## 📦 Installation
@@ -255,9 +255,9 @@ console.log(`Depth: ${chain.depth}, Valid: ${chain.integrity_valid}`);
 
 ---
 
-## 📋 Compliance (SOC2/HIPAA)
+## 📋 Compliance (SOC2/HIPAA/PCI-DSS/ISO27001)
 
-Automated compliance tracking and reporting.
+Automated compliance tracking and reporting for multiple frameworks.
 
 ```typescript
 import { ComplianceManager } from '@weave_protocol/domere';
@@ -283,21 +283,42 @@ await compliance.logAccessControl({
   success: true
 });
 
-// Generic checkpoint
-await compliance.checkpoint({
+// PCI-DSS: Log cardholder data access
+await compliance.logCardholderDataAccess({
   thread_id: 'thr_xxx',
-  framework: 'SOC2',
-  control: 'CC6.1',
-  event_type: 'access',
-  event_description: 'Data accessed',
-  data_classification: 'confidential',
-  agent_id: 'agent-1',
-  sign: true
+  agent_id: 'payment-processor',
+  data_type: 'pan',
+  action: 'access',
+  masked: true,
+  encrypted: true,
+  business_justification: 'Process refund'
+});
+
+// ISO27001: Log security incident
+await compliance.logSecurityIncident({
+  thread_id: 'thr_xxx',
+  agent_id: 'security-monitor',
+  incident_id: 'INC-001',
+  incident_type: 'unauthorized_access',
+  severity: 'high',
+  status: 'investigating',
+  affected_assets: ['db-prod-1'],
+  description: 'Unusual access pattern detected'
+});
+
+// ISO27001: Log asset management
+await compliance.logAssetEvent({
+  thread_id: 'thr_xxx',
+  agent_id: 'asset-manager',
+  asset_id: 'srv-prod-5',
+  asset_type: 'hardware',
+  action: 'classify',
+  classification: 'confidential'
 });
 
 // Generate report
 const report = await compliance.generateReport({
-  framework: 'HIPAA',
+  framework: 'PCI-DSS',
   period_start: new Date('2026-01-01'),
   period_end: new Date('2026-03-31')
 });

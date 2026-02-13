@@ -658,6 +658,8 @@ export class ComplianceManager {
       deletion_method: 'soft',
       legal_hold_exempt: true,
     });
+  }
+    });
     
     this.addRetentionPolicy({
       name: 'cardholder_retention',
@@ -674,7 +676,7 @@ export class ComplianceManager {
       deletion_method: 'soft',
       legal_hold_exempt: true,
     });
-  
+  }
   private assessRisk(params: { data_classification: string; event_type: string }): 'low' | 'medium' | 'high' | 'critical' {
     if (params.data_classification === 'phi' || params.data_classification === 'restricted') {
       if (params.event_type === 'disclosure' || params.event_type === 'transmission') {
