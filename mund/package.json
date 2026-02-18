@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/mund",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "The Guardian Protocol - MCP-based security monitoring for agentic AI systems",
   "main": "dist/index.js",
   "bin": {
@@ -15,18 +15,7 @@
     "test": "vitest",
     "prepublishOnly": "npm run build"
   },
-  "keywords": [
-    "mcp",
-    "ai",
-    "security",
-    "monitoring",
-    "agent",
-    "claude",
-    "llm",
-    "guardian",
-    "secrets",
-    "scanning"
-  ],
+  "keywords": "[\"mcp\",\"mcp-server\",\"ai\",\"ai-security\",\"llm-security\",\"agent-security\",\"security\",\"prompt-injection\",\"secret-detection\",\"pii-detection\",\"claude\",\"openai\",\"compliance\",\"scanning\",\"guardian\"]",
   "author": "",
   "license": "Apache-2.0",
   "repository": {
