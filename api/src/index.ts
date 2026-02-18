@@ -85,8 +85,6 @@ app.post('/api/v1/functions/call', async (req: Request, res: Response) => {
     res.status(500).json({ error: String(error) });
   }
 });
-});
-
 // Get available functions (for OpenAI/Gemini function calling setup)
 app.get('/api/v1/functions', (_req: Request, res: Response) => {
   res.json({
