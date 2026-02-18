@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/mund",
-  "version": "0.1.6",
+  "version": "0.1.8",
   "description": "The Guardian Protocol - MCP-based security monitoring for agentic AI systems",
   "main": "dist/index.js",
   "bin": {
@@ -38,13 +38,13 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "express": "^4.21.0",
-    "zod": "^3.23.8",
-    "yaml": "^2.5.0",
     "better-sqlite3": "^11.3.0",
+    "express": "^4.21.0",
     "nodemailer": "^6.9.15",
+    "uuid": "^10.0.0",
     "winston": "^3.14.2",
-    "uuid": "^10.0.0"
+    "yaml": "^2.5.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.11",
@@ -52,11 +52,12 @@
     "@types/node": "^22.5.5",
     "@types/nodemailer": "^6.4.16",
     "@types/uuid": "^10.0.0",
-    "tsx": "^4.19.1",
-    "typescript": "^5.6.2",
-    "vitest": "^2.1.1",
     "@typescript-eslint/eslint-plugin": "^8.6.0",
     "@typescript-eslint/parser": "^8.6.0",
-    "eslint": "^9.10.0"
-  }
+    "eslint": "^9.10.0",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2",
+    "vitest": "^2.1.1"
+  },
+  "mcpName": "io.github.Tyox-all/mund"
 }

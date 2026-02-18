@@ -41,3 +41,4 @@ temp/
 config.local.yaml
 rules/local/
 solana/
+.mcpregistry*

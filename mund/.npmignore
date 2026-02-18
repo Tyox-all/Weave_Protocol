@@ -1,0 +1,5 @@
+.mcpregistry*
+server.json
+*.bak
+.env
+.DS_Store
