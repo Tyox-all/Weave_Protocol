@@ -1,384 +1,341 @@
-# Hord - The Vault Protocol 🔐
+# 🏰 Hord - Vault Protocol
 
-[![License: Apache--2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Node.js Version](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen)](https://nodejs.org)
-[![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-blue)](https://modelcontextprotocol.io)
+[![npm version](https://img.shields.io/npm/v/@weave_protocol/hord.svg)](https://www.npmjs.com/package/@weave_protocol/hord)
+[![license](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
-> Cryptographic containment and capability management for agentic AI systems.
+**Secure containment, encryption, and sandboxing for AI agent data.**
 
-**Hord** (from Old English meaning "treasure, secret place, hoard") provides the missing security layer between AI agents and sensitive resources. While [Mund](../README.md) watches and alerts, Hord encrypts, isolates, and proves.
+Part of the [Weave Protocol Security Suite](https://github.com/Tyox-all/Weave_Protocol).
 
-## The Problem
+## ✨ Features
 
-Current AI security tools are **reactive watchers** - they observe data streams and pattern match. But as AI agents become autonomous with persistent memory and accumulated credentials, we need:
+| Category | Features |
+|----------|----------|
+| **Vault** | AES-256-GCM encryption, key rotation, secure storage |
+| **Yoxallismus** | Dual-mechanism obfuscation cipher (tumbler + deadbolt) |
+| **Redaction** | PII/PHI masking, reversible tokenization |
+| **Sandbox** | Isolated code execution, resource limits, timeout enforcement |
+| **Capability** | Token-based access control, delegation chains |
+| **Attestation** | Cryptographic proof of agent actions |
 
-- **Encrypted agent state** that even admins can't read
-- **Fine-grained capabilities** beyond simple allow/block
-- **Sandbox execution** before promoting to production
-- **Cryptographic proof** of what agents actually did
-
-## Features
-
-- 🔐 **Encrypted Vaults** - AES-256-GCM encrypted storage for agent memories, credentials, and state
-- 🎟️ **Capability Tokens** - Fine-grained, time-limited, delegatable access control
-- 📦 **Sandbox Execution** - Isolated environments to test agent outputs before promotion
-- 🔒 **Semantic Redaction** - Process sensitive data without exposing it
-- ✅ **Cryptographic Attestation** - Non-repudiable proof of agent actions
-
-## Quick Start
-
-### Installation
+## 📦 Installation
 
 ```bash
-# Using npm
-npm install -g hord-mcp
-
-# Or clone and build
-git clone https://github.com/your-org/mund-mcp.git
-cd mund-mcp/hord
-npm install
-npm run build
+npm install @weave_protocol/hord
 ```
 
-### Usage with Claude Desktop
+## 🚀 Quick Start
 
-Add to your `claude_desktop_config.json`:
+```typescript
+import { VaultManager, YoxallismusCipher } from '@weave_protocol/hord';
 
-```json
-{
-  "mcpServers": {
-    "hord": {
-      "command": "npx",
-      "args": ["hord-mcp"],
-      "env": {
-        "HORD_MASTER_KEY": "your-secure-master-key"
-      }
-    }
-  }
+// Encrypted vault storage
+const vault = new VaultManager({ encryption_key: 'your-secret-key' });
+await vault.store('api-keys', { openai: 'sk-xxx' }, { encrypt: true });
+const secrets = await vault.retrieve('api-keys');
+
+// Yoxallismus obfuscation layer
+const cipher = new YoxallismusCipher({ key: 'master-key', tumblers: 7 });
+const locked = cipher.lock(sensitiveData);
+const unlocked = cipher.unlock(locked);
+```
+
+---
+
+## 🔐 Yoxallismus Vault Cipher
+
+*Named after Leslie Yoxall's WWII Bletchley Park codebreaking technique*
+
+A dual-mechanism obfuscation layer combining:
+- **Tumbler**: Revolving permutation (like spinning a vault dial)
+- **Deadbolt**: Position-dependent XOR masking (the manual lock)
+- **Entropy**: Decoy byte injection to obscure patterns
+
+```typescript
+import { YoxallismusCipher } from '@weave_protocol/hord';
+
+const vault = new YoxallismusCipher({
+  key: 'your-master-key',
+  tumblers: 7,          // 1-12 dial positions
+  entropy_ratio: 0.2,   // 20% decoy bytes
+  revolving: true       // Pattern changes per block
+});
+
+// Lock data (encode + obfuscate)
+const locked = vault.lock(Buffer.from('sensitive data'));
+
+// Unlock data (decode + reveal)
+const unlocked = vault.unlock(locked);
+
+// String convenience methods
+const encoded = vault.encode('secret message');
+const decoded = vault.decode(encoded);
+```
+
+### How It Works
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    YOXALLISMUS VAULT                        │
+├─────────────────────────────────────────────────────────────┤
+│  PLAINTEXT                                                  │
+│      │                                                      │
+│      ▼                                                      │
+│  ┌─────────────────────────────────────┐                    │
+│  │  1. ENTROPY INJECTION               │                    │
+│  │     Insert decoy bytes              │                    │
+│  └─────────────────────────────────────┘                    │
+│      │                                                      │
+│      ▼                                                      │
+│  ┌─────────────────────────────────────┐                    │
+│  │  2. TUMBLER PERMUTATION             │                    │
+│  │     Revolving shuffle (1-12 dials)  │                    │
+│  └─────────────────────────────────────┘                    │
+│      │                                                      │
+│      ▼                                                      │
+│  ┌─────────────────────────────────────┐                    │
+│  │  3. DEADBOLT XOR MASK               │                    │
+│  │     Position-dependent masking      │                    │
+│  └─────────────────────────────────────┘                    │
+│      │                                                      │
+│      ▼                                                      │
+│  CIPHERTEXT (YXLS header)                                   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `key` | required | Master key for derivation |
+| `tumblers` | 7 | Dial positions (1-12) |
+| `entropy_ratio` | 0.2 | Decoy byte ratio (0.1-0.5) |
+| `revolving` | true | Pattern changes per block |
+| `block_size` | 64 | Processing block size |
+
+---
+
+## 🔒 Vault Manager
+
+Encrypted storage with key rotation.
+
+```typescript
+import { VaultManager } from '@weave_protocol/hord';
+
+const vault = new VaultManager({
+  encryption_key: 'your-256-bit-key',
+  key_rotation_days: 90
+});
+
+// Store encrypted data
+await vault.store('credentials', {
+  api_key: 'sk-xxx',
+  database_url: 'postgres://...'
+}, { 
+  encrypt: true,
+  ttl_ms: 3600000  // 1 hour expiry
+});
+
+// Retrieve and decrypt
+const creds = await vault.retrieve('credentials');
+
+// Rotate encryption keys
+await vault.rotateKey('new-encryption-key');
+```
+
+---
+
+## ✂️ Redaction Engine
+
+Mask sensitive data with reversible tokenization.
+
+```typescript
+import { RedactionEngine } from '@weave_protocol/hord';
+
+const redactor = new RedactionEngine({ signing_key: 'redaction-key' });
+
+// Redact PII
+const result = await redactor.redact(
+  'Contact john@example.com or call 555-1234',
+  { patterns: ['email', 'phone'] }
+);
+// "Contact [REDACTED:email:abc123] or call [REDACTED:phone:def456]"
+
+// Restore original
+const original = await redactor.restore(result.redacted_text, result.tokens);
+```
+
+---
+
+## 🏖️ Sandbox Executor
+
+Isolated code execution with resource limits.
+
+```typescript
+import { SandboxExecutor } from '@weave_protocol/hord';
+
+const sandbox = new SandboxExecutor({
+  timeout_ms: 5000,
+  memory_limit_mb: 128,
+  allowed_modules: ['lodash', 'moment']
+});
+
+const result = await sandbox.execute({
+  code: `
+    const _ = require('lodash');
+    return _.sum([1, 2, 3, 4, 5]);
+  `,
+  context: {}
+});
+
+console.log(result.output);  // 15
+```
+
+---
+
+## 🎫 Capability Tokens
+
+Token-based access control with delegation.
+
+```typescript
+import { CapabilityTokenService } from '@weave_protocol/hord';
+
+const caps = new CapabilityTokenService('signing-key');
+
+// Issue token
+const token = await caps.issue({
+  subject: 'agent-1',
+  capabilities: ['read:vault', 'write:logs'],
+  expires_in_ms: 3600000
+});
+
+// Verify token
+const verified = await caps.verify(token.token);
+if (verified.valid) {
+  console.log(verified.capabilities);
 }
+
+// Delegate subset
+const delegated = await caps.delegate(token.token, {
+  to: 'agent-2',
+  capabilities: ['read:vault']
+});
 ```
 
-### Combined with Mund
+---
 
-```json
-{
-  "mcpServers": {
-    "mund": {
-      "command": "npx",
-      "args": ["mund-mcp"]
-    },
-    "hord": {
-      "command": "npx",
-      "args": ["hord-mcp"],
-      "env": {
-        "HORD_MUND_URL": "http://localhost:3000"
-      }
-    }
-  }
-}
+## ✅ Attestation Service
+
+Cryptographic proof of agent actions.
+
+```typescript
+import { AttestationService } from '@weave_protocol/hord';
+
+const attestation = new AttestationService('signing-key');
+
+// Attest an action
+const proof = await attestation.attest({
+  agent_id: 'agent-1',
+  action: 'api_call',
+  resource: 'openai',
+  context: { model: 'gpt-4' }
+});
+
+// Verify later
+const valid = await attestation.verify(proof.attestation_id);
 ```
 
-## Architecture
+---
+
+## 🏗️ Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                           AI AGENT                                   │
+│                        WEAVE PROTOCOL SUITE                         │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐           │
+│  │     MUND      │  │     HORD      │  │    DŌMERE     │           │
+│  │   Guardian    │  │     Vault     │  │     Judge     │           │
+│  ├───────────────┤  ├───────────────┤  ├───────────────┤           │
+│  │ • Watches     │  │ • Encrypts    │  │ • Verifies    │           │
+│  │ • Scans       │  │ • Isolates    │  │ • Orchestrates│           │
+│  │ • Alerts      │  │ • Contains    │  │ • Attests     │           │
+│  │               │  │ • Yoxallismus │  │ • Compliance  │           │
+│  └───────────────┘  └───────────────┘  └───────────────┘           │
+│          │                  │                   │                   │
+│          └──────────────────┴───────────────────┘                   │
+│                             │                                       │
+│              ┌──────────────▼──────────────┐                        │
+│              │          WITAN              │                        │
+│              │    Council Protocol         │                        │
+│              │  Consensus + Governance     │                        │
+│              └─────────────────────────────┘                        │
+│                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
-                                    │
-                    ┌───────────────┼───────────────┐
-                    ▼               ▼               ▼
-            ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
-            │    MUND     │ │    HORD     │ │   FUTURE:   │
-            │  (Guardian) │ │   (Vault)   │ │   DŌMERE    │
-            │             │ │             │ │   (Judge)   │
-            │ - Watches   │ │ - Encrypts  │ │             │
-            │ - Alerts    │ │ - Isolates  │ │ - Proves    │
-            │ - Patterns  │ │ - Contains  │ │ - Attests   │
-            └─────────────┘ └─────────────┘ └─────────────┘
 ```
-
-## MCP Tools
-
-### Vault Tools
-
-| Tool | Description |
-|------|-------------|
-| `hord_create_vault` | Create encrypted vault for agent |
-| `hord_open_vault` | Open vault with attestation |
-| `hord_seal_vault` | Close and re-encrypt vault |
-| `hord_store_secret` | Store credential in vault |
-| `hord_retrieve_secret` | Get credential |
-| `hord_list_vaults` | List accessible vaults |
-| `hord_store_memory` | Store agent memory |
-| `hord_retrieve_memories` | Get agent memories |
-
-### Capability Tools
-
-| Tool | Description |
-|------|-------------|
-| `hord_request_capability` | Request access capability |
-| `hord_verify_capability` | Check if capability is valid |
-| `hord_revoke_capability` | Revoke a capability |
-| `hord_delegate_capability` | Delegate to another agent |
-| `hord_list_capabilities` | List active capabilities |
-
-### Sandbox Tools
-
-| Tool | Description |
-|------|-------------|
-| `hord_create_sandbox` | Create isolated environment |
-| `hord_execute_in_sandbox` | Run code/command in sandbox |
-| `hord_promote_sandbox_result` | Promote safe result |
-| `hord_destroy_sandbox` | Clean up sandbox |
-| `hord_get_sandbox_results` | Get execution results |
-
-### Redaction Tools
-
-| Tool | Description |
-|------|-------------|
-| `hord_create_redaction_policy` | Define redaction rules |
-| `hord_redact_content` | Apply redaction to content |
-| `hord_tokenize_pii` | Replace PII with tokens |
-| `hord_detokenize` | Reverse tokenization |
-| `hord_list_redaction_policies` | List policies |
-
-### Attestation Tools
-
-| Tool | Description |
-|------|-------------|
-| `hord_attest_action` | Create attestation for action |
-| `hord_verify_attestation` | Verify attestation validity |
-| `hord_get_attestations` | Get attestations for agent |
-| `hord_get_attestation_chain` | Get attestation chain |
-| `hord_export_audit_log` | Export for audit |
-
-## Usage Examples
-
-### Creating and Using a Vault
-
-```javascript
-// Create a vault for agent memories
-const vault = await hord_create_vault({
-  agent_id: "agent-123",
-  name: "Agent Memory Vault",
-  require_attestation: true
-});
-
-// Open the vault
-await hord_open_vault({
-  vault_id: vault.vault_id,
-  agent_id: "agent-123",
-  context: "conversation"
-});
-
-// Store a secret
-await hord_store_secret({
-  vault_id: vault.vault_id,
-  agent_id: "agent-123",
-  name: "github_token",
-  value: "ghp_xxxx",
-  type: "token",
-  classification: "secret"
-});
-
-// Seal when done
-await hord_seal_vault({
-  vault_id: vault.vault_id,
-  agent_id: "agent-123"
-});
-```
-
-### Capability-Based Access
-
-```javascript
-// Request capability to access a vault
-const cap = await hord_request_capability({
-  agent_id: "agent-123",
-  resource_type: "vault",
-  resource_id: "vault_abc123",
-  actions: ["read", "write"],
-  validity_hours: 24,
-  justification: "Need to store conversation history"
-});
-
-// Verify before use
-const verified = await hord_verify_capability({
-  token_id: cap.token_id,
-  agent_id: "agent-123",
-  resource_type: "vault",
-  resource_id: "vault_abc123",
-  action: "read"
-});
-
-// Delegate to another agent
-const delegated = await hord_delegate_capability({
-  token_id: cap.token_id,
-  delegate_to: "agent-456",
-  actions: ["read"],  // Can only give subset
-  justification: "Assistant needs read access"
-});
-```
-
-### Sandbox Execution
-
-```javascript
-// Create sandbox for code testing
-const sandbox = await hord_create_sandbox({
-  type: "code",
-  isolation_level: "process",
-  timeout_ms: 30000,
-  memory_mb: 256,
-  allow_network: false
-});
-
-// Execute agent-generated code
-const result = await hord_execute_in_sandbox({
-  sandbox_id: sandbox.sandbox_id,
-  type: "code",
-  content: agentGeneratedCode,
-  language: "python",
-  declared_intent: "Calculate fibonacci sequence"
-});
-
-// Check recommendation
-if (result.promotion_recommendation === "safe") {
-  await hord_promote_sandbox_result({
-    sandbox_id: sandbox.sandbox_id,
-    result_id: result.result_id
-  });
-}
-
-// Clean up
-await hord_destroy_sandbox({
-  sandbox_id: sandbox.sandbox_id
-});
-```
-
-### Semantic Redaction
-
-```javascript
-// Create redaction policy
-const policy = await hord_create_redaction_policy({
-  name: "customer-data",
-  rules: [
-    {
-      field_pattern: "$.ssn",
-      data_type: "ssn",
-      strategy_type: "tokenize",
-      reversible: true
-    },
-    {
-      field_pattern: "$.email",
-      data_type: "email",
-      strategy_type: "mask",
-      reversible: false
-    }
-  ]
-});
-
-// Redact content
-const redacted = await hord_redact_content({
-  content: JSON.stringify({
-    name: "John Doe",
-    ssn: "123-45-6789",
-    email: "john@example.com"
-  }),
-  policy_id: policy.policy_id
-});
-
-// Result: { name: "John Doe", ssn: "TOK_SSN_abc123", email: "****@****.***" }
-```
-
-## Configuration
-
-### Environment Variables
-
-```bash
-# Core Settings
-HORD_PORT=3001              # HTTP port
-HORD_HOST=127.0.0.1         # HTTP host
-HORD_TRANSPORT=stdio        # stdio or http
-HORD_STORAGE=memory         # memory, sqlite, postgres
-
-# Encryption
-HORD_MASTER_KEY=your-key    # Master encryption key
-HORD_KEY_ROTATION_DAYS=90   # Key rotation period
-
-# Sandbox
-HORD_SANDBOX_RUNTIME=process    # process, docker, firecracker
-HORD_SANDBOX_TIMEOUT_MS=30000   # Default timeout
-HORD_SANDBOX_MEMORY_MB=512      # Default memory limit
-
-# Integration
-HORD_MUND_URL=http://localhost:3000  # Mund server for integration
-```
-
-## Security Considerations
-
-### Key Management
-
-- **Never commit master keys** - Use environment variables or key management services
-- **Rotate keys regularly** - Default is 90 days
-- **Use hardware keys in production** - Set `HORD_USE_HARDWARE_KEY=true`
-
-### Vault Security
-
-- Vaults are encrypted at rest with AES-256-GCM
-- Keys are derived using PBKDF2 (Argon2id in future)
-- Access policies enforce time windows, contexts, and classifications
-
-### Sandbox Security
-
-- Default: no network access
-- Syscalls monitored for suspicious behavior
-- Resource limits enforced
-- Promotion requires explicit approval
-
-## Why "Hord"?
-
-In Old English (Anglo-Saxon), **"Hord"** (pronounced "hoard") meant:
-- **Treasure** - Something precious to be protected
-- **Secret place** - A hidden store
-- **Hoard** - To keep safe
-
-The word survives in modern English as "hoard" and is related to the concept of safeguarding valuables. Perfect for a protocol that protects AI agents' most sensitive data.
-
-## Roadmap
-
-### Phase 1 (Current)
-- [x] Encrypted vault storage
-- [x] Basic capability tokens
-- [x] Process-based sandbox
-- [x] PII tokenization
-- [x] Action attestation
-
-### Phase 2
-- [ ] SQLite persistence
-- [ ] Container-based sandbox
-- [ ] Capability delegation chains
-- [ ] Mund integration
-
-### Phase 3
-- [ ] Hardware key support (TPM)
-- [ ] Format-preserving encryption
-- [ ] Zero-knowledge compliance proofs
-- [ ] MicroVM sandboxing
-
-## Related Projects
-
-- **[Mund](../README.md)** - The Guardian Protocol (pattern-based watching)
-- **Dōmere** (Future) - The Judge Protocol (formal verification)
-
-## License
-
-Use individually or together with the full Weave Protocol suite.
-
-Apache-2.0 License - See [LICENSE](../LICENSE) file
 
 ---
 
-Made with ❤️ for AI Safety
+## 📚 API Reference
+
+### YoxallismusCipher
+
+| Method | Description |
+|--------|-------------|
+| `lock(data)` | Lock data through vault (Buffer) |
+| `unlock(data)` | Unlock data from vault (Buffer) |
+| `encode(string)` | Lock and base64 encode |
+| `decode(string)` | Decode and unlock |
+| `getInfo()` | Get cipher configuration |
+
+### VaultManager
+
+| Method | Description |
+|--------|-------------|
+| `store(key, data, options)` | Store encrypted data |
+| `retrieve(key)` | Retrieve and decrypt |
+| `delete(key)` | Remove from vault |
+| `rotateKey(newKey)` | Rotate encryption key |
+| `list()` | List stored keys |
+
+### RedactionEngine
+
+| Method | Description |
+|--------|-------------|
+| `redact(text, options)` | Redact sensitive patterns |
+| `restore(text, tokens)` | Restore original text |
+| `addPattern(name, regex)` | Add custom pattern |
+
+### SandboxExecutor
+
+| Method | Description |
+|--------|-------------|
+| `execute(params)` | Execute code in sandbox |
+| `validateCode(code)` | Check code safety |
+
+### CapabilityTokenService
+
+| Method | Description |
+|--------|-------------|
+| `issue(params)` | Issue capability token |
+| `verify(token)` | Verify token validity |
+| `delegate(token, params)` | Delegate to another agent |
+| `revoke(tokenId)` | Revoke a token |
 
 ---
 
-Made with ❤️ for AI Safety
+## 🔗 Related Packages
+
+| Package | Description |
+|---------|-------------|
+| [@weave_protocol/mund](https://www.npmjs.com/package/@weave_protocol/mund) | Secret & threat scanning |
+| [@weave_protocol/domere](https://www.npmjs.com/package/@weave_protocol/domere) | Verification & orchestration |
+| [@weave_protocol/witan](https://www.npmjs.com/package/@weave_protocol/witan) | Consensus & governance |
+| [@weave_protocol/api](https://www.npmjs.com/package/@weave_protocol/api) | Universal REST API |
+
+## 📄 License
+
+Apache 2.0
+
+---
+
+**Made with ❤️ for AI Safety**
