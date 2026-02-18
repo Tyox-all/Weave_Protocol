@@ -18,6 +18,25 @@ Weave Protocol provides defense-in-depth for autonomous AI systems: secret scann
 | **[@weave_protocol/witan](./witan)** | Council Protocol - Consensus, communication & governance | `npm i @weave_protocol/witan` |
 | **[@weave_protocol/api](./api)** | Universal REST API for all protocols | `npm i @weave_protocol/api` |
 
+## 🔌 MCP Registry
+
+Mund is available on the official [MCP Registry](https://registry.modelcontextprotocol.io/) for Claude Desktop and other MCP-compatible AI assistants.
+
+```json
+{
+  "mcpServers": {
+    "mund": {
+      "command": "npx",
+      "args": ["@weave_protocol/mund"]
+    }
+  }
+}
+```
+
+[**View on MCP Registry →**](https://registry.modelcontextprotocol.io/)
+
+---
+
 ## 🏗️ Architecture
 
 ```

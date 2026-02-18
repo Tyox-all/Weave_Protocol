@@ -6,12 +6,12 @@
     "url": "https://github.com/Tyox-all/Weave_Protocol",
     "source": "github"
   },
-  "version": "0.1.7",
+  "version": "0.1.9",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@weave_protocol/mund",
-      "version": "0.1.7",
+      "version": "0.1.9",
       "transport": {
         "type": "stdio"
       },
