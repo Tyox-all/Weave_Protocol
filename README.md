@@ -44,17 +44,17 @@ Mund is available on the official [MCP Registry](https://registry.modelcontextpr
 │                           WEAVE PROTOCOL SUITE                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐  ┌─────────────┐  │
-│  │     MUND      │  │     HORD      │  │    DŌMERE     │  │    WITAN    │  │
-│  │   Guardian    │  │     Vault     │  │     Judge     │  │   Council   │  │
-│  ├───────────────┤  ├───────────────┤  ├───────────────┤  ├─────────────┤  │
-│  │ • Secrets     │  │ • Storage     │  │ • Intent      │  │ • Consensus │  │
-│  │ • PII         │  │ • Redaction   │  │ • Replay      │  │ • Comms Bus │  │
-│  │ • Injection   │  │ • Sandbox     │  │ • Handoff     │  │ • Policy    │  │
-│  │ • Exfil       │  │ • Encrypt     │  │ • Compliance  │  │ • Recovery  │  │
-│  │ • MCP Server  │  │ • Yoxallismus │  │ • Scheduler   │  │ • Voting    │  │
-│  │               │  │               │  │ • Registry    │  │ • Channels  │  │
-│  └───────────────┘  └───────────────┘  └───────────────┘  └─────────────┘  │
+│  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐  ┌─────────────┐   │
+│  │     MUND      │  │     HORD      │  │    DŌMERE     │  │    WITAN    │   │
+│  │   Guardian    │  │     Vault     │  │     Judge     │  │   Council   │   │
+│  ├───────────────┤  ├───────────────┤  ├───────────────┤  ├─────────────┤   │
+│  │ • Secrets     │  │ • Storage     │  │ • Intent      │  │ • Consensus │   │
+│  │ • PII         │  │ • Redaction   │  │ • Replay      │  │ • Comms Bus │   │
+│  │ • Injection   │  │ • Sandbox     │  │ • Handoff     │  │ • Policy    │   │
+│  │ • Exfil       │  │ • Encrypt     │  │ • Compliance  │  │ • Recovery  │   │
+│  │ • MCP Server  │  │ • Yoxallismus │  │ • Scheduler   │  │ • Voting    │   │ 
+│  │               │  │               │  │ • Registry    │  │ • Channels  │   │
+│  └───────────────┘  └───────────────┘  └───────────────┘  └─────────────┘   │
 │         │                  │                   │                 │          │
 │         └──────────────────┴───────────────────┴─────────────────┘          │
 │                                   │                                         │
