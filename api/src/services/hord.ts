@@ -335,4 +335,40 @@ export class HordService {
     decrypted += decipher.final('utf8');
     return decrypted;
   }
+
+  // =============================================================================
+  // Yoxallismus Cipher
+  // =============================================================================
+
+  async yoxallismusLock(
+    data: string,
+    key: string,
+    options?: { tumblers?: number; entropy_ratio?: number; revolving?: boolean }
+  ): Promise<{ locked: string; info: object }> {
+    const { YoxallismusCipher } = await import("@weave_protocol/hord");
+    
+    const cipher = new YoxallismusCipher({
+      key,
+      tumblers: options?.tumblers,
+      entropy_ratio: options?.entropy_ratio,
+      revolving: options?.revolving
+    });
+    
+    const locked = cipher.encode(data);
+    
+    return {
+      locked,
+      info: cipher.getInfo()
+    };
+  }
+
+  async yoxallismusUnlock(data: string, key: string): Promise<{ unlocked: string }> {
+    const { YoxallismusCipher } = await import("@weave_protocol/hord");
+    
+    const cipher = new YoxallismusCipher({ key });
+    const unlocked = cipher.decode(data);
+    
+    return { unlocked };
+  }
+
 }

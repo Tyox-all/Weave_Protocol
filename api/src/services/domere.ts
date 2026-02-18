@@ -6,6 +6,7 @@ import crypto from 'crypto';
 
 export class DomereService {
   private threads: Map<string, any> = new Map();
+  private signingKey: string = process.env.WEAVE_SIGNING_KEY || "weave-default-signing-key";
   private anchors: Map<string, any> = new Map();
   
   // ==========================================================================
@@ -503,4 +504,78 @@ export class DomereService {
     
     return hashes[0];
   }
+
+  // =============================================================================
+  // Compliance
+  // =============================================================================
+
+  async createCheckpoint(params: {
+    thread_id: string; framework: string; control: string; event_type: string;
+    event_description?: string; data_classification?: string; agent_id: string;
+    user_id?: string; risk_level?: string; sign?: boolean;
+  }): Promise<object> {
+    const { ComplianceManager } = await import("@weave_protocol/domere");
+    const compliance = new ComplianceManager(this.signingKey);
+    return compliance.checkpoint({
+      thread_id: params.thread_id, framework: params.framework as any,
+      control: params.control, event_type: params.event_type as any,
+      event_description: params.event_description || "",
+      data_classification: params.data_classification as any || "internal",
+      agent_id: params.agent_id, user_id: params.user_id,
+      risk_level: params.risk_level as any || "low", sign: params.sign ?? true
+    });
+  }
+
+  async logCardholderDataAccess(params: {
+    thread_id: string; agent_id: string; data_type: string; action: string;
+    masked: boolean; encrypted: boolean; business_justification: string;
+  }): Promise<object> {
+    const { ComplianceManager } = await import("@weave_protocol/domere");
+    const compliance = new ComplianceManager(this.signingKey);
+    return compliance.logCardholderDataAccess({
+      thread_id: params.thread_id, agent_id: params.agent_id,
+      data_type: params.data_type as any, action: params.action as any,
+      masked: params.masked, encrypted: params.encrypted,
+      business_justification: params.business_justification
+    });
+  }
+
+  async logSecurityIncident(params: {
+    thread_id: string; agent_id: string; incident_id: string; incident_type: string;
+    severity: string; status: string; affected_assets: string[]; description?: string;
+  }): Promise<object> {
+    const { ComplianceManager } = await import("@weave_protocol/domere");
+    const compliance = new ComplianceManager(this.signingKey);
+    return compliance.logSecurityIncident({
+      thread_id: params.thread_id, agent_id: params.agent_id,
+      incident_id: params.incident_id, incident_type: params.incident_type as any,
+      severity: params.severity as any, status: params.status as any,
+      affected_assets: params.affected_assets, description: params.description || ""
+    });
+  }
+
+  async logAssetEvent(params: {
+    thread_id: string; agent_id: string; asset_id: string;
+    asset_type: string; action: string; classification: string;
+  }): Promise<object> {
+    const { ComplianceManager } = await import("@weave_protocol/domere");
+    const compliance = new ComplianceManager(this.signingKey);
+    return compliance.logAssetEvent({
+      thread_id: params.thread_id, agent_id: params.agent_id,
+      asset_id: params.asset_id, asset_type: params.asset_type as any,
+      action: params.action as any, classification: params.classification as any
+    });
+  }
+
+  async generateComplianceReport(params: {
+    framework: string; period_start: Date; period_end: Date;
+  }): Promise<object> {
+    const { ComplianceManager } = await import("@weave_protocol/domere");
+    const compliance = new ComplianceManager(this.signingKey);
+    return compliance.generateReport({
+      framework: params.framework as any,
+      period_start: params.period_start, period_end: params.period_end
+    });
+  }
+
 }

@@ -289,4 +289,68 @@ router.post('/attest/verify', async (req: Request, res: Response) => {
   }
 });
 
+
+// =============================================================================
+// Yoxallismus Cipher
+// =============================================================================
+
+/**
+ * POST /api/v1/hord/yoxallismus/lock
+ * Lock data with Yoxallismus vault cipher
+ */
+router.post("/yoxallismus/lock", async (req: Request, res: Response) => {
+  try {
+    const { data, key, tumblers, entropy_ratio, revolving } = req.body;
+    
+    if (!data || !key) {
+      return res.status(400).json({ error: "data and key are required" });
+    }
+    
+    const result = await hord.yoxallismusLock(data, key, { tumblers, entropy_ratio, revolving });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+/**
+ * POST /api/v1/hord/yoxallismus/unlock
+ * Unlock data with Yoxallismus vault cipher
+ */
+router.post("/yoxallismus/unlock", async (req: Request, res: Response) => {
+  try {
+    const { data, key } = req.body;
+    
+    if (!data || !key) {
+      return res.status(400).json({ error: "data and key are required" });
+    }
+    
+    const result = await hord.yoxallismusUnlock(data, key);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+/**
+ * GET /api/v1/hord/yoxallismus/info
+ * Get Yoxallismus cipher info
+ */
+router.get("/yoxallismus/info", async (_req: Request, res: Response) => {
+  try {
+    res.json({
+      name: "Yoxallismus Vault Cipher",
+      description: "Dual-mechanism obfuscation (tumbler + deadbolt)",
+      options: {
+        tumblers: { default: 7, min: 1, max: 12, description: "Number of dial positions" },
+        entropy_ratio: { default: 0.2, min: 0.1, max: 0.5, description: "Decoy byte ratio" },
+        revolving: { default: true, description: "Pattern changes per block" },
+        block_size: { default: 64, description: "Processing block size" }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
 export { router as hordRoutes };
