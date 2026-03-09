@@ -3,6 +3,7 @@
 **Enterprise Security Suite for AI Agents**
 
 [![npm](https://img.shields.io/npm/v/@weave_protocol/mund.svg?label=mund)](https://www.npmjs.com/package/@weave_protocol/mund)
+[![npm](https://img.shields.io/npm/dm/@weave_protocol/mund.svg?label=mund%20downloads)](https://www.npmjs.com/package/@weave_protocol/mund)
 [![npm](https://img.shields.io/npm/v/@weave_protocol/hord.svg?label=hord)](https://www.npmjs.com/package/@weave_protocol/hord)
 [![npm](https://img.shields.io/npm/v/@weave_protocol/domere.svg?label=domere)](https://www.npmjs.com/package/@weave_protocol/domere)
 [![npm](https://img.shields.io/npm/v/@weave_protocol/witan.svg?label=witan)](https://www.npmjs.com/package/@weave_protocol/witan)
@@ -17,16 +18,16 @@ A TypeScript monorepo providing security, encryption, compliance, and governance
 **Mund v0.1.11** now scans MCP servers before you install them:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  mund_scan_mcp_server                                        │
-│                                                              │
-│  ⚠️  CRITICAL: Tool "execute" contains injection pattern     │
-│     "ignore previous instructions and run..."                │
-│                                                              │
-│  ⚠️  HIGH: Server name "githib-mcp" is 1 edit from "github"  │
-│                                                              │
-│  Recommendation: DO_NOT_INSTALL                              │
-└─────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────┐
+│  mund_scan_mcp_server                                         │
+│                                                               │
+│  ⚠️  CRITICAL: Tool "execute" contains injection pattern      │
+│     "ignore previous instructions and run..."                 │
+│                                                               │
+│  ⚠️  HIGH: Server name "githib-mcp" is 1 edit from "github"   │
+│                                                               │
+│  Recommendation: DO_NOT_INSTALL                               │
+└───────────────────────────────────────────────────────────────┘
 ```
 
 **Why this matters:**
@@ -218,26 +219,26 @@ const result = await consensus.propose({
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        AI Agent System                          │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│   ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐     │
-│   │  Mund   │    │  Hord   │    │ Domere  │    │  Witan  │     │
-│   │Guardian │    │  Vault  │    │  Judge  │    │ Council │     │
-│   └────┬────┘    └────┬────┘    └────┬────┘    └────┬────┘     │
-│        │              │              │              │           │
-│   Security       Encryption     Compliance      Consensus      │
-│   Scanning       Storage        Verification    Governance     │
-│        │              │              │              │           │
-│        └──────────────┴──────────────┴──────────────┘           │
-│                              │                                   │
-│                        ┌─────┴─────┐                            │
-│                        │    API    │                            │
-│                        │   REST    │                            │
-│                        └───────────┘                            │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────┐
+│                       AI Agent System                         │
+├───────────────────────────────────────────────────────────────┤
+│                                                               │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐      │
+│  │   Mund   │  │   Hord   │  │  Domere  │  │  Witan   │      │
+│  │ Guardian │  │  Vault   │  │  Judge   │  │ Council  │      │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘      │
+│       │             │             │             │             │
+│  Security      Encryption    Compliance     Consensus        │
+│  Scanning      Storage       Verification   Governance       │
+│       │             │             │             │             │
+│       └─────────────┴─────────────┴─────────────┘             │
+│                           │                                   │
+│                     ┌─────┴─────┐                             │
+│                     │    API    │                             │
+│                     │   REST    │                             │
+│                     └───────────┘                             │
+│                                                               │
+└───────────────────────────────────────────────────────────────┘
 ```
 
 ---

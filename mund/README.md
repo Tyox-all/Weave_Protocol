@@ -3,6 +3,7 @@
 **MCP Security Scanner for AI Agents**
 
 [![npm version](https://img.shields.io/npm/v/@weave_protocol/mund.svg)](https://www.npmjs.com/package/@weave_protocol/mund)
+[![npm downloads](https://img.shields.io/npm/dm/@weave_protocol/mund.svg)](https://www.npmjs.com/package/@weave_protocol/mund)
 [![MCP Registry](https://img.shields.io/badge/MCP-Registry-blue)](https://registry.modelcontextprotocol.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -302,30 +303,30 @@ Mund uses YAML-based rules in `rules/default.yaml`. Example:
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                         Mund MCP Server                      │
-├─────────────────────────────────────────────────────────────┤
-│  Tools                                                       │
-│  ├── mund_scan              Content scanning                 │
-│  ├── mund_scan_conversation Conversation scanning            │
-│  ├── mund_check_secret      Secret detection                 │
-│  ├── mund_check_pii         PII detection                    │
-│  ├── mund_get_stats         Statistics                       │
-│  ├── mund_scan_mcp_server   MCP server scanning       [NEW]  │
-│  ├── mund_check_typosquatting  Name verification      [NEW]  │
-│  └── mund_audit_mcp_permissions  Permission audit     [NEW]  │
-├─────────────────────────────────────────────────────────────┤
-│  Analyzers                                                   │
-│  ├── SecretScanner          API keys, tokens, credentials    │
-│  ├── PIIDetector            Personal information             │
-│  ├── InjectionDetector      Prompt injection attempts        │
-│  ├── CodeAnalyzer           Dangerous code patterns          │
-│  ├── ExfiltrationDetector   Data exfiltration attempts       │
-│  └── McpServerAnalyzer      MCP manifest security     [NEW]  │
-├─────────────────────────────────────────────────────────────┤
-│  Notifications                                               │
-│  ├── Slack, Teams, Email, Webhooks                          │
-└─────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────┐
+│                       Mund MCP Server                         │
+├───────────────────────────────────────────────────────────────┤
+│  Tools                                                        │
+│  ├── mund_scan              Content scanning                  │
+│  ├── mund_scan_conversation Conversation scanning             │
+│  ├── mund_check_secret      Secret detection                  │
+│  ├── mund_check_pii         PII detection                     │
+│  ├── mund_get_stats         Statistics                        │
+│  ├── mund_scan_mcp_server   MCP server scanning        [NEW]  │
+│  ├── mund_check_typosquatting  Name verification       [NEW]  │
+│  └── mund_audit_mcp_permissions  Permission audit      [NEW]  │
+├───────────────────────────────────────────────────────────────┤
+│  Analyzers                                                    │
+│  ├── SecretScanner          API keys, tokens, credentials     │
+│  ├── PIIDetector            Personal information              │
+│  ├── InjectionDetector      Prompt injection attempts         │
+│  ├── CodeAnalyzer           Dangerous code patterns           │
+│  ├── ExfiltrationDetector   Data exfiltration attempts        │
+│  └── McpServerAnalyzer      MCP manifest security      [NEW]  │
+├───────────────────────────────────────────────────────────────┤
+│  Notifications                                                │
+│  └── Slack, Teams, Email, Webhooks                            │
+└───────────────────────────────────────────────────────────────┘
 ```
 
 ---
