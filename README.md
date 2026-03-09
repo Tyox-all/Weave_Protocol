@@ -1,4 +1,4 @@
-# Weave Protocol
+# 🕸️ Weave Protocol
 
 **Enterprise Security Suite for AI Agents**
 
@@ -18,7 +18,7 @@ A TypeScript monorepo providing security, encryption, compliance, and governance
 
 ---
 
-## What's New: MCP Server Scanner
+## 🆕 What's New: MCP Server Scanner
 
 **Mund v0.1.11** now scans MCP servers before you install them:
 
@@ -44,19 +44,19 @@ A TypeScript monorepo providing security, encryption, compliance, and governance
 
 ---
 
-## Packages
+## 📦 Packages
 
 | Package | Version | Description |
 |---------|---------|-------------|
-| [@weave_protocol/mund](./mund) | 0.1.11 | Security scanner - secrets, PII, injection, **MCP server vetting** |
-| [@weave_protocol/hord](./hord) | 0.1.4 | Encrypted vault with Yoxallismus cipher |
-| [@weave_protocol/domere](./domere) | 1.2.10 | Compliance (PCI-DSS, ISO27001) & verification |
-| [@weave_protocol/witan](./witan) | 1.0.0 | Multi-agent consensus & governance |
-| [@weave_protocol/api](./api) | 1.0.6 | REST API for all packages |
+| [🛡️ @weave_protocol/mund](./mund) | 0.1.11 | Security scanner - secrets, PII, injection, **MCP server vetting** |
+| [🏛️ @weave_protocol/hord](./hord) | 0.1.4 | Encrypted vault with Yoxallismus cipher |
+| [⚖️ @weave_protocol/domere](./domere) | 1.2.10 | Compliance (PCI-DSS, ISO27001) & verification |
+| [👥 @weave_protocol/witan](./witan) | 1.0.0 | Multi-agent consensus & governance |
+| [🔌 @weave_protocol/api](./api) | 1.0.6 | REST API for all packages |
 
 ---
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Install All Packages
 
@@ -99,9 +99,9 @@ https://registry.modelcontextprotocol.io
 
 ---
 
-## Package Details
+## ✨ Package Details
 
-### Mund - The Guardian
+### 🛡️ Mund - The Guardian
 
 Real-time security scanning for AI agents.
 
@@ -132,7 +132,7 @@ const serverScan = await mund.scanMcpServer(serverJson);
 
 ---
 
-### Hord - The Vault
+### 🏛️ Hord - The Vault
 
 Encrypted storage with the Yoxallismus dual-tumbler cipher.
 
@@ -158,7 +158,7 @@ const unlocked = await cipher.unlock(locked);
 
 ---
 
-### Domere - The Judge
+### ⚖️ Domere - The Judge
 
 Compliance verification and audit logging.
 
@@ -193,7 +193,7 @@ const report = await compliance.generateReport('pci-dss', {
 
 ---
 
-### Witan - The Council
+### 👥 Witan - The Council
 
 Multi-agent consensus and governance.
 
@@ -221,7 +221,7 @@ const result = await consensus.propose({
 
 ---
 
-## Architecture
+## 🏗️ Architecture
 
 ```
 ┌───────────────────────────────────────────────────────────────┐
@@ -229,7 +229,7 @@ const result = await consensus.propose({
 ├───────────────────────────────────────────────────────────────┤
 │                                                               │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐      │
-│  │   Mund   │  │   Hord   │  │  Domere  │  │  Witan   │      │
+│  │  🛡️ Mund │  │ 🏛️ Hord  │  │ ⚖️ Domere│  │ 👥 Witan │      │
 │  │ Guardian │  │  Vault   │  │  Judge   │  │ Council  │      │
 │  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘      │
 │       │             │             │             │             │
@@ -239,7 +239,7 @@ const result = await consensus.propose({
 │       └─────────────┴─────────────┴─────────────┘             │
 │                           │                                   │
 │                     ┌─────┴─────┐                             │
-│                     │    API    │                             │
+│                     │  🔌 API   │                             │
 │                     │   REST    │                             │
 │                     └───────────┘                             │
 │                                                               │
@@ -248,7 +248,7 @@ const result = await consensus.propose({
 
 ---
 
-## REST API
+## 🔌 REST API
 
 The `@weave_protocol/api` package provides HTTP endpoints for all functionality:
 
@@ -276,14 +276,14 @@ docker run -p 3000:3000 weave-protocol/api
 
 ---
 
-## Security Model
+## 🔒 Security Model
 
 Weave Protocol implements defense-in-depth:
 
-1. **Mund** scans all inputs for threats before processing
-2. **Hord** encrypts sensitive data at rest and in transit
-3. **Domere** logs all actions with tamper-evident checksums
-4. **Witan** requires consensus for high-risk operations
+1. **🛡️ Mund** scans all inputs for threats before processing
+2. **🏛️ Hord** encrypts sensitive data at rest and in transit
+3. **⚖️ Domere** logs all actions with tamper-evident checksums
+4. **👥 Witan** requires consensus for high-risk operations
 
 ### CORS Model Integration
 
@@ -291,13 +291,13 @@ The Weave Protocol maps to the CORS Model for AI agent security:
 
 | CORS Layer | Weave Package | Function |
 |------------|---------------|----------|
-| **Origin Validation** | Mund | Validates input sources, detects injection |
-| **Context Integrity** | Hord | Protects data integrity through encryption |
-| **Deterministic Enforcement** | Domere | Ensures consistent policy application |
+| **Origin Validation** | 🛡️ Mund | Validates input sources, detects injection |
+| **Context Integrity** | 🏛️ Hord | Protects data integrity through encryption |
+| **Deterministic Enforcement** | ⚖️ Domere | Ensures consistent policy application |
 
 ---
 
-## Development
+## 🛠️ Development
 
 ```bash
 # Clone
@@ -315,7 +315,7 @@ npm test
 
 ---
 
-## Roadmap
+## 🗺️ Roadmap
 
 - [ ] LangChain/LlamaIndex integration package
 - [ ] Web dashboard for monitoring
@@ -325,19 +325,19 @@ npm test
 
 ---
 
-## Contributing
+## 🤝 Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
-## License
+## 📄 License
 
 Apache 2.0 - See [LICENSE](LICENSE)
 
 ---
 
-## Links
+## 🔗 Links
 
 - **GitHub:** https://github.com/Tyox-all/Weave_Protocol
 - **npm (mund):** https://www.npmjs.com/package/@weave_protocol/mund
@@ -348,4 +348,4 @@ Apache 2.0 - See [LICENSE](LICENSE)
 
 ---
 
-*Built with care for the AI agent ecosystem.*
+*Built with ❤️ for the AI agent ecosystem.*

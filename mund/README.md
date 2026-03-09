@@ -1,4 +1,4 @@
-# Mund - The Guardian Protocol
+# 🛡️ Mund - The Guardian Protocol
 
 **MCP Security Scanner for AI Agents**
 
@@ -9,7 +9,7 @@
 
 Mund (Old English: "protection, guardian") is a real-time security scanner for AI agent systems. It detects prompt injection, secrets, PII, dangerous code patterns, and data exfiltration attempts. **New in v0.1.11:** Scan MCP servers for security issues before you install them.
 
-## Features
+## ✨ Features
 
 | Category | What It Detects |
 |----------|-----------------|
@@ -20,7 +20,7 @@ Mund (Old English: "protection, guardian") is a real-time security scanner for A
 | **Exfiltration** | Suspicious URLs, DNS tunneling, base64-encoded data blocks |
 | **MCP Servers** | Malicious tool descriptions, typosquatting, dangerous permissions, embedded secrets |
 
-## Installation
+## 📦 Installation
 
 ```bash
 # npm
@@ -30,7 +30,7 @@ npm install @weave_protocol/mund
 npx @weave_protocol/mund
 ```
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Claude Desktop Integration
 
@@ -64,7 +64,7 @@ if (issues.some(i => i.severity === 'critical')) {
 
 ---
 
-## MCP Server Scanner
+## 🔍 MCP Server Scanner
 
 **Scan MCP servers before you install them.** Mund detects malicious tool descriptions, typosquatting attacks, dangerous permissions, and embedded secrets in server manifests.
 
@@ -156,7 +156,7 @@ Output: {
 
 ---
 
-## Content Scanning Tools
+## 🔐 Content Scanning Tools
 
 ### `mund_scan`
 
@@ -232,7 +232,7 @@ Output: {
 
 ---
 
-## Configuration
+## ⚙️ Configuration
 
 ### Environment Variables
 
@@ -244,7 +244,7 @@ Output: {
 | `MUND_BLOCK_MODE` | Block on critical issues | `false` |
 | `MUND_STORAGE` | `memory` or `sqlite` | `memory` |
 
-### Notifications
+### 🔔 Notifications
 
 Mund can alert on detections via Slack, Teams, email, or webhooks:
 
@@ -266,7 +266,7 @@ MUND_WEBHOOK_URL=https://api.company.com/alerts
 
 ---
 
-## Detection Rules
+## 📜 Detection Rules
 
 Mund uses YAML-based rules in `rules/default.yaml`. Example:
 
@@ -300,7 +300,7 @@ Mund uses YAML-based rules in `rules/default.yaml`. Example:
 
 ---
 
-## Architecture
+## 🏗️ Architecture
 
 ```
 ┌───────────────────────────────────────────────────────────────┐
@@ -331,27 +331,27 @@ Mund uses YAML-based rules in `rules/default.yaml`. Example:
 
 ---
 
-## Part of Weave Protocol
+## 🔗 Part of Weave Protocol
 
 Mund is the security layer of the [Weave Protocol](https://github.com/Tyox-all/Weave_Protocol) security suite:
 
 | Package | Purpose |
 |---------|---------|
-| **Mund** | Security scanning & MCP server vetting |
-| **Hord** | Encrypted vault storage (Yoxallismus cipher) |
-| **Domere** | Compliance & verification (PCI-DSS, ISO27001) |
-| **Witan** | Multi-agent consensus & governance |
-| **API** | REST interface for all packages |
+| **🛡️ Mund** | Security scanning & MCP server vetting |
+| **🏛️ Hord** | Encrypted vault storage (Yoxallismus cipher) |
+| **⚖️ Domere** | Compliance & verification (PCI-DSS, ISO27001) |
+| **👥 Witan** | Multi-agent consensus & governance |
+| **🔌 API** | REST interface for all packages |
 
 ---
 
-## License
+## 📄 License
 
 MIT License - see [LICENSE](LICENSE)
 
 ---
 
-## Links
+## 🔗 Links
 
 - **npm:** https://www.npmjs.com/package/@weave_protocol/mund
 - **MCP Registry:** Search "mund" at https://registry.modelcontextprotocol.io
