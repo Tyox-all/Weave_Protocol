@@ -1,617 +1,345 @@
-# 🛡️ Weave Protocol Security Suite
+# Weave Protocol
 
-[![npm version](https://img.shields.io/npm/v/@weave_protocol/domere.svg)](https://www.npmjs.com/package/@weave_protocol/domere)
-[![license](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![downloads](https://img.shields.io/npm/dm/@weave_protocol/domere.svg)](https://www.npmjs.com/package/@weave_protocol/domere)
+**Enterprise Security Suite for AI Agents**
 
-**Enterprise-grade security and orchestration infrastructure for AI agents.**
+[![npm](https://img.shields.io/npm/v/@weave_protocol/mund.svg?label=mund)](https://www.npmjs.com/package/@weave_protocol/mund)
+[![npm](https://img.shields.io/npm/v/@weave_protocol/hord.svg?label=hord)](https://www.npmjs.com/package/@weave_protocol/hord)
+[![npm](https://img.shields.io/npm/v/@weave_protocol/domere.svg?label=domere)](https://www.npmjs.com/package/@weave_protocol/domere)
+[![npm](https://img.shields.io/npm/v/@weave_protocol/witan.svg?label=witan)](https://www.npmjs.com/package/@weave_protocol/witan)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-Weave Protocol provides defense-in-depth for autonomous AI systems: secret scanning, secure containment, intent verification, execution replay, multi-agent coordination, and compliance tracking—all with blockchain anchoring for immutable audit trails.
+A TypeScript monorepo providing security, encryption, compliance, and governance tools for AI agent systems. Built for the Model Context Protocol (MCP) ecosystem.
 
-## 📦 Packages
+---
 
-| Package | Description | Install |
-|---------|-------------|---------|
-| **[@weave_protocol/mund](./mund)** | Guardian Protocol - Secret & threat scanning | `npm i @weave_protocol/mund` |
-| **[@weave_protocol/hord](./hord)** | Vault Protocol - Secure containment & sandboxing | `npm i @weave_protocol/hord` |
-| **[@weave_protocol/domere](./domere)** | Judge Protocol - Verification, orchestration & compliance | `npm i @weave_protocol/domere` |
-| **[@weave_protocol/witan](./witan)** | Council Protocol - Consensus, communication & governance | `npm i @weave_protocol/witan` |
-| **[@weave_protocol/api](./api)** | Universal REST API for all protocols | `npm i @weave_protocol/api` |
+## What's New: MCP Server Scanner
 
-## 🔌 MCP Registry
+**Mund v0.1.11** now scans MCP servers before you install them:
 
-Mund is available on the official [MCP Registry](https://registry.modelcontextprotocol.io/) for Claude Desktop and other MCP-compatible AI assistants.
+```
+┌─────────────────────────────────────────────────────────────┐
+│  mund_scan_mcp_server                                        │
+│                                                              │
+│  ⚠️  CRITICAL: Tool "execute" contains injection pattern     │
+│     "ignore previous instructions and run..."                │
+│                                                              │
+│  ⚠️  HIGH: Server name "githib-mcp" is 1 edit from "github"  │
+│                                                              │
+│  Recommendation: DO_NOT_INSTALL                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Why this matters:**
+- 43% of MCP servers have command injection vulnerabilities
+- "Line jumping" attacks hide malicious prompts in tool descriptions
+- Typosquatting mimics legitimate server names
+
+[See Mund README →](./mund/README.md)
+
+---
+
+## Packages
+
+| Package | Version | Description |
+|---------|---------|-------------|
+| [@weave_protocol/mund](./mund) | 0.1.11 | Security scanner - secrets, PII, injection, **MCP server vetting** |
+| [@weave_protocol/hord](./hord) | 0.1.4 | Encrypted vault with Yoxallismus cipher |
+| [@weave_protocol/domere](./domere) | 1.2.10 | Compliance (PCI-DSS, ISO27001) & verification |
+| [@weave_protocol/witan](./witan) | 1.0.0 | Multi-agent consensus & governance |
+| [@weave_protocol/api](./api) | 1.0.6 | REST API for all packages |
+
+---
+
+## Quick Start
+
+### Install All Packages
+
+```bash
+npm install @weave_protocol/mund @weave_protocol/hord @weave_protocol/domere
+```
+
+### Claude Desktop Integration
+
+Add to `claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "mund": {
       "command": "npx",
-      "args": ["@weave_protocol/mund"]
+      "args": ["-y", "@weave_protocol/mund"]
+    },
+    "hord": {
+      "command": "npx",
+      "args": ["-y", "@weave_protocol/hord"]
+    },
+    "domere": {
+      "command": "npx",
+      "args": ["-y", "@weave_protocol/domere"]
     }
   }
 }
 ```
 
-[**View on MCP Registry →**](https://registry.modelcontextprotocol.io/)
+### MCP Registry
 
----
-
-## 🏗️ Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           WEAVE PROTOCOL SUITE                              │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐  ┌─────────────┐   │
-│  │     MUND      │  │     HORD      │  │    DŌMERE     │  │    WITAN    │   │
-│  │   Guardian    │  │     Vault     │  │     Judge     │  │   Council   │   │
-│  ├───────────────┤  ├───────────────┤  ├───────────────┤  ├─────────────┤   │
-│  │ • Secrets     │  │ • Storage     │  │ • Intent      │  │ • Consensus │   │
-│  │ • PII         │  │ • Redaction   │  │ • Replay      │  │ • Comms Bus │   │
-│  │ • Injection   │  │ • Sandbox     │  │ • Handoff     │  │ • Policy    │   │
-│  │ • Exfil       │  │ • Encrypt     │  │ • Compliance  │  │ • Recovery  │   │
-│  │ • MCP Server  │  │ • Yoxallismus │  │ • Scheduler   │  │ • Voting    │   │ 
-│  │               │  │               │  │ • Registry    │  │ • Channels  │   │
-│  └───────────────┘  └───────────────┘  └───────────────┘  └─────────────┘   │
-│         │                  │                   │                 │          │
-│         └──────────────────┴───────────────────┴─────────────────┘          │
-│                                   │                                         │
-│                    ┌──────────────▼──────────────┐                          │
-│                    │     WITAN COUNCIL           │                          │
-│                    │  (Orchestrator + N Agents)  │                          │
-│                    └──────────────┬──────────────┘                          │
-│            ┌────┬────┬────┬────┬──┴──┬────┬────┬────┐                       │
-│            ▼    ▼    ▼    ▼    ▼     ▼    ▼    ▼    ▼                       │
-│          [A1] [A2] [A3] [A4] [A5]  [A6] [A7] [A8] [...]                     │
-│                                                                             │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                           BLOCKCHAIN LAYER                                  │
-│                    ┌─────────────┬─────────────┐                            │
-│                    │   Solana    │  Ethereum   │                            │
-│                    │   Mainnet   │   Mainnet   │                            │
-│                    └─────────────┴─────────────┘                            │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-## 🚀 Quick Start
-
-### Option 1: Witan Council (Full Stack)
-
-```typescript
-import { WitanCouncil } from '@weave_protocol/witan';
-
-const council = new WitanCouncil({
-  signing_key: 'your-secret-key',
-  max_agents: 10
-});
-
-await council.start();
-
-// Register agents with voting weights
-await council.registerAgent({
-  name: 'researcher',
-  capabilities: ['search', 'analysis'],
-  voting_weight: 2
-});
-
-// Submit tasks, propose decisions, send messages
-await council.submitTask({ intent: 'Analyze market data', priority: 'high' });
-
-const proposal = await council.propose({
-  title: 'Increase compute budget',
-  type: 'resource',
-  proposer_id: 'researcher'
-});
-
-await council.vote(proposal.id, 'researcher', 'approve');
-```
-
-### Option 2: Dōmere Orchestration (Core)
-
-```typescript
-import { Orchestrator } from '@weave_protocol/domere';
-
-// Create orchestrator for 10 agents
-const orch = new Orchestrator({ max_agents: 10 });
-await orch.start();
-
-// Register agents with capabilities
-for (let i = 0; i < 10; i++) {
-  await orch.registerAgent({
-    name: `agent-${i}`,
-    capabilities: ['research', 'analysis', 'coding'][i % 3],
-    max_concurrent_tasks: 3
-  });
-}
-
-// Submit tasks with dependencies
-const fetchTask = await orch.submitTask({
-  intent: 'Fetch Q3 financial data',
-  priority: 'high',
-  required_capabilities: ['research']
-});
-
-const analyzeTask = await orch.submitTask({
-  intent: 'Analyze Q3 trends',
-  dependencies: [fetchTask.id],  // Waits for fetch to complete
-  required_capabilities: ['analysis']
-});
-
-// Agents receive tasks via heartbeat
-const { tasks_to_run } = await orch.heartbeat('agent-0', []);
-```
-
-### Option 3: REST API (Any AI Agent)
+Mund is available on the official MCP Registry:
 
 ```bash
-npm install @weave_protocol/api
-npx weave-api
-# Server running on http://localhost:3000
-```
-
-```bash
-# Scan for secrets/threats
-curl -X POST http://localhost:3000/api/v1/mund/scan \
-  -H "Content-Type: application/json" \
-  -d '{"content": "AWS key: AKIAIOSFODNN7EXAMPLE"}'
-
-# Create verified thread
-curl -X POST http://localhost:3000/api/v1/domere/threads \
-  -d '{"origin_type": "agent", "origin_identity": "gpt-4", "intent": "Process data"}'
-```
-
-### Option 4: Direct Package Usage
-
-```typescript
-import { MundScanner } from '@weave_protocol/mund';
-import { HordVault } from '@weave_protocol/hord';
-import { ExecutionReplayManager, ComplianceManager } from '@weave_protocol/domere';
-
-// Scan for secrets
-const scanner = new MundScanner();
-const threats = await scanner.scan('API key: sk-1234567890abcdef');
-
-// Secure storage
-const vault = new HordVault();
-await vault.store('api-key', 'sk-1234...', { encryption: true });
-
-// Track execution
-const replay = new ExecutionReplayManager('encryption-key');
-await replay.recordAction({ thread_id: 'thr_1', agent_id: 'agent-1', ... });
+# Search for it
+https://registry.modelcontextprotocol.io
+# Server ID: io.github.Tyox-all/mund
 ```
 
 ---
 
-## 🔐 Mund - Guardian Protocol
+## Package Details
 
-Real-time threat detection for AI inputs/outputs.
+### Mund - The Guardian
+
+Real-time security scanning for AI agents.
 
 **Detects:**
-- 🔑 **Secrets**: API keys (OpenAI, AWS, GitHub, etc.), passwords, tokens
-- 👤 **PII**: SSN, emails, phone numbers, credit cards
-- 💉 **Injection**: Prompt injection, jailbreak attempts
-- 📤 **Exfiltration**: Data theft patterns
+- Prompt injection & jailbreak attempts
+- Secrets (API keys, tokens, credentials)
+- PII (SSN, credit cards, emails)
+- Dangerous code patterns
+- Data exfiltration attempts
+- **Malicious MCP servers** (NEW)
+
+**MCP Server Scanning Tools:**
+| Tool | Purpose |
+|------|---------|
+| `mund_scan_mcp_server` | Full security scan of server manifests |
+| `mund_check_typosquatting` | Detect name squatting attacks |
+| `mund_audit_mcp_permissions` | Analyze tool capabilities |
 
 ```typescript
-import { MundScanner } from '@weave_protocol/mund';
+// Scan content
+const result = await mund.scan("Here's my key: sk-abc123...");
+// { safe: false, issues: [{ severity: "critical", ... }] }
 
-const scanner = new MundScanner();
-const result = await scanner.scan(`
-  My AWS key is AKIAIOSFODNN7EXAMPLE
-  and my SSN is 123-45-6789
-`);
-
-console.log(result.issues);
-// [
-//   { type: 'secret', name: 'AWS Access Key', severity: 'critical' },
-//   { type: 'pii', name: 'SSN', severity: 'high' }
-// ]
+// Scan MCP server before install
+const serverScan = await mund.scanMcpServer(serverJson);
+// { recommendation: "DO_NOT_INSTALL", issues: [...] }
 ```
 
 ---
 
-## 🏛️ Hord - Vault Protocol
+### Hord - The Vault
 
-Secure containment and sandboxed execution.
+Encrypted storage with the Yoxallismus dual-tumbler cipher.
 
 **Features:**
-- 🔒 Encrypted secret storage
-- 📝 Automatic redaction
-- 🏖️ Sandboxed code execution
-- 🔐 Access control policies
+- AES-256-GCM encryption
+- Yoxallismus obfuscation layer
+- Secure key derivation (Argon2)
+- Memory-safe secret handling
 
 ```typescript
-import { HordVault } from '@weave_protocol/hord';
+import { YoxallismusCipher } from '@weave_protocol/hord';
 
-const vault = new HordVault({ encryption_key: process.env.VAULT_KEY });
+const cipher = new YoxallismusCipher('master-key');
 
-// Store secrets securely
-await vault.store('openai-key', 'sk-...', { ttl: 3600 });
+// Lock (encrypt + obfuscate)
+const locked = await cipher.lock(sensitiveData);
 
-// Redact sensitive data
-const safe = await vault.redact('My SSN is 123-45-6789');
-// → "My SSN is [REDACTED]"
+// Unlock (de-obfuscate + decrypt)
+const unlocked = await cipher.unlock(locked);
 ```
+
+**Yoxallismus Cipher:** A dual-layer encryption combining AES-256-GCM with tumbler/deadbolt obfuscation. Data is first encrypted, then the ciphertext is scrambled using position-dependent transformations that require both the key and the original encryption context to reverse.
 
 ---
 
-## ⚖️ Dōmere - Judge Protocol
+### Domere - The Judge
 
-Intent verification, orchestration, compliance, and blockchain anchoring.
+Compliance verification and audit logging.
 
-### 🎯 Intent Tracking & Drift Detection
+**Frameworks:**
+- PCI-DSS 4.0 (payment card security)
+- ISO 27001 (information security)
+- Custom compliance rules
 
-```typescript
-import { ThreadManager } from '@weave_protocol/domere';
-
-const manager = new ThreadManager();
-
-const thread = await manager.createThread({
-  origin_type: 'human',
-  origin_identity: 'user@company.com',
-  intent: 'Generate quarterly report',
-  constraints: ['read-only', 'no-external-api']
-});
-
-// Check for drift
-const drift = await manager.checkDrift(thread.id, 'Sending data to external API');
-// → { drifted: true, reason: 'Violates no-external-api constraint' }
-```
-
-### 🔄 Execution Replay & Audit Trail
-
-Complete forensic trail with cryptographic verification.
-
-```typescript
-import { ExecutionReplayManager } from '@weave_protocol/domere';
-
-const replay = new ExecutionReplayManager('encryption-key');
-
-// Record every action
-await replay.recordAction({
-  thread_id: 'thr_xxx',
-  agent_id: 'gpt-4-agent',
-  agent_type: 'llm',
-  action_type: 'inference',
-  action_name: 'generate_report',
-  input: { prompt: '...' },
-  output: { response: '...' },
-  latency_ms: 1250,
-  cost_usd: 0.03,
-  tokens_in: 500,
-  tokens_out: 1000
-});
-
-// Get tamper-proof trail
-const trail = await replay.getExecutionTrail('thr_xxx');
-console.log(trail.integrity_valid);  // true
-console.log(trail.merkle_root);      // For blockchain anchoring
-```
-
-### 🤝 Multi-Agent Handoff Verification
-
-Secure delegation between AI agents with permission inheritance.
-
-```typescript
-import { HandoffManager } from '@weave_protocol/domere';
-
-const handoff = new HandoffManager('signing-key', {
-  max_delegation_depth: 5,
-  max_handoff_duration_ms: 3600000
-});
-
-// Delegate from orchestrator to researcher
-const token = await handoff.createHandoff({
-  thread_id: 'thr_xxx',
-  from_agent: 'orchestrator',
-  to_agent: 'researcher',
-  delegated_intent: 'Find Q3 revenue data',
-  constraints: ['read-only', 'internal-data-only'],
-  permissions: [{ resource: 'database', actions: ['read'] }],
-  max_actions: 10,
-  expires_in_ms: 300000
-});
-
-// Researcher verifies before acting
-const verification = await handoff.verifyHandoff(token.token, 'researcher');
-```
-
-### 📋 Compliance Checkpoints (SOC2/HIPAA)
-
-Automated compliance tracking and reporting.
+**Blockchain Anchoring:**
+- Solana Mainnet: `6g7raTAHU2h331VKtfVtkS5pmuvR8vMYwjGsZF1CUj2o`
+- Solana Devnet: `BeCYVJYfbUu3k2TPGmh9VoGWeJwzm2hg2NdtnvbdBNCj`
+- Ethereum: `0xAA8b52adD3CEce6269d14C6335a79df451543820`
 
 ```typescript
 import { ComplianceManager } from '@weave_protocol/domere';
 
-const compliance = new ComplianceManager('signing-key');
+const compliance = new ComplianceManager(['pci-dss', 'iso27001']);
 
-// HIPAA: Log PHI access
-await compliance.logPHIAccess({
-  thread_id: 'thr_xxx',
-  agent_id: 'medical-assistant',
-  patient_id: 'patient_123',
-  access_reason: 'Treatment recommendation',
-  data_accessed: ['diagnosis', 'medications'],
-  legal_basis: 'treatment'
+// Create tamper-evident checkpoint
+const checkpoint = await compliance.createCheckpoint({
+  action: 'data_access',
+  resource: 'customer_records',
+  actor: 'agent-001'
 });
 
-// Generate compliance report
-const report = await compliance.generateReport({
-  framework: 'HIPAA',
-  period_start: new Date('2026-01-01'),
-  period_end: new Date('2026-03-31')
+// Generate audit report
+const report = await compliance.generateReport('pci-dss', {
+  startDate: '2024-01-01',
+  endDate: '2024-12-31'
 });
-console.log('Score:', report.compliance_score);
-```
-
-### 📊 Task Scheduler (Multi-Agent)
-
-Priority queue with dependencies, retries, and load balancing.
-
-```typescript
-import { TaskScheduler } from '@weave_protocol/domere';
-
-const scheduler = new TaskScheduler();
-
-const task = await scheduler.createTask({
-  intent: 'Analyze Q3 data',
-  priority: 'high',
-  dependencies: ['fetch-data-task'],
-  constraints: {
-    required_capabilities: ['data-analysis'],
-    max_duration_ms: 300000
-  },
-  retry_policy: { max_retries: 3, backoff: 'exponential' }
-});
-
-const assignment = await scheduler.assignTask(task.id);
-```
-
-### 🤖 Agent Registry (Health & Capabilities)
-
-Agent lifecycle, heartbeat monitoring, and failover.
-
-```typescript
-import { AgentRegistry } from '@weave_protocol/domere';
-
-const registry = new AgentRegistry();
-
-const agent = await registry.register({
-  agent_id: 'agent-7',
-  capabilities: ['code-generation', 'testing'],
-  max_concurrent_tasks: 3
-});
-
-registry.onAgentDown((agent, activeTasks) => {
-  console.log(`Agent ${agent.id} down, reassigning tasks`);
-});
-```
-
-### 🗃️ State Manager (Shared State with Locks)
-
-Distributed state with locking, branching, and conflict resolution.
-
-```typescript
-import { StateManager } from '@weave_protocol/domere';
-
-const state = new StateManager({ conflict_resolution: 'last-write-wins' });
-
-// Lock before writing
-const lock = await state.acquireLock({ key: 'db', holder: 'agent-3' });
-if (lock.acquired) {
-  await state.set('db', { updated: true });
-  await state.releaseLock('db', 'agent-3');
-}
-
-// Git-style branching
-await state.createBranch('experiment');
-await state.set('config', newConfig, { branch: 'experiment' });
-await state.merge('experiment', 'main');
-```
-
-### 🎛️ Unified Orchestrator
-
-Single interface for multi-agent coordination.
-
-```typescript
-import { Orchestrator } from '@weave_protocol/domere';
-
-const orch = new Orchestrator({ max_agents: 10 });
-await orch.start();
-
-for (let i = 0; i < 10; i++) {
-  await orch.registerAgent({ name: `worker-${i}`, capabilities: ['general'] });
-}
-
-await orch.submitTask({ intent: 'Process batch', priority: 'high' });
-
-const stats = orch.getStats();
-console.log(`${stats.agents.ready}/${stats.agents.total} agents ready`);
 ```
 
 ---
 
-## 🏛️ Witan - Council Protocol
+### Witan - The Council
 
-Multi-agent consensus, communication, governance, and recovery.
+Multi-agent consensus and governance.
 
-### 🗳️ Consensus Engine
-
-```typescript
-import { ConsensusEngine } from '@weave_protocol/witan';
-
-const consensus = new ConsensusEngine('signing-key', {
-  default_quorum: 0.5,
-  default_threshold: 0.6
-});
-
-const proposal = await consensus.createProposal({
-  title: 'Deploy new model',
-  proposal_type: 'action',
-  proposer_id: 'orchestrator',
-  eligible_voters: ['agent-1', 'agent-2', 'agent-3']
-});
-
-await consensus.vote(proposal.id, 'agent-1', 'approve');
-await consensus.vote(proposal.id, 'agent-2', 'approve');
-
-const result = await consensus.finalizeProposal(proposal.id);
-console.log(result.decision); // 'approved'
-```
-
-### 📨 Communication Bus
+**Features:**
+- Voting protocols (unanimous, majority, weighted)
+- Policy enforcement
+- Agent communication bus
+- Failure recovery
 
 ```typescript
-import { CommunicationBus } from '@weave_protocol/witan';
+import { ConsensusEngine, PolicyEngine } from '@weave_protocol/witan';
 
-const bus = new CommunicationBus('signing-key');
-
-// Direct message
-await bus.send({
-  from: 'agent-1',
-  to: 'agent-2',
-  type: 'data-handoff',
-  payload: { dataset_id: 'ds_123' }
+const consensus = new ConsensusEngine({
+  protocol: 'weighted_majority',
+  threshold: 0.66,
+  timeout: 30000
 });
 
-// Broadcast to all
-await bus.broadcast({
-  from: 'orchestrator',
-  type: 'priority-change',
-  payload: { all_tasks: 'high' }
+// Propose action requiring consensus
+const result = await consensus.propose({
+  action: 'deploy_to_production',
+  requiredApprovals: ['security-agent', 'qa-agent', 'ops-agent']
 });
-```
-
-### 📜 Policy Engine
-
-```typescript
-import { PolicyEngine } from '@weave_protocol/witan';
-
-const policy = new PolicyEngine();
-
-// Rate limit: 100 requests per minute
-await policy.createRateLimit({
-  name: 'api-limit',
-  targets: [{ type: 'all' }],
-  max_requests: 100,
-  window_ms: 60000
-});
-
-// Enforce
-const decision = await policy.enforce({
-  agent_id: 'agent-1',
-  action: 'api_call',
-  timestamp: new Date()
-});
-```
-
-### 🔄 Recovery Manager
-
-```typescript
-import { RecoveryManager } from '@weave_protocol/witan';
-
-const recovery = new RecoveryManager('signing-key');
-
-// Checkpoint
-const checkpoint = await recovery.checkpoint({
-  name: 'Pre-deployment',
-  created_by: 'admin'
-});
-
-// Transaction with auto-rollback
-const txn = await recovery.beginTransaction({
-  initiator: 'agent-1',
-  auto_checkpoint: true
-});
-
-// ... operations ...
-await recovery.commitTransaction(txn.id);
-// or: await recovery.rollbackTransaction(txn.id);
 ```
 
 ---
 
-## ⛓️ Blockchain Deployments
+## Architecture
 
-| Chain | Network | Contract/Program | Explorer |
-|-------|---------|------------------|----------|
-| **Solana** | Mainnet | `6g7raTAHU2h331VKtfVtkS5pmuvR8vMYwjGsZF1CUj2o` | [View](https://solscan.io/account/6g7raTAHU2h331VKtfVtkS5pmuvR8vMYwjGsZF1CUj2o) |
-| **Solana** | Devnet | `BeCYVJYfbUu3k2TPGmh9VoGWeJwzm2hg2NdtnvbdBNCj` | [View](https://solscan.io/account/BeCYVJYfbUu3k2TPGmh9VoGWeJwzm2hg2NdtnvbdBNCj?cluster=devnet) |
-| **Ethereum** | Mainnet | `0xAA8b52adD3CEce6269d14C6335a79df451543820` | [View](https://etherscan.io/address/0xAA8b52adD3CEce6269d14C6335a79df451543820) |
-
----
-
-## 📊 Feature Matrix
-
-| Feature | Mund | Hord | Dōmere | Witan |
-|---------|:----:|:----:|:------:|:-----:|
-| Secret Detection | ✅ | | | |
-| PII Detection | ✅ | | | |
-| Injection Detection | ✅ | | | |
-| MCP Server | ✅ | | | |
-| Encrypted Storage | | ✅ | | |
-| Redaction | | ✅ | | |
-| Sandboxing | | ✅ | | |
-| Yoxallismus Cipher | | ✅ | | |
-| Intent Tracking | | | ✅ | |
-| Drift Detection | | | ✅ | |
-| Execution Replay | | | ✅ | |
-| Multi-Agent Handoff | | | ✅ | |
-| SOC2 Compliance | | | ✅ | |
-| HIPAA Compliance | | | ✅ | |
-| PCI-DSS Compliance | | | ✅ | |
-| ISO27001 Compliance | | | ✅ | |
-| Task Scheduling | | | ✅ | |
-| Agent Registry | | | ✅ | |
-| Shared State/Locks | | | ✅ | |
-| Blockchain Anchoring | | | ✅ | |
-| Consensus/Voting | | | | ✅ |
-| Agent Messaging | | | | ✅ |
-| Policy Engine | | | | ✅ |
-| Checkpoints/Recovery | | | | ✅ |
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        AI Agent System                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐     │
+│   │  Mund   │    │  Hord   │    │ Domere  │    │  Witan  │     │
+│   │Guardian │    │  Vault  │    │  Judge  │    │ Council │     │
+│   └────┬────┘    └────┬────┘    └────┬────┘    └────┬────┘     │
+│        │              │              │              │           │
+│   Security       Encryption     Compliance      Consensus      │
+│   Scanning       Storage        Verification    Governance     │
+│        │              │              │              │           │
+│        └──────────────┴──────────────┴──────────────┘           │
+│                              │                                   │
+│                        ┌─────┴─────┐                            │
+│                        │    API    │                            │
+│                        │   REST    │                            │
+│                        └───────────┘                            │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## 🗺️ Roadmap
+## REST API
 
-### Current (v1.x)
-- ✅ Mund - Secret & threat scanning
-- ✅ Hord - Secure vault & sandbox
-- ✅ Dōmere - Verification & orchestration
-- ✅ Witan - Consensus, communication & governance
-- ✅ REST API
-- ✅ Ethereum mainnet deployment
-- ✅ Solana mainnet deployment
-- ✅ PCI-DSS & ISO27001 compliance frameworks
-- ✅ Yoxallismus Vault Cipher (Hord)
-- ✅ MCP server integration (Mund)
+The `@weave_protocol/api` package provides HTTP endpoints for all functionality:
 
-### Next (v2.x)
-- 🤖 Advanced agent coordination patterns - *In progress*
-- 📊 Real-time monitoring dashboard - *In research*
+```bash
+# Start the API server
+npx @weave_protocol/api
 
----
+# Or with Docker
+docker run -p 3000:3000 weave-protocol/api
+```
 
-## 📄 License
+**Endpoints:**
 
-Apache 2.0 - See [LICENSE](LICENSE) for details.
-
----
-
-## 🤝 Contributing
-
-Contributions welcome! Here's how:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-Please ensure your code passes existing tests and follows the project's coding style.
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/mund/scan` | Scan content for security issues |
+| POST | `/mund/scan-mcp-server` | Scan MCP server manifest |
+| POST | `/hord/encrypt` | Encrypt data |
+| POST | `/hord/decrypt` | Decrypt data |
+| POST | `/hord/yoxallismus/lock` | Lock with Yoxallismus cipher |
+| POST | `/hord/yoxallismus/unlock` | Unlock with Yoxallismus cipher |
+| POST | `/domere/checkpoint` | Create compliance checkpoint |
+| GET | `/domere/compliance/frameworks` | List available frameworks |
+| POST | `/domere/compliance/report` | Generate compliance report |
 
 ---
 
-**Made with ❤️ for AI Safety**
+## Security Model
+
+Weave Protocol implements defense-in-depth:
+
+1. **Mund** scans all inputs for threats before processing
+2. **Hord** encrypts sensitive data at rest and in transit
+3. **Domere** logs all actions with tamper-evident checksums
+4. **Witan** requires consensus for high-risk operations
+
+### CORS Model Integration
+
+The Weave Protocol maps to the CORS Model for AI agent security:
+
+| CORS Layer | Weave Package | Function |
+|------------|---------------|----------|
+| **Origin Validation** | Mund | Validates input sources, detects injection |
+| **Context Integrity** | Hord | Protects data integrity through encryption |
+| **Deterministic Enforcement** | Domere | Ensures consistent policy application |
+
+---
+
+## Development
+
+```bash
+# Clone
+git clone https://github.com/Tyox-all/Weave_Protocol.git
+cd Weave_Protocol
+
+# Install dependencies (each package)
+cd mund && npm install && npm run build
+cd ../hord && npm install && npm run build
+cd ../domere && npm install && npm run build
+
+# Run tests
+npm test
+```
+
+---
+
+## Roadmap
+
+- [ ] LangChain/LlamaIndex integration package
+- [ ] Web dashboard for monitoring
+- [ ] Additional compliance frameworks (SOC2, HIPAA)
+- [ ] MCP server reputation scoring
+- [ ] Automated threat intelligence updates
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+---
+
+## License
+
+Apache 2.0 - See [LICENSE](LICENSE)
+
+---
+
+## Links
+
+- **GitHub:** https://github.com/Tyox-all/Weave_Protocol
+- **npm (mund):** https://www.npmjs.com/package/@weave_protocol/mund
+- **npm (hord):** https://www.npmjs.com/package/@weave_protocol/hord
+- **npm (domere):** https://www.npmjs.com/package/@weave_protocol/domere
+- **npm (witan):** https://www.npmjs.com/package/@weave_protocol/witan
+- **MCP Registry:** https://registry.modelcontextprotocol.io (search "mund")
+
+---
+
+*Built with care for the AI agent ecosystem.*
