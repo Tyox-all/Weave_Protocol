@@ -50,7 +50,7 @@ A TypeScript monorepo providing security, encryption, compliance, and governance
 |---------|---------|-------------|
 | [🛡️ @weave_protocol/mund](./mund) | 0.1.11 | Security scanner - secrets, PII, injection, **MCP server vetting** |
 | [🏛️ @weave_protocol/hord](./hord) | 0.1.4 | Encrypted vault with Yoxallismus cipher |
-| [⚖️ @weave_protocol/domere](./domere) | 1.2.10 | Compliance (PCI-DSS, ISO27001) & verification |
+| [⚖️ @weave_protocol/domere](./domere) | 1.2.10 | Compliance (PCI-DSS, ISO27001, SOC2, HIPAA) & verification |
 | [👥 @weave_protocol/witan](./witan) | 1.0.0 | Multi-agent consensus & governance |
 | [🔌 @weave_protocol/api](./api) | 1.0.6 | REST API for all packages |
 
@@ -105,20 +105,14 @@ https://registry.modelcontextprotocol.io
 
 Real-time security scanning for AI agents.
 
-**Detects:**
-- Prompt injection & jailbreak attempts
-- Secrets (API keys, tokens, credentials)
-- PII (SSN, credit cards, emails)
-- Dangerous code patterns
-- Data exfiltration attempts
-- **Malicious MCP servers** (NEW)
-
-**MCP Server Scanning Tools:**
-| Tool | Purpose |
-|------|---------|
-| `mund_scan_mcp_server` | Full security scan of server manifests |
-| `mund_check_typosquatting` | Detect name squatting attacks |
-| `mund_audit_mcp_permissions` | Analyze tool capabilities |
+| Category | Features |
+|----------|----------|
+| **Secrets** | API keys, tokens, passwords, certificates (30+ patterns) |
+| **PII** | SSN, credit cards, emails, phone numbers, addresses |
+| **Injection** | Prompt injection, jailbreak attempts, instruction override |
+| **Exfiltration** | Data leakage, encoding tricks, steganography |
+| **Code** | Dangerous patterns, eval/exec, SQL injection, XSS |
+| **MCP Servers** | Malicious tool descriptions, typosquatting, dangerous permissions |
 
 ```typescript
 // Scan content
@@ -136,11 +130,13 @@ const serverScan = await mund.scanMcpServer(serverJson);
 
 Encrypted storage with the Yoxallismus dual-tumbler cipher.
 
-**Features:**
-- AES-256-GCM encryption
-- Yoxallismus obfuscation layer
-- Secure key derivation (Argon2)
-- Memory-safe secret handling
+| Category | Features |
+|----------|----------|
+| **Encryption** | AES-256-GCM, ChaCha20-Poly1305 |
+| **Key Derivation** | Argon2id with configurable parameters |
+| **Yoxallismus** | Dual-layer tumbler/deadbolt obfuscation |
+| **Memory Safety** | Secure buffer handling, auto-zeroing |
+| **MCP Server** | Claude Desktop integration, vault management tools |
 
 ```typescript
 import { YoxallismusCipher } from '@weave_protocol/hord';
@@ -160,12 +156,14 @@ const unlocked = await cipher.unlock(locked);
 
 ### ⚖️ Domere - The Judge
 
-Compliance verification and audit logging.
+Enterprise-grade verification, orchestration, compliance, and audit infrastructure.
 
-**Frameworks:**
-- PCI-DSS 4.0 (payment card security)
-- ISO 27001 (information security)
-- Custom compliance rules
+| Category | Features |
+|----------|----------|
+| **Verification** | Intent tracking, drift detection, execution replay, multi-agent handoff |
+| **Orchestration** | Task scheduler, agent registry, shared state with locks |
+| **Compliance** | SOC2, HIPAA, PCI-DSS, ISO27001 checkpoints & reporting |
+| **Blockchain** | Solana & Ethereum anchoring for immutable audit trails |
 
 **Blockchain Anchoring:**
 - Solana Mainnet: `6g7raTAHU2h331VKtfVtkS5pmuvR8vMYwjGsZF1CUj2o`
@@ -175,7 +173,7 @@ Compliance verification and audit logging.
 ```typescript
 import { ComplianceManager } from '@weave_protocol/domere';
 
-const compliance = new ComplianceManager(['pci-dss', 'iso27001']);
+const compliance = new ComplianceManager(['pci-dss', 'iso27001', 'soc2', 'hipaa']);
 
 // Create tamper-evident checkpoint
 const checkpoint = await compliance.createCheckpoint({
@@ -197,11 +195,12 @@ const report = await compliance.generateReport('pci-dss', {
 
 Multi-agent consensus and governance.
 
-**Features:**
-- Voting protocols (unanimous, majority, weighted)
-- Policy enforcement
-- Agent communication bus
-- Failure recovery
+| Category | Features |
+|----------|----------|
+| **Consensus** | Unanimous, majority, weighted, quorum protocols |
+| **Policy** | Rule enforcement, permission management, escalation |
+| **Communication** | Agent bus, broadcast, point-to-point messaging |
+| **Recovery** | Failure detection, automatic failover, state recovery |
 
 ```typescript
 import { ConsensusEngine, PolicyEngine } from '@weave_protocol/witan';
@@ -319,9 +318,9 @@ npm test
 
 - [ ] LangChain/LlamaIndex integration package
 - [ ] Web dashboard for monitoring
-- [ ] Additional compliance frameworks (SOC2, HIPAA)
 - [ ] MCP server reputation scoring
 - [ ] Automated threat intelligence updates
+- [ ] GDPR compliance framework
 
 ---
 
