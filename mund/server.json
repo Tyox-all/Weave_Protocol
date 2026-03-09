@@ -1,85 +1,49 @@
 {
-  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.Tyox-all/mund",
-  "description": "AI security scanner - secrets, PII, prompt injection, and exfiltration detection.",
-  "repository": {
-    "url": "https://github.com/Tyox-all/Weave_Protocol",
-    "source": "github"
-  },
-  "version": "0.1.10",
-  "packages": [
-    {
-      "registryType": "npm",
-      "identifier": "@weave_protocol/mund",
-      "version": "0.1.10",
-      "transport": {
-        "type": "stdio"
-      },
-      "environmentVariables": [
-        {
-          "name": "MUND_SEVERITY_THRESHOLD",
-          "description": "Minimum severity level to report (low, medium, high, critical)",
-          "isRequired": false,
-          "format": "string"
-        },
-        {
-          "name": "MUND_LOG_LEVEL",
-          "description": "Logging verbosity (debug, info, warn, error)",
-          "isRequired": false,
-          "format": "string"
-        }
-      ]
-    }
-  ],
+  "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/registry/main/schema/server.json",
+  "name": "mund",
+  "mcpName": "io.github.Tyox-all/mund",
+  "version": "0.1.11",
+  "description": "MCP security scanner: prompt injection, secrets, PII, MCP server scanning",
+  "repository": "https://github.com/Tyox-all/Weave_Protocol",
+  "author": "Tyox-all",
+  "license": "MIT",
+  "runtime": "node",
+  "command": "npx",
+  "args": ["-y", "@weave_protocol/mund"],
   "tools": [
     {
-      "name": "mund_scan_content",
-      "description": "Full security scan on content for secrets, PII, injection, and exfiltration"
+      "name": "mund_scan",
+      "description": "Scan content for security issues (injection, secrets, PII, code patterns)"
     },
     {
-      "name": "mund_scan_secrets",
-      "description": "Scan for API keys, tokens, passwords, and credentials (30+ patterns)"
+      "name": "mund_scan_conversation",
+      "description": "Scan an entire conversation history for security issues"
     },
     {
-      "name": "mund_scan_pii",
-      "description": "Detect personally identifiable information (SSN, credit cards, email, phone)"
+      "name": "mund_check_secret",
+      "description": "Check if a specific string looks like a secret/credential"
     },
     {
-      "name": "mund_scan_injection",
-      "description": "Detect prompt injection and jailbreak attempts"
-    },
-    {
-      "name": "mund_scan_exfiltration",
-      "description": "Detect data exfiltration patterns and encoding tricks"
-    },
-    {
-      "name": "mund_analyze_code",
-      "description": "Analyze code for security vulnerabilities (SQL injection, XSS, eval)"
-    },
-    {
-      "name": "mund_get_rules",
-      "description": "Get current detection rules and patterns"
-    },
-    {
-      "name": "mund_add_rule",
-      "description": "Add custom detection rule"
+      "name": "mund_check_pii",
+      "description": "Check content for personally identifiable information"
     },
     {
       "name": "mund_get_stats",
-      "description": "Get scanning statistics"
+      "description": "Get scanning statistics and detection history"
+    },
+    {
+      "name": "mund_scan_mcp_server",
+      "description": "Scan MCP server manifests for security issues before installation"
+    },
+    {
+      "name": "mund_check_typosquatting",
+      "description": "Check if server name is typosquatting a legitimate server"
+    },
+    {
+      "name": "mund_audit_mcp_permissions",
+      "description": "Audit permission scope and capabilities of MCP server tools"
     }
   ],
-  "categories": [
-    "security",
-    "developer-tools"
-  ],
-  "tags": [
-    "ai-security",
-    "secret-detection",
-    "pii-detection",
-    "prompt-injection",
-    "llm-security",
-    "agent-security",
-    "weave-protocol"
-  ]
+  "categories": ["security", "compliance"],
+  "tags": ["security", "mcp", "ai-security", "prompt-injection", "secrets", "pii", "scanning"]
 }

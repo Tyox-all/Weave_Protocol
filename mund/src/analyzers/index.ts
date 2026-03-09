@@ -8,12 +8,14 @@ export { PIIDetector } from './pii-detector.js';
 export { CodeAnalyzer } from './code-analyzer.js';
 export { InjectionDetector } from './injection-detector.js';
 export { ExfiltrationDetector } from './exfiltration-detector.js';
+export { McpServerAnalyzer } from './mcp-server-analyzer.js';
 
 import { SecretScanner } from './secret-scanner.js';
 import { PIIDetector } from './pii-detector.js';
 import { CodeAnalyzer } from './code-analyzer.js';
 import { InjectionDetector } from './injection-detector.js';
 import { ExfiltrationDetector } from './exfiltration-detector.js';
+import { McpServerAnalyzer } from './mcp-server-analyzer.js';
 import type { IAnalyzer } from '../types.js';
 
 /**
@@ -25,7 +27,8 @@ export function getAnalyzers(): IAnalyzer[] {
     new PIIDetector(),
     new CodeAnalyzer(),
     new InjectionDetector(),
-    new ExfiltrationDetector()
+    new ExfiltrationDetector(),
+    new McpServerAnalyzer()
   ];
 }
 
