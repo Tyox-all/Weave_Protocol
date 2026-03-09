@@ -1,11 +1,12 @@
 {
-  "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/registry/main/schema/server.json",
-  "name": "mund",
-  "mcpName": "io.github.Tyox-all/mund",
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Tyox-all/mund",
   "version": "0.1.11",
   "description": "MCP security scanner: prompt injection, secrets, PII, MCP server scanning",
-  "repository": "https://github.com/Tyox-all/Weave_Protocol",
-  "author": "Tyox-all",
+  "repository": {
+    "url": "https://github.com/Tyox-all/Weave_Protocol",
+    "source": "github"
+  },
   "license": "MIT",
   "runtime": "node",
   "command": "npx",
