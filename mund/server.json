@@ -1,50 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.Tyox-all/mund",
-  "version": "0.1.11",
-  "description": "MCP security scanner: prompt injection, secrets, PII, MCP server scanning",
+  "version": "0.1.12",
+  "title": "Mund — MCP Security Scanner",
+  "description": "Scan for prompt injection, secrets, PII, and vet MCP servers before installation",
   "repository": {
     "url": "https://github.com/Tyox-all/Weave_Protocol",
     "source": "github"
   },
-  "license": "MIT",
-  "runtime": "node",
-  "command": "npx",
-  "args": ["-y", "@weave_protocol/mund"],
-  "tools": [
-    {
-      "name": "mund_scan",
-      "description": "Scan content for security issues (injection, secrets, PII, code patterns)"
-    },
-    {
-      "name": "mund_scan_conversation",
-      "description": "Scan an entire conversation history for security issues"
-    },
-    {
-      "name": "mund_check_secret",
-      "description": "Check if a specific string looks like a secret/credential"
-    },
-    {
-      "name": "mund_check_pii",
-      "description": "Check content for personally identifiable information"
-    },
-    {
-      "name": "mund_get_stats",
-      "description": "Get scanning statistics and detection history"
-    },
-    {
-      "name": "mund_scan_mcp_server",
-      "description": "Scan MCP server manifests for security issues before installation"
-    },
-    {
-      "name": "mund_check_typosquatting",
-      "description": "Check if server name is typosquatting a legitimate server"
-    },
-    {
-      "name": "mund_audit_mcp_permissions",
-      "description": "Audit permission scope and capabilities of MCP server tools"
-    }
-  ],
-  "categories": ["security", "compliance"],
-  "tags": ["security", "mcp", "ai-security", "prompt-injection", "secrets", "pii", "scanning"]
+  "packages": [{
+    "registryType": "npm",
+    "identifier": "@weave_protocol/mund",
+    "version": "0.1.12",
+    "transport": {"type": "stdio"}
+  }]
 }
