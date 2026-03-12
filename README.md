@@ -20,7 +20,7 @@ A TypeScript monorepo providing security, encryption, compliance, and governance
 
 ## 🆕 What's New: MCP Server Scanner
 
-**Mund v0.1.11** now scans MCP servers before you install them:
+**Mund v0.1.12** now scans MCP servers before you install them:
 
 ```
 ┌───────────────────────────────────────────────────────────────┐
@@ -48,11 +48,43 @@ A TypeScript monorepo providing security, encryption, compliance, and governance
 
 | Package | Version | Description |
 |---------|---------|-------------|
-| [🛡️ @weave_protocol/mund](./mund) | 0.1.11 | Security scanner - secrets, PII, injection, **MCP server vetting** |
+| [🛡️ @weave_protocol/mund](./mund) | 0.1.12 | Security scanner - secrets, PII, injection, **MCP server vetting** |
 | [🏛️ @weave_protocol/hord](./hord) | 0.1.4 | Encrypted vault with Yoxallismus cipher |
 | [⚖️ @weave_protocol/domere](./domere) | 1.2.10 | Compliance (PCI-DSS, ISO27001, SOC2, HIPAA) & verification |
 | [👥 @weave_protocol/witan](./witan) | 1.0.0 | Multi-agent consensus & governance |
 | [🔌 @weave_protocol/api](./api) | 1.0.6 | REST API for all packages |
+
+---
+
+## 🤖 AI Agent Skills
+
+Each package includes a `SKILL.md` file following the [Claude Agent Skills specification](https://docs.anthropic.com/en/docs/claude-code/skills). These teach AI agents how to use Weave Protocol tools effectively.
+
+| Package | Skill Name | Triggers |
+|---------|------------|----------|
+| 🛡️ Mund | `security-scanning` | scan, detect secrets, check injection, vet MCP server |
+| 🏛️ Hord | `encrypting-data` | encrypt, decrypt, vault, Yoxallismus, protect |
+| ⚖️ Domere | `compliance-auditing` | audit, checkpoint, SOC2, HIPAA, PCI-DSS, blockchain |
+| 👥 Witan | `consensus-governance` | consensus, vote, approve, policy, escalate |
+| 🔌 API | `weave-api-calling` | REST API, HTTP endpoint, curl, fetch |
+
+**Installation:**
+
+Copy skill files to your Claude skills directory:
+
+```bash
+# Clone repo
+git clone https://github.com/Tyox-all/Weave_Protocol.git
+
+# Copy skills to Claude Code
+mkdir -p ~/.claude/skills/weave-protocol
+cp Weave_Protocol/*/SKILL.md ~/.claude/skills/weave-protocol/
+
+# Or for Claude.ai (upload as custom skills)
+# Settings > Features > Custom Skills > Upload ZIP
+```
+
+Once installed, Claude automatically invokes the appropriate skill when you ask it to scan content, encrypt data, create compliance checkpoints, or coordinate multi-agent consensus.
 
 ---
 
@@ -124,6 +156,8 @@ const serverScan = await mund.scanMcpServer(serverJson);
 // { recommendation: "DO_NOT_INSTALL", issues: [...] }
 ```
 
+📄 **Skill:** [`security-scanning`](./mund/SKILL.md)
+
 ---
 
 ### 🏛️ Hord - The Vault
@@ -151,6 +185,8 @@ const unlocked = await cipher.unlock(locked);
 ```
 
 **Yoxallismus Cipher:** A dual-layer encryption combining AES-256-GCM with tumbler/deadbolt obfuscation. Data is first encrypted, then the ciphertext is scrambled using position-dependent transformations that require both the key and the original encryption context to reverse.
+
+📄 **Skill:** [`encrypting-data`](./hord/SKILL.md)
 
 ---
 
@@ -189,6 +225,8 @@ const report = await compliance.generateReport('pci-dss', {
 });
 ```
 
+📄 **Skill:** [`compliance-auditing`](./domere/SKILL.md)
+
 ---
 
 ### 👥 Witan - The Council
@@ -217,6 +255,8 @@ const result = await consensus.propose({
   requiredApprovals: ['security-agent', 'qa-agent', 'ops-agent']
 });
 ```
+
+📄 **Skill:** [`consensus-governance`](./witan/SKILL.md)
 
 ---
 
@@ -272,6 +312,8 @@ docker run -p 3000:3000 weave-protocol/api
 | POST | `/domere/checkpoint` | Create compliance checkpoint |
 | GET | `/domere/compliance/frameworks` | List available frameworks |
 | POST | `/domere/compliance/report` | Generate compliance report |
+
+📄 **Skill:** [`weave-api-calling`](./api/SKILL.md)
 
 ---
 
