@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import GDPRManager from './gdpr-manager';
+import GDPRManager from './gdpr-manager.js';
 import {
   ConsentPurpose,
   LegalBasis,
@@ -19,7 +19,7 @@ import {
   DecisionSignificance,
   GDPRReportType,
   DeletionMethod,
-} from './gdpr-types';
+} from './gdpr-types.js';
 
 // ============================================================================
 // Schema Definitions

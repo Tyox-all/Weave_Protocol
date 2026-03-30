@@ -4,10 +4,10 @@
  */
 
 // Types
-export * from './gdpr-types';
+export * from './gdpr-types.js';
 
 // Manager
-export { GDPRManager, default as GDPRManagerDefault } from './gdpr-manager';
+export { GDPRManager, default as GDPRManagerDefault } from './gdpr-manager.js';
 
 // MCP Tools
-export { gdprTools, createGDPRToolHandlers } from './gdpr-tools';
+export { gdprTools, createGDPRToolHandlers } from './gdpr-tools.js';

@@ -42,7 +42,7 @@ import {
   GDPRReportSummary,
   GDPRCheckpoint,
   GDPRCheckpointType,
-} from './gdpr-types';
+} from './gdpr-types.js';
 
 // ============================================================================
 // Storage Interface (in-memory default, can be extended)

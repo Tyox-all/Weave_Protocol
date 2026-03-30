@@ -47,4 +47,4 @@ export * from "./audit/index.js";
 export * from "./handoff/index.js";
 export * from "./compliance/index.js";
 export * from "./orchestration/index.js";
-export * from './gdpr-index';
+export * from './gdpr-index.js';
