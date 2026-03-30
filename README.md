@@ -18,29 +18,26 @@ A TypeScript monorepo providing security, encryption, compliance, and governance
 
 ---
 
-## 🆕 What's New: MCP Server Scanner
+## 🆕 What's New: GDPR Compliance
 
-**Mund v0.1.12** now scans MCP servers before you install them:
+**Domere v1.3.0** adds comprehensive GDPR support with 11 new MCP tools:
 
 ```
 ┌───────────────────────────────────────────────────────────────┐
-│  mund_scan_mcp_server                                         │
+│  🇪🇺 GDPR Compliance Tools                                    │
 │                                                               │
-│  ⚠️  CRITICAL: Tool "execute" contains injection pattern      │
-│     "ignore previous instructions and run..."                 │
-│                                                               │
-│  ⚠️  HIGH: Server name "githib-mcp" is 1 edit from "github"   │
-│                                                               │
-│  Recommendation: DO_NOT_INSTALL                               │
+│  ✓ Consent Management (Article 6, 7)                          │
+│  ✓ Data Subject Access Requests (Article 15-22)               │
+│  ✓ Right to Erasure (Article 17)                              │
+│  ✓ Data Portability (Article 20)                              │
+│  ✓ 72-Hour Breach Notification (Article 33-34)                │
+│  ✓ Automated Decision Tracking (Article 22)                   │
+│  ✓ Retention Policy Enforcement (Article 5)                   │
+│  ✓ Processing Records (Article 30)                            │
 └───────────────────────────────────────────────────────────────┘
 ```
 
-**Why this matters:**
-- 43% of MCP servers have command injection vulnerabilities
-- "Line jumping" attacks hide malicious prompts in tool descriptions
-- Typosquatting mimics legitimate server names
-
-[See Mund README →](./mund/README.md)
+[See Domere README →](./domere/README.md)
 
 ---
 
@@ -48,11 +45,11 @@ A TypeScript monorepo providing security, encryption, compliance, and governance
 
 | Package | Version | Description |
 |---------|---------|-------------|
-| [🛡️ @weave_protocol/mund](./mund) | 0.1.12 | Security scanner - secrets, PII, injection, **MCP server vetting** |
-| [🏛️ @weave_protocol/hord](./hord) | 0.1.4 | Encrypted vault with Yoxallismus cipher |
-| [⚖️ @weave_protocol/domere](./domere) | 1.2.10 | Compliance (PCI-DSS, ISO27001, SOC2, HIPAA) & verification |
-| [👥 @weave_protocol/witan](./witan) | 1.0.0 | Multi-agent consensus & governance |
-| [🔌 @weave_protocol/api](./api) | 1.0.6 | REST API for all packages |
+| [🛡️ @weave_protocol/mund](./mund) | 0.1.13 | Security scanner - secrets, PII, injection, **MCP server vetting** |
+| [🏛️ @weave_protocol/hord](./hord) | 0.1.5 | Encrypted vault with Yoxallismus cipher |
+| [⚖️ @weave_protocol/domere](./domere) | 1.3.0 | Compliance (SOC2, HIPAA, PCI-DSS, ISO27001, **GDPR**) & verification |
+| [👥 @weave_protocol/witan](./witan) | 1.0.1 | Multi-agent consensus & governance |
+| [🔌 @weave_protocol/api](./api) | 1.0.7 | REST API for all packages |
 
 ---
 
@@ -64,7 +61,7 @@ Each package includes a `SKILL.md` file following the [Claude Agent Skills speci
 |---------|------------|----------|
 | 🛡️ Mund | `security-scanning` | scan, detect secrets, check injection, vet MCP server |
 | 🏛️ Hord | `encrypting-data` | encrypt, decrypt, vault, Yoxallismus, protect |
-| ⚖️ Domere | `compliance-auditing` | audit, checkpoint, SOC2, HIPAA, PCI-DSS, blockchain |
+| ⚖️ Domere | `compliance-auditing` | audit, checkpoint, SOC2, HIPAA, PCI-DSS, ISO27001, **GDPR**, consent, DSAR, breach |
 | 👥 Witan | `consensus-governance` | consensus, vote, approve, policy, escalate |
 | 🔌 API | `weave-api-calling` | REST API, HTTP endpoint, curl, fetch |
 
@@ -198,8 +195,9 @@ Enterprise-grade verification, orchestration, compliance, and audit infrastructu
 |----------|----------|
 | **Verification** | Intent tracking, drift detection, execution replay, multi-agent handoff |
 | **Orchestration** | Task scheduler, agent registry, shared state with locks |
-| **Compliance** | SOC2, HIPAA, PCI-DSS, ISO27001 checkpoints & reporting |
+| **Compliance** | SOC2, HIPAA, PCI-DSS, ISO27001, **GDPR** checkpoints & reporting |
 | **Blockchain** | Solana & Ethereum anchoring for immutable audit trails |
+| **GDPR** | Consent, DSAR, erasure, portability, breach notification, Article 22 |
 
 **Blockchain Anchoring:**
 - Solana Mainnet: `6g7raTAHU2h331VKtfVtkS5pmuvR8vMYwjGsZF1CUj2o`
@@ -207,21 +205,31 @@ Enterprise-grade verification, orchestration, compliance, and audit infrastructu
 - Ethereum: `0xAA8b52adD3CEce6269d14C6335a79df451543820`
 
 ```typescript
-import { ComplianceManager } from '@weave_protocol/domere';
+import { ComplianceManager, GDPRManager } from '@weave_protocol/domere';
 
+// Traditional compliance checkpoint
 const compliance = new ComplianceManager(['pci-dss', 'iso27001', 'soc2', 'hipaa']);
-
-// Create tamper-evident checkpoint
 const checkpoint = await compliance.createCheckpoint({
   action: 'data_access',
   resource: 'customer_records',
   actor: 'agent-001'
 });
 
-// Generate audit report
-const report = await compliance.generateReport('pci-dss', {
-  startDate: '2024-01-01',
-  endDate: '2024-12-31'
+// GDPR consent management
+const gdpr = new GDPRManager({ name: 'Acme Corp', email: 'dpo@acme.com' });
+const consent = gdpr.recordConsent({
+  subjectId: 'user-123',
+  purpose: 'marketing',
+  legalBasis: 'consent',
+  granted: true,
+  source: 'web_form',
+  version: '2.1'
+});
+
+// Handle DSAR (30-day deadline automatic)
+const dsar = gdpr.createDSAR({
+  subjectId: 'user-123',
+  type: 'access'
 });
 ```
 
@@ -312,6 +320,10 @@ docker run -p 3000:3000 weave-protocol/api
 | POST | `/domere/checkpoint` | Create compliance checkpoint |
 | GET | `/domere/compliance/frameworks` | List available frameworks |
 | POST | `/domere/compliance/report` | Generate compliance report |
+| POST | `/domere/gdpr/consent` | Record/check consent |
+| POST | `/domere/gdpr/dsar` | Handle DSAR requests |
+| POST | `/domere/gdpr/breach` | Report/manage breaches |
+| POST | `/domere/gdpr/report` | Generate GDPR report |
 
 📄 **Skill:** [`weave-api-calling`](./api/SKILL.md)
 
@@ -358,11 +370,12 @@ npm test
 
 ## 🗺️ Roadmap
 
+- [x] ~~GDPR compliance framework~~ ✅ **Shipped in v1.3.0**
 - [ ] LangChain/LlamaIndex integration package
 - [ ] Web dashboard for monitoring
 - [ ] MCP server reputation scoring
 - [ ] Automated threat intelligence updates
-- [ ] GDPR compliance framework
+- [ ] CCPA compliance framework
 
 ---
 

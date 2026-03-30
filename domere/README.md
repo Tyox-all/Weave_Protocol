@@ -1,12 +1,14 @@
-# ⚖️ Dōmere - Judge Protocol
+# ⚖️ @weave_protocol/domere
 
-[![npm version](https://img.shields.io/npm/v/@weave_protocol/domere.svg)](https://www.npmjs.com/package/@weave_protocol/domere)
-[![license](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![downloads](https://img.shields.io/npm/dm/@weave_protocol/domere.svg)](https://www.npmjs.com/package/@weave_protocol/domere)
+**Enterprise Compliance, Verification & GDPR for AI Agents**
 
-**Enterprise-grade verification, orchestration, compliance, and audit infrastructure for AI agents.**
+[![npm](https://img.shields.io/npm/v/@weave_protocol/domere.svg)](https://www.npmjs.com/package/@weave_protocol/domere)
+[![npm](https://img.shields.io/npm/dm/@weave_protocol/domere.svg)](https://www.npmjs.com/package/@weave_protocol/domere)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-Part of the [Weave Protocol Security Suite](https://github.com/Tyox-all/Weave_Protocol).
+Part of the [Weave Protocol](https://github.com/Tyox-all/Weave_Protocol) security suite.
+
+---
 
 ## ✨ Features
 
@@ -14,8 +16,11 @@ Part of the [Weave Protocol Security Suite](https://github.com/Tyox-all/Weave_Pr
 |----------|----------|
 | **Verification** | Intent tracking, drift detection, execution replay, multi-agent handoff |
 | **Orchestration** | Task scheduler, agent registry, shared state with locks |
-| **Compliance** | SOC2, HIPAA, PCI-DSS, ISO27001 checkpoints & reporting |
+| **Compliance** | SOC2, HIPAA, PCI-DSS, ISO27001, **GDPR** checkpoints & reporting |
 | **Blockchain** | Solana & Ethereum anchoring for immutable audit trails |
+| **GDPR** | Consent management, DSAR handling, breach notification, retention enforcement |
+
+---
 
 ## 📦 Installation
 
@@ -23,392 +28,349 @@ Part of the [Weave Protocol Security Suite](https://github.com/Tyox-all/Weave_Pr
 npm install @weave_protocol/domere
 ```
 
-## 🚀 Quick Start: Multi-Agent Orchestration
-
-```typescript
-import { Orchestrator } from '@weave_protocol/domere';
-
-// Configure agent limit as needed (no hard maximum)
-const orch = new Orchestrator({ max_agents: 10 });
-await orch.start();
-
-// Register agents
-for (let i = 0; i < 10; i++) {
-  await orch.registerAgent({
-    name: `agent-${i}`,
-    capabilities: ['research', 'analysis', 'coding'][i % 3],
-    max_concurrent_tasks: 3
-  });
-}
-
-// Submit tasks with dependencies
-const task1 = await orch.submitTask({
-  intent: 'Fetch Q3 data',
-  priority: 'high'
-});
-
-const task2 = await orch.submitTask({
-  intent: 'Analyze Q3 trends',
-  dependencies: [task1.id]  // Waits for task1
-});
-
-// Get stats
-const stats = orch.getStats();
-console.log(`${stats.agents.ready} agents ready, ${stats.tasks.queued} tasks queued`);
-```
-
 ---
 
-## 📊 Task Scheduler
+## 🚀 Quick Start
 
-Priority queue with dependencies, retries, and load balancing.
-
-```typescript
-import { TaskScheduler } from '@weave_protocol/domere';
-
-const scheduler = new TaskScheduler();
-
-const task = await scheduler.createTask({
-  intent: 'Analyze Q3 data',
-  priority: 'high',
-  dependencies: ['fetch-data-task'],
-  constraints: {
-    required_capabilities: ['data-analysis'],
-    max_duration_ms: 300000,
-    exclusive_resources: ['gpu-1']
-  },
-  retry_policy: {
-    max_retries: 3,
-    backoff: 'exponential'
-  }
-});
-
-// Auto-assign to best agent
-const assignment = await scheduler.assignTask(task.id);
-
-// Track progress
-scheduler.onTaskProgress(task.id, (p) => console.log(`${p.percent}%`));
-
-// Handle completion
-scheduler.onTaskComplete(task.id, (result) => {
-  console.log(`Completed in ${result.duration_ms}ms`);
-});
-```
-
----
-
-## 🤖 Agent Registry
-
-Agent lifecycle, heartbeat monitoring, and failover.
-
-```typescript
-import { AgentRegistry } from '@weave_protocol/domere';
-
-const registry = new AgentRegistry({
-  heartbeat_interval_ms: 5000,
-  heartbeat_timeout_ms: 15000
-});
-
-// Register agent
-const agent = await registry.register({
-  agent_id: 'agent-7',
-  capabilities: ['code-generation', 'testing'],
-  max_concurrent_tasks: 3
-});
-
-await registry.setReady('agent-7');
-
-// Process heartbeats
-await registry.heartbeat({
-  agent_id: 'agent-7',
-  current_tasks: ['task_1', 'task_2']
-});
-
-// Handle failures
-registry.onAgentDown((agent, tasks) => {
-  console.log(`${agent.id} down with ${tasks.length} tasks`);
-  // Reassign tasks...
-});
-
-// Find best agent
-const best = registry.getBestAgent({
-  capabilities: ['code-generation'],
-  prefer_lowest_load: true
-});
-```
-
----
-
-## 🗃️ State Manager
-
-Shared state with locking, branching, and conflict resolution.
-
-```typescript
-import { StateManager } from '@weave_protocol/domere';
-
-const state = new StateManager({
-  conflict_resolution: 'last-write-wins'
-});
-
-// Lock before writing
-const lock = await state.acquireLock({
-  key: 'customer-db',
-  holder: 'agent-3',
-  duration_ms: 30000,
-  type: 'exclusive'
-});
-
-if (lock.acquired) {
-  await state.set('customer-db', { updated: true });
-  await state.releaseLock('customer-db', 'agent-3');
-}
-
-// Git-style branching
-await state.createBranch('experiment', { parent: 'main' });
-await state.set('config', newConfig, { branch: 'experiment' });
-
-// Merge with conflict detection
-const result = await state.merge('experiment', 'main');
-if (result.conflicts.length > 0) {
-  // Resolve conflicts
-}
-
-// Snapshots for rollback
-const snap = await state.createSnapshot();
-// ... later ...
-await state.restoreSnapshot(snap.id);
-```
-
----
-
-## 🔄 Execution Replay
-
-Tamper-proof audit trail with cryptographic verification.
-
-```typescript
-import { ExecutionReplayManager } from '@weave_protocol/domere';
-
-const replay = new ExecutionReplayManager('encryption-key');
-
-// Record actions
-await replay.recordAction({
-  thread_id: 'thr_xxx',
-  agent_id: 'gpt-4-agent',
-  agent_type: 'llm',
-  action_type: 'inference',
-  action_name: 'generate_report',
-  input: { prompt: '...' },
-  output: { response: '...' },
-  latency_ms: 1250,
-  cost_usd: 0.03,
-  tokens_in: 500,
-  tokens_out: 1000
-});
-
-// Get trail
-const trail = await replay.getExecutionTrail('thr_xxx');
-console.log(trail.integrity_valid);  // true
-console.log(trail.merkle_root);      // For blockchain
-
-// Generate report
-const report = await replay.generateAuditReport({
-  start_time: new Date('2026-01-01'),
-  end_time: new Date('2026-01-31')
-});
-```
-
----
-
-## 🤝 Multi-Agent Handoff
-
-Secure delegation with permission inheritance.
-
-```typescript
-import { HandoffManager } from '@weave_protocol/domere';
-
-const handoff = new HandoffManager('signing-key', {
-  max_delegation_depth: 5
-});
-
-// Create handoff token
-const token = await handoff.createHandoff({
-  thread_id: 'thr_xxx',
-  from_agent: 'orchestrator',
-  to_agent: 'researcher',
-  delegated_intent: 'Find Q3 data',
-  constraints: ['read-only'],
-  permissions: [{ resource: 'database', actions: ['read'] }],
-  max_actions: 10,
-  expires_in_ms: 300000
-});
-
-// Verify before acting
-const v = await handoff.verifyHandoff(token.token, 'researcher');
-if (v.valid) {
-  console.log(`${v.remaining_actions} actions left`);
-}
-
-// Track chain
-const chain = await handoff.getDelegationChain('thr_xxx');
-console.log(`Depth: ${chain.depth}, Valid: ${chain.integrity_valid}`);
-```
-
----
-
-## 📋 Compliance (SOC2/HIPAA/PCI-DSS/ISO27001)
-
-Automated compliance tracking and reporting for multiple frameworks.
+### Basic Compliance Checkpoint
 
 ```typescript
 import { ComplianceManager } from '@weave_protocol/domere';
 
-const compliance = new ComplianceManager('signing-key');
+const compliance = new ComplianceManager(['soc2', 'hipaa', 'gdpr']);
 
-// HIPAA: Log PHI access
-await compliance.logPHIAccess({
-  thread_id: 'thr_xxx',
-  agent_id: 'medical-ai',
-  patient_id: 'patient_123',
-  access_reason: 'Treatment',
-  data_accessed: ['diagnosis'],
-  legal_basis: 'treatment'
+// Create tamper-evident checkpoint
+const checkpoint = await compliance.createCheckpoint({
+  action: 'data_access',
+  resource: 'patient_records',
+  actor: 'agent-medical-01',
+  metadata: { reason: 'treatment_review' }
 });
 
-// SOC2: Log access control
-await compliance.logAccessControl({
-  thread_id: 'thr_xxx',
-  agent_id: 'admin-bot',
-  resource: 'reports',
-  action: 'grant',
-  success: true
-});
+console.log(checkpoint.hash); // SHA-256 hash for verification
+```
 
-// PCI-DSS: Log cardholder data access
-await compliance.logCardholderDataAccess({
-  thread_id: 'thr_xxx',
-  agent_id: 'payment-processor',
-  data_type: 'pan',
-  action: 'access',
-  masked: true,
-  encrypted: true,
-  business_justification: 'Process refund'
-});
+### Claude Desktop Integration
 
-// ISO27001: Log security incident
-await compliance.logSecurityIncident({
-  thread_id: 'thr_xxx',
-  agent_id: 'security-monitor',
-  incident_id: 'INC-001',
-  incident_type: 'unauthorized_access',
-  severity: 'high',
-  status: 'investigating',
-  affected_assets: ['db-prod-1'],
-  description: 'Unusual access pattern detected'
-});
+Add to `claude_desktop_config.json`:
 
-// ISO27001: Log asset management
-await compliance.logAssetEvent({
-  thread_id: 'thr_xxx',
-  agent_id: 'asset-manager',
-  asset_id: 'srv-prod-5',
-  asset_type: 'hardware',
-  action: 'classify',
-  classification: 'confidential'
-});
-
-// Generate report
-const report = await compliance.generateReport({
-  framework: 'PCI-DSS',
-  period_start: new Date('2026-01-01'),
-  period_end: new Date('2026-03-31')
-});
-console.log(`Score: ${report.compliance_score}`);
+```json
+{
+  "mcpServers": {
+    "domere": {
+      "command": "npx",
+      "args": ["-y", "@weave_protocol/domere"]
+    }
+  }
+}
 ```
 
 ---
 
-## ⛓️ Blockchain Anchoring
+## 🇪🇺 GDPR Compliance
 
-Immutable proof on Solana and Ethereum.
+Domere v1.3.0 includes comprehensive GDPR support with 11 new MCP tools.
+
+### GDPR Tools Overview
+
+| Tool | GDPR Article | Purpose |
+|------|--------------|---------|
+| `domere_gdpr_record_consent` | Art 6, 7 | Record consent with legal basis |
+| `domere_gdpr_withdraw_consent` | Art 7(3) | Process consent withdrawal |
+| `domere_gdpr_check_consent` | Art 6 | Verify valid consent exists |
+| `domere_gdpr_handle_dsar` | Art 15-22 | Manage all subject rights requests |
+| `domere_gdpr_right_to_erasure` | Art 17 | Execute "right to be forgotten" |
+| `domere_gdpr_data_portability` | Art 20 | Export data in portable format |
+| `domere_gdpr_log_processing` | Art 30 | Maintain processing records |
+| `domere_gdpr_breach_notify` | Art 33-34 | 72-hour breach notification workflow |
+| `domere_gdpr_retention_check` | Art 5(1)(e) | Enforce storage limitation |
+| `domere_gdpr_automated_decision` | Art 22 | Track AI decisions & human review |
+| `domere_gdpr_report` | Various | Generate compliance reports |
+
+### Consent Management
 
 ```typescript
-import { EthereumAnchor } from '@weave_protocol/domere';
+import { GDPRManager } from '@weave_protocol/domere';
 
-const anchor = new EthereumAnchor({
-  contract_address: '0xAA8b52adD3CEce6269d14C6335a79df451543820'
+// Initialize with data controller info
+const gdpr = new GDPRManager({
+  name: 'Acme Corporation',
+  email: 'dpo@acme.com',
+  address: '123 Main St, London',
+  dpoContact: 'Jane Smith'
 });
 
-await anchor.anchorThread({
-  thread_id: 'thr_xxx',
-  merkle_root: trail.merkle_root,
-  intent_hash: 'abc123...',
-  compliant: true
+// Record consent with full audit trail
+const consent = gdpr.recordConsent({
+  subjectId: 'user-abc-123',
+  purpose: 'marketing',           // or: analytics, profiling, etc.
+  legalBasis: 'consent',          // Art 6(1)(a)
+  granted: true,
+  source: 'web_form',
+  version: '2.1.0'
 });
+
+// Check if consent is valid
+const canMarket = gdpr.hasValidConsent('user-abc-123', 'marketing');
+
+// Withdraw consent (creates audit record)
+gdpr.withdrawConsent(consent.id, 'User requested opt-out');
 ```
 
-| Chain | Network | Address |
-|-------|---------|---------|
-| Solana | Mainnet | `6g7raTAHU2h331VKtfVtkS5pmuvR8vMYwjGsZF1CUj2o` |
-| Solana | Devnet | `BeCYVJYfbUu3k2TPGmh9VoGWeJwzm2hg2NdtnvbdBNCj` |
-| Ethereum | Mainnet | `0xAA8b52adD3CEce6269d14C6335a79df451543820` |
+### Data Subject Access Requests (DSAR)
+
+```typescript
+// Create DSAR - automatically sets 30-day deadline
+const dsar = gdpr.createDSAR({
+  subjectId: 'user-abc-123',
+  type: 'access',                 // or: erasure, portability, rectification, etc.
+  verificationMethod: 'email'
+});
+
+console.log(`Due date: ${dsar.dueDate}`); // 30 days from now
+
+// Verify identity
+gdpr.verifyDSAR(dsar.id, 'privacy-team');
+
+// Process request
+gdpr.processDSAR(dsar.id, 'analyst-01');
+
+// Complete with response
+gdpr.completeDSAR(dsar.id, {
+  type: 'access',
+  completedAt: new Date(),
+  dataIncluded: true,
+  dataFormat: 'json',
+  dataLocation: '/exports/user-abc-123.json'
+});
+
+// Check for overdue requests
+const overdue = gdpr.getOverdueDSARs();
+if (overdue.length > 0) {
+  console.warn(`⚠️ ${overdue.length} DSARs are past deadline!`);
+}
+```
+
+### Right to Erasure
+
+```typescript
+// Execute erasure with audit trail
+const result = await gdpr.executeErasure('user-abc-123', 'User request');
+
+console.log(`Erased ${result.erasedRecords} records`);
+// Subject data anonymized, audit trail preserved
+```
+
+### Data Portability
+
+```typescript
+// Export all subject data in portable format
+const exportData = gdpr.exportSubjectData('user-abc-123', 'json');
+
+// Returns:
+// - subject profile
+// - consent records
+// - DSAR history
+// - automated decisions
+// All in machine-readable format
+```
+
+### Data Breach Management
+
+```typescript
+// Report a breach immediately upon detection
+const breach = gdpr.reportBreach({
+  description: 'Unauthorized database access detected',
+  severity: 'critical',
+  affectedSubjects: 15000,
+  affectedCategories: ['identification', 'contact', 'financial'],
+  cause: 'cyber_attack',
+  consequences: ['Identity theft risk', 'Financial fraud risk']
+});
+
+// 72-hour deadline starts now!
+console.log(`⚠️ Must notify authority by ${new Date(breach.detectedAt.getTime() + 72*60*60*1000)}`);
+
+// Add mitigation actions
+gdpr.addBreachMitigation(breach.id, {
+  action: 'Revoked compromised credentials',
+  performedBy: 'security-team',
+  effective: true
+});
+
+gdpr.addBreachMitigation(breach.id, {
+  action: 'Enabled additional monitoring',
+  performedBy: 'security-team',
+  effective: true
+});
+
+// Notify supervisory authority (within 72 hours!)
+gdpr.notifySupervisoryAuthority(breach.id, 'ICO UK', 'ICO-2024-12345');
+
+// Notify affected subjects if high risk
+gdpr.notifyAffectedSubjects(breach.id, 'email', 15000);
+
+// Close breach with lessons learned
+gdpr.closeBreach(breach.id, 
+  'SQL injection via unvalidated input',
+  ['Input validation on all endpoints', 'WAF rules updated', 'Quarterly pen testing']
+);
+```
+
+### Retention Policy Enforcement
+
+```typescript
+// Create retention policy
+const policy = gdpr.createRetentionPolicy({
+  name: 'Customer Contact Data',
+  description: 'Contact information for inactive customers',
+  dataCategories: ['contact', 'identification'],
+  retentionPeriod: {
+    duration: 730,  // 2 years
+    unit: 'days',
+    reviewCycle: 90
+  },
+  legalBasis: 'Legitimate interest - customer service',
+  deletionMethod: 'anonymization',
+  status: 'active',
+  nextReviewDate: new Date('2025-01-01')
+});
+
+// Execute retention check
+const check = gdpr.executeRetentionCheck(policy.id);
+console.log(`Deleted ${check.recordsDeleted} expired records`);
+```
+
+### Automated Decision Tracking (Article 22)
+
+```typescript
+// Record AI-powered decision
+const decision = gdpr.recordAutomatedDecision({
+  subjectId: 'user-abc-123',
+  decisionType: 'credit_scoring',
+  algorithm: 'credit-model-v3.2',
+  inputData: ['payment_history', 'income', 'employment'],
+  outcome: 'approved',
+  significance: 'legal_effects',  // Triggers human review requirement
+  legalBasis: 'contract',
+  explanation: 'Score of 720 exceeds threshold of 650'
+});
+
+if (decision.humanReviewRequired) {
+  console.log('⚠️ Human review required per Article 22');
+  
+  // Complete human review
+  gdpr.completeHumanReview(
+    decision.id,
+    'reviewer@company.com',
+    'Approved - decision upheld after manual verification'
+  );
+}
+
+// Check pending reviews
+const pending = gdpr.getPendingHumanReviews();
+console.log(`${pending.length} decisions awaiting human review`);
+```
+
+### GDPR Reporting
+
+```typescript
+// Generate compliance report
+const report = gdpr.generateReport('full_compliance', {
+  start: new Date('2024-01-01'),
+  end: new Date('2024-12-31')
+});
+
+console.log(`Compliance Score: ${report.summary.complianceScore}%`);
+console.log(`DSARs Completed: ${report.summary.dsarCompleted}/${report.summary.dsarRequests}`);
+console.log(`Avg Response Time: ${report.summary.avgResponseTime} days`);
+console.log(`Breaches: ${report.summary.breaches}`);
+console.log(`Human Reviews: ${report.summary.humanReviews}`);
+```
 
 ---
 
-## 📚 API Reference
+## 🔗 Blockchain Anchoring
 
-### Orchestrator
-| Method | Description |
-|--------|-------------|
-| `start()` | Start orchestrator |
-| `registerAgent(params)` | Register new agent |
-| `submitTask(params)` | Submit task to queue |
-| `heartbeat(agentId, tasks)` | Process agent heartbeat |
-| `taskCompleted(agentId, taskId, result)` | Report completion |
-| `getStats()` | Get orchestrator stats |
+Anchor checkpoints to blockchain for immutable audit proof:
 
-### TaskScheduler
-| Method | Description |
-|--------|-------------|
-| `createTask(params)` | Create task with dependencies |
-| `assignTask(taskId, agentId?)` | Assign to agent |
-| `completeTask(taskId, agentId, result)` | Mark complete |
-| `failTask(taskId, agentId, error)` | Mark failed (auto-retry) |
-| `reassignFromAgent(agentId)` | Reassign failed agent's tasks |
+```typescript
+// Anchor to Solana
+const anchor = await compliance.anchorToBlockchain(checkpoint.id, 'solana');
+console.log(`Transaction: ${anchor.transactionId}`);
 
-### AgentRegistry
-| Method | Description |
-|--------|-------------|
-| `register(params)` | Register agent |
-| `heartbeat(payload)` | Process heartbeat |
-| `findAgents(query)` | Find matching agents |
-| `drain(agentId)` | Stop accepting tasks |
-| `deregister(agentId)` | Remove agent |
+// Verify later
+const verified = await compliance.verifyBlockchainAnchor(checkpoint.id);
+console.log(`Verified: ${verified.valid}`);
+```
 
-### StateManager
-| Method | Description |
-|--------|-------------|
-| `get(key)` / `set(key, value)` | Basic operations |
-| `acquireLock(request)` | Acquire lock |
-| `releaseLock(key, holder)` | Release lock |
-| `createBranch(name)` | Create branch |
-| `merge(source, target)` | Merge branches |
-| `createSnapshot()` | Create snapshot |
+**Blockchain Addresses:**
+- **Solana Mainnet:** `6g7raTAHU2h331VKtfVtkS5pmuvR8vMYwjGsZF1CUj2o`
+- **Solana Devnet:** `BeCYVJYfbUu3k2TPGmh9VoGWeJwzm2hg2NdtnvbdBNCj`
+- **Ethereum:** `0xAA8b52adD3CEce6269d14C6335a79df451543820`
 
 ---
 
-## 🔗 Related Packages
+## 📊 Compliance Frameworks
 
-| Package | Description |
-|---------|-------------|
-| [@weave_protocol/witan](https://www.npmjs.com/package/@weave_protocol/witan) | Consensus, communication & governance |
-| [@weave_protocol/mund](https://www.npmjs.com/package/@weave_protocol/mund) | Secret & threat scanning |
-| [@weave_protocol/hord](https://www.npmjs.com/package/@weave_protocol/hord) | Secure vault & sandbox |
-| [@weave_protocol/api](https://www.npmjs.com/package/@weave_protocol/api) | Universal REST API |
+| Framework | Status | Description |
+|-----------|--------|-------------|
+| SOC2 | ✅ Implemented | Trust Services Criteria |
+| HIPAA | ✅ Implemented | Healthcare data protection |
+| PCI-DSS | ✅ Implemented | Payment card security |
+| ISO27001 | ✅ Implemented | Information security management |
+| GDPR | ✅ Implemented | EU data protection regulation |
+
+---
+
+## 🛠️ MCP Tools Reference
+
+### Core Compliance Tools
+
+```
+domere_checkpoint          Create tamper-evident checkpoint
+domere_verify              Verify checkpoint integrity
+domere_compliance_report   Generate framework report
+domere_list_frameworks     List available frameworks
+domere_anchor_blockchain   Anchor to Solana/Ethereum
+```
+
+### GDPR Tools
+
+```
+domere_gdpr_record_consent      Record/update consent
+domere_gdpr_withdraw_consent    Withdraw consent
+domere_gdpr_check_consent       Check consent status
+domere_gdpr_handle_dsar         Create/manage DSARs
+domere_gdpr_right_to_erasure    Execute data deletion
+domere_gdpr_data_portability    Export subject data
+domere_gdpr_log_processing      Article 30 records
+domere_gdpr_breach_notify       Breach management
+domere_gdpr_retention_check     Retention enforcement
+domere_gdpr_automated_decision  Article 22 tracking
+domere_gdpr_report              Compliance reporting
+```
+
+---
+
+## 🤖 AI Agent Skill
+
+This package includes a `SKILL.md` for Claude AI integration.
+
+**Skill name:** `compliance-auditing`
+
+**Triggers:** audit, checkpoint, SOC2, HIPAA, PCI-DSS, ISO27001, GDPR, blockchain, consent, DSAR, breach, retention
+
+---
 
 ## 📄 License
 
-Apache 2.0
+Apache 2.0 - See [LICENSE](../LICENSE)
 
 ---
 
-**Made with ❤️ for AI Safety**
+## 🔗 Links
+
+- **GitHub:** https://github.com/Tyox-all/Weave_Protocol
+- **npm:** https://www.npmjs.com/package/@weave_protocol/domere
+- **Main README:** [Weave Protocol](../README.md)
