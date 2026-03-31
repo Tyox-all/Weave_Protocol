@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/witan",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Council Protocol - Multi-agent consensus, communication, and governance for AI systems",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
