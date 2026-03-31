@@ -1,0 +1,49 @@
+# .github/workflows/publish-all.yml
+# Publishes ALL packages to npm with provenance attestation
+
+name: Publish All Packages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish-all:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package: [mund, hord, domere, witan, hundredmen, langchain, api]
+      fail-fast: false  # Continue publishing other packages if one fails
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Update npm
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.package }}
+        run: npm ci
+
+      - name: Build
+        working-directory: ${{ matrix.package }}
+        run: npm run build
+
+      - name: Publish with provenance
+        working-directory: ${{ matrix.package }}
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Success
+        run: echo "✅ Published @weave_protocol/${{ matrix.package }} with provenance"

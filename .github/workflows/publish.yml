@@ -1,0 +1,79 @@
+# .github/workflows/publish.yml
+# Publishes packages to npm with provenance attestation
+# Triggered manually or when a version tag is pushed
+
+name: Publish to npm
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Package to publish'
+        required: true
+        type: choice
+        options:
+          - mund
+          - hord
+          - domere
+          - witan
+          - hundredmen
+          - langchain
+          - api
+  push:
+    tags:
+      - 'v*'  # Triggers on tags like v1.0.0
+
+# REQUIRED: Permission to generate OIDC token for provenance
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      # Ensure latest npm (provenance requires npm 9.5.0+)
+      - name: Update npm
+        run: npm install -g npm@latest
+
+      # Determine which package to publish
+      - name: Set package directory
+        id: pkg
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "dir=${{ github.event.inputs.package }}" >> $GITHUB_OUTPUT
+          else
+            # For tag pushes, extract package from tag (e.g., mund-v0.2.0 -> mund)
+            TAG="${GITHUB_REF#refs/tags/}"
+            PKG=$(echo "$TAG" | sed 's/-v.*//')
+            echo "dir=$PKG" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install dependencies
+        working-directory: ${{ steps.pkg.outputs.dir }}
+        run: npm ci
+
+      - name: Build
+        working-directory: ${{ steps.pkg.outputs.dir }}
+        run: npm run build
+
+      # Publish with provenance attestation
+      - name: Publish to npm
+        working-directory: ${{ steps.pkg.outputs.dir }}
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Published
+        run: |
+          echo "✅ Published @weave_protocol/${{ steps.pkg.outputs.dir }} with provenance"
+          echo "View at: https://www.npmjs.com/package/@weave_protocol/${{ steps.pkg.outputs.dir }}"
