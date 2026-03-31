@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Inspector MCP Server
- * @weave_protocol/inspector
+ * Hundredmen MCP Server
+ * @weave_protocol/hundredmen
  * 
  * Real-time MCP security proxy with live feed and reputation scoring
  */
@@ -15,7 +15,7 @@ import {
 
 import { Interceptor } from './interceptor.js';
 import { ReputationManager } from './reputation.js';
-import { inspectorTools, createInspectorToolHandlers } from './tools.js';
+import { hundredmenTools, createHundredmenToolHandlers } from './tools.js';
 
 // ============================================================================
 // Initialize Components
@@ -35,7 +35,7 @@ reputationManager.onAlert((alert) => {
 });
 
 // Create tool handlers
-const handlers = createInspectorToolHandlers(interceptor, reputationManager);
+const handlers = createHundredmenToolHandlers(interceptor, reputationManager);
 
 // ============================================================================
 // MCP Server
@@ -43,7 +43,7 @@ const handlers = createInspectorToolHandlers(interceptor, reputationManager);
 
 const server = new Server(
   {
-    name: 'weave-inspector',
+    name: 'weave-hundredmen',
     version: '1.0.0',
   },
   {
@@ -56,7 +56,7 @@ const server = new Server(
 // List available tools
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
-    tools: inspectorTools.map(tool => ({
+    tools: hundredmenTools.map(tool => ({
       name: tool.name,
       description: tool.description,
       inputSchema: tool.inputSchema,
@@ -112,7 +112,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error('🔍 Weave Inspector MCP Server running');
+  console.error('🔍 Weave Hundredmen MCP Server running');
 }
 
 main().catch((error) => {

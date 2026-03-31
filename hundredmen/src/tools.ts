@@ -25,7 +25,7 @@ export const inspectorTools = [
   // Session Management
   // --------------------------------------------------------------------------
   {
-    name: 'inspector_create_session',
+    name: 'hundredmen_create_session',
     description: `Create a new inspection session for tracking AI agent activity.
 Sessions group tool calls and enable drift detection across the conversation.
 Use when: starting a new task, beginning agent workflow, initializing inspection.`,
@@ -41,7 +41,7 @@ Use when: starting a new task, beginning agent workflow, initializing inspection
     },
   },
   {
-    name: 'inspector_declare_intent',
+    name: 'hundredmen_declare_intent',
     description: `Declare the intended actions for a session.
 Enables drift detection by comparing actual tool calls against declared intent.
 Use when: before performing a task, setting expectations, documenting purpose.`,
@@ -50,7 +50,7 @@ Use when: before performing a task, setting expectations, documenting purpose.`,
       properties: {
         session_id: {
           type: 'string',
-          description: 'Session ID from inspector_create_session',
+          description: 'Session ID from hundredmen_create_session',
         },
         intent: {
           type: 'string',
@@ -61,7 +61,7 @@ Use when: before performing a task, setting expectations, documenting purpose.`,
     },
   },
   {
-    name: 'inspector_end_session',
+    name: 'hundredmen_end_session',
     description: `End an inspection session and get summary statistics.
 Use when: task completed, workflow finished, cleaning up.`,
     inputSchema: {
@@ -84,7 +84,7 @@ Use when: task completed, workflow finished, cleaning up.`,
   // Live Feed & History
   // --------------------------------------------------------------------------
   {
-    name: 'inspector_get_live_feed',
+    name: 'hundredmen_get_live_feed',
     description: `Get recent intercepted calls in real-time.
 Shows what the AI agent is actually doing vs what it said it would do.
 Use when: monitoring agent activity, reviewing actions, debugging behavior.`,
@@ -113,7 +113,7 @@ Use when: monitoring agent activity, reviewing actions, debugging behavior.`,
     },
   },
   {
-    name: 'inspector_get_call_history',
+    name: 'hundredmen_get_call_history',
     description: `Query historical call data with filters.
 Use when: auditing past activity, investigating incidents, generating reports.`,
     inputSchema: {
@@ -145,7 +145,7 @@ Use when: auditing past activity, investigating incidents, generating reports.`,
     },
   },
   {
-    name: 'inspector_diff_intent',
+    name: 'hundredmen_diff_intent',
     description: `Compare declared intent vs actual actions ("Said X, doing Y" analysis).
 Identifies drift between what the AI said it would do and what it's actually doing.
 Use when: verifying agent behavior, catching unauthorized actions, security review.`,
@@ -169,7 +169,7 @@ Use when: verifying agent behavior, catching unauthorized actions, security revi
   // Manual Approval
   // --------------------------------------------------------------------------
   {
-    name: 'inspector_get_pending',
+    name: 'hundredmen_get_pending',
     description: `Get all calls waiting for manual approval.
 Use when: reviewing risky operations, approving/blocking queued actions.`,
     inputSchema: {
@@ -179,7 +179,7 @@ Use when: reviewing risky operations, approving/blocking queued actions.`,
     },
   },
   {
-    name: 'inspector_approve_call',
+    name: 'hundredmen_approve_call',
     description: `Manually approve a pending call.
 Use when: allowing a blocked operation after review, unblocking legitimate actions.`,
     inputSchema: {
@@ -198,7 +198,7 @@ Use when: allowing a blocked operation after review, unblocking legitimate actio
     },
   },
   {
-    name: 'inspector_block_call',
+    name: 'hundredmen_block_call',
     description: `Manually block a pending call.
 Use when: preventing suspicious actions, blocking after review.`,
     inputSchema: {
@@ -225,7 +225,7 @@ Use when: preventing suspicious actions, blocking after review.`,
   // Reputation
   // --------------------------------------------------------------------------
   {
-    name: 'inspector_check_reputation',
+    name: 'hundredmen_check_reputation',
     description: `Get reputation score and details for an MCP server.
 Shows trust score, security score, community reports, and verification status.
 Use when: evaluating server trustworthiness, before enabling new servers.`,
@@ -241,7 +241,7 @@ Use when: evaluating server trustworthiness, before enabling new servers.`,
     },
   },
   {
-    name: 'inspector_report_suspicious',
+    name: 'hundredmen_report_suspicious',
     description: `Report suspicious behavior from an MCP server.
 Contributes to community reputation scoring.
 Use when: server behaves unexpectedly, potential security issue, data concerns.`,
@@ -270,7 +270,7 @@ Use when: server behaves unexpectedly, potential security issue, data concerns.`
     },
   },
   {
-    name: 'inspector_get_server_stats',
+    name: 'hundredmen_get_server_stats',
     description: `Get detailed statistics for an MCP server.
 Shows call patterns, error rates, response times, and anomalies.
 Use when: analyzing server behavior, investigating issues, capacity planning.`,
@@ -286,7 +286,7 @@ Use when: analyzing server behavior, investigating issues, capacity planning.`,
     },
   },
   {
-    name: 'inspector_list_servers',
+    name: 'hundredmen_list_servers',
     description: `List all known servers with reputation scores.
 Use when: reviewing server inventory, finding low-reputation servers.`,
     inputSchema: {
@@ -310,7 +310,7 @@ Use when: reviewing server inventory, finding low-reputation servers.`,
   // Configuration
   // --------------------------------------------------------------------------
   {
-    name: 'inspector_set_policy',
+    name: 'hundredmen_set_policy',
     description: `Configure inspection policies.
 Set which operations require approval, risk thresholds, etc.
 Use when: customizing security rules, adjusting sensitivity.`,
@@ -343,7 +343,7 @@ Use when: customizing security rules, adjusting sensitivity.`,
     },
   },
   {
-    name: 'inspector_get_config',
+    name: 'hundredmen_get_config',
     description: `Get current inspector configuration.
 Use when: reviewing settings, debugging policy issues.`,
     inputSchema: {
@@ -357,7 +357,7 @@ Use when: reviewing settings, debugging policy issues.`,
   // Statistics
   // --------------------------------------------------------------------------
   {
-    name: 'inspector_get_stats',
+    name: 'hundredmen_get_stats',
     description: `Get overall inspector statistics.
 Shows total calls, approval rate, block rate, active sessions.
 Use when: monitoring system health, generating reports.`,
@@ -379,17 +379,17 @@ export function createInspectorToolHandlers(
 ) {
   return {
     // Session Management
-    inspector_create_session: async (params: { agent_id?: string }) => {
+    hundredmen_create_session: async (params: { agent_id?: string }) => {
       const session = interceptor.createSession(params.agent_id);
       return {
         success: true,
         session_id: session.id,
         started_at: session.startedAt,
-        message: 'Inspection session created. Declare your intent with inspector_declare_intent.',
+        message: 'Inspection session created. Declare your intent with hundredmen_declare_intent.',
       };
     },
     
-    inspector_declare_intent: async (params: { session_id: string; intent: string }) => {
+    hundredmen_declare_intent: async (params: { session_id: string; intent: string }) => {
       interceptor.declareIntent(params.session_id, params.intent);
       const session = interceptor.getSession(params.session_id);
       return {
@@ -400,7 +400,7 @@ export function createInspectorToolHandlers(
       };
     },
     
-    inspector_end_session: async (params: { session_id: string; reason?: string }) => {
+    hundredmen_end_session: async (params: { session_id: string; reason?: string }) => {
       const session = interceptor.getSession(params.session_id);
       if (!session) {
         return { success: false, error: 'Session not found' };
@@ -424,7 +424,7 @@ export function createInspectorToolHandlers(
     },
     
     // Live Feed & History
-    inspector_get_live_feed: async (params: {
+    hundredmen_get_live_feed: async (params: {
       session_id?: string;
       server?: string;
       status?: CallStatus;
@@ -454,7 +454,7 @@ export function createInspectorToolHandlers(
       };
     },
     
-    inspector_get_call_history: async (params: {
+    hundredmen_get_call_history: async (params: {
       session_id?: string;
       server?: string;
       status?: CallStatus;
@@ -491,7 +491,7 @@ export function createInspectorToolHandlers(
       };
     },
     
-    inspector_diff_intent: async (params: { session_id: string; call_id?: string }) => {
+    hundredmen_diff_intent: async (params: { session_id: string; call_id?: string }) => {
       const session = interceptor.getSession(params.session_id);
       if (!session) {
         return { success: false, error: 'Session not found' };
@@ -542,7 +542,7 @@ export function createInspectorToolHandlers(
     },
     
     // Manual Approval
-    inspector_get_pending: async () => {
+    hundredmen_get_pending: async () => {
       const pending = interceptor.getPendingApprovals();
       return {
         success: true,
@@ -560,7 +560,7 @@ export function createInspectorToolHandlers(
       };
     },
     
-    inspector_approve_call: async (params: { call_id: string; approved_by?: string }) => {
+    hundredmen_approve_call: async (params: { call_id: string; approved_by?: string }) => {
       const call = interceptor.approveCall(params.call_id, params.approved_by);
       if (!call) {
         return { success: false, error: 'Call not found or not pending' };
@@ -573,7 +573,7 @@ export function createInspectorToolHandlers(
       };
     },
     
-    inspector_block_call: async (params: { call_id: string; blocked_by?: string; reason?: string }) => {
+    hundredmen_block_call: async (params: { call_id: string; blocked_by?: string; reason?: string }) => {
       const call = interceptor.blockCall(params.call_id, params.blocked_by, params.reason);
       if (!call) {
         return { success: false, error: 'Call not found or not pending' };
@@ -587,7 +587,7 @@ export function createInspectorToolHandlers(
     },
     
     // Reputation
-    inspector_check_reputation: async (params: { server_id: string }) => {
+    hundredmen_check_reputation: async (params: { server_id: string }) => {
       const reputation = reputationManager.getReputation(params.server_id);
       return {
         success: true,
@@ -610,7 +610,7 @@ export function createInspectorToolHandlers(
       };
     },
     
-    inspector_report_suspicious: async (params: {
+    hundredmen_report_suspicious: async (params: {
       server_id: string;
       report_type: ReportType;
       description: string;
@@ -635,7 +635,7 @@ export function createInspectorToolHandlers(
       };
     },
     
-    inspector_get_server_stats: async (params: { server_id: string }) => {
+    hundredmen_get_server_stats: async (params: { server_id: string }) => {
       const reputation = reputationManager.getReputation(params.server_id);
       const reports = reputationManager.getReports(params.server_id);
       
@@ -658,7 +658,7 @@ export function createInspectorToolHandlers(
       };
     },
     
-    inspector_list_servers: async (params: { filter?: string; min_score?: number }) => {
+    hundredmen_list_servers: async (params: { filter?: string; min_score?: number }) => {
       let servers = reputationManager.getAllReputations();
       
       if (params.filter === 'verified') {
@@ -689,7 +689,7 @@ export function createInspectorToolHandlers(
     },
     
     // Configuration
-    inspector_set_policy: async (params: {
+    hundredmen_set_policy: async (params: {
       mode?: 'passive' | 'active' | 'strict';
       min_reputation_score?: number;
       require_approval_for?: IntentCategory[];
@@ -711,7 +711,7 @@ export function createInspectorToolHandlers(
       };
     },
     
-    inspector_get_config: async () => {
+    hundredmen_get_config: async () => {
       return {
         success: true,
         config: interceptor.getConfig(),
@@ -719,7 +719,7 @@ export function createInspectorToolHandlers(
     },
     
     // Statistics
-    inspector_get_stats: async () => {
+    hundredmen_get_stats: async () => {
       const stats = interceptor.getStats();
       const maliciousCount = reputationManager.getMaliciousServers().length;
       const lowRepCount = reputationManager.getLowReputationServers().length;

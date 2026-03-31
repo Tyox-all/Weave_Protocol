@@ -1,9 +1,9 @@
-# 🔍 @weave_protocol/inspector
+# 🔍 @weave_protocol/hundredmen
 
 **Real-Time MCP Security Proxy for AI Agents**
 
-[![npm](https://img.shields.io/npm/v/@weave_protocol/inspector.svg)](https://www.npmjs.com/package/@weave_protocol/inspector)
-[![npm](https://img.shields.io/npm/dm/@weave_protocol/inspector.svg)](https://www.npmjs.com/package/@weave_protocol/inspector)
+[![npm](https://img.shields.io/npm/v/@weave_protocol/hundredmen.svg)](https://www.npmjs.com/package/@weave_protocol/hundredmen)
+[![npm](https://img.shields.io/npm/dm/@weave_protocol/hundredmen.svg)](https://www.npmjs.com/package/@weave_protocol/hundredmen)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 Part of the [Weave Protocol](https://github.com/Tyox-all/Weave_Protocol) security suite.
@@ -12,7 +12,7 @@ Part of the [Weave Protocol](https://github.com/Tyox-all/Weave_Protocol) securit
 
 ## ✨ What It Does
 
-Inspector sits between AI agents and MCP servers, providing:
+Hundredmen sits between AI agents and MCP servers, providing:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -21,7 +21,7 @@ Inspector sits between AI agents and MCP servers, providing:
                   │ Tool calls
                   ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  🔍 Weave Inspector                                         │
+│  🔍 Weave Hundredmen                                         │
 │                                                             │
 │  • Intercept every tool call                                │
 │  • Scan arguments for secrets, PII, injection               │
@@ -45,7 +45,7 @@ Inspector sits between AI agents and MCP servers, providing:
 ## 📦 Installation
 
 ```bash
-npm install @weave_protocol/inspector
+npm install @weave_protocol/hundredmen
 ```
 
 ---
@@ -59,9 +59,9 @@ Add to `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "inspector": {
+    "hundredmen": {
       "command": "npx",
-      "args": ["-y", "@weave_protocol/inspector"]
+      "args": ["-y", "@weave_protocol/hundredmen"]
     }
   }
 }
@@ -70,7 +70,7 @@ Add to `claude_desktop_config.json`:
 ### Basic Usage
 
 ```typescript
-import { Interceptor, ReputationManager } from '@weave_protocol/inspector';
+import { Interceptor, ReputationManager } from '@weave_protocol/hundredmen';
 
 // Create components
 const interceptor = new Interceptor({
@@ -121,42 +121,42 @@ if (call.status === 'approved') {
 
 | Tool | Purpose |
 |------|---------|
-| `inspector_create_session` | Start inspection session |
-| `inspector_declare_intent` | Declare what you plan to do |
-| `inspector_end_session` | End session and get summary |
+| `hundredmen_create_session` | Start inspection session |
+| `hundredmen_declare_intent` | Declare what you plan to do |
+| `hundredmen_end_session` | End session and get summary |
 
 ### Live Feed & History
 
 | Tool | Purpose |
 |------|---------|
-| `inspector_get_live_feed` | Real-time stream of intercepted calls |
-| `inspector_get_call_history` | Query historical call data |
-| `inspector_diff_intent` | "Said X, doing Y" analysis |
+| `hundredmen_get_live_feed` | Real-time stream of intercepted calls |
+| `hundredmen_get_call_history` | Query historical call data |
+| `hundredmen_diff_intent` | "Said X, doing Y" analysis |
 
 ### Manual Approval
 
 | Tool | Purpose |
 |------|---------|
-| `inspector_get_pending` | List calls waiting for approval |
-| `inspector_approve_call` | Manually approve a pending call |
-| `inspector_block_call` | Manually block a pending call |
+| `hundredmen_get_pending` | List calls waiting for approval |
+| `hundredmen_approve_call` | Manually approve a pending call |
+| `hundredmen_block_call` | Manually block a pending call |
 
 ### Reputation
 
 | Tool | Purpose |
 |------|---------|
-| `inspector_check_reputation` | Get server trust score |
-| `inspector_report_suspicious` | Report bad behavior |
-| `inspector_get_server_stats` | Detailed server analytics |
-| `inspector_list_servers` | List all known servers |
+| `hundredmen_check_reputation` | Get server trust score |
+| `hundredmen_report_suspicious` | Report bad behavior |
+| `hundredmen_get_server_stats` | Detailed server analytics |
+| `hundredmen_list_servers` | List all known servers |
 
 ### Configuration
 
 | Tool | Purpose |
 |------|---------|
-| `inspector_set_policy` | Configure inspection rules |
-| `inspector_get_config` | View current settings |
-| `inspector_get_stats` | Overall statistics |
+| `hundredmen_set_policy` | Configure inspection rules |
+| `hundredmen_get_config` | View current settings |
+| `hundredmen_get_stats` | Overall statistics |
 
 ---
 
@@ -170,7 +170,7 @@ if (call.status === 'approved') {
 
 ```typescript
 // Set mode via tool
-inspector_set_policy({ mode: 'strict' })
+hundredmen_set_policy({ mode: 'strict' })
 
 // Or programmatically
 interceptor.setConfig({ mode: 'strict' });
@@ -212,7 +212,7 @@ Compares declared intent against actual tool calls:
 
 ```typescript
 // Declare intent
-inspector_declare_intent({
+hundredmen_declare_intent({
   session_id: 'abc123',
   intent: 'Read and summarize the README file'
 });
@@ -233,10 +233,10 @@ Drift severity:
 
 ## 🔌 Integration with Mund & Domere
 
-Inspector integrates with other Weave Protocol packages:
+Hundredmen integrates with other Weave Protocol packages:
 
 ```typescript
-import { Interceptor } from '@weave_protocol/inspector';
+import { Interceptor } from '@weave_protocol/hundredmen';
 import { scan } from '@weave_protocol/mund';
 import { ComplianceManager } from '@weave_protocol/domere';
 
@@ -259,7 +259,7 @@ interceptor.setBlockchainAnchor(async (data) => {
   const checkpoint = await compliance.createCheckpoint({
     action: 'tool_call',
     resource: 'mcp',
-    actor: 'inspector',
+    actor: 'hundredmen',
     metadata: data,
   });
   return checkpoint.id;
@@ -272,16 +272,16 @@ interceptor.setBlockchainAnchor(async (data) => {
 
 ```typescript
 // Get live feed for dashboard
-const feed = await inspector_get_live_feed({ limit: 50 });
+const feed = await hundredmen_get_live_feed({ limit: 50 });
 
 // Show pending approvals
-const pending = await inspector_get_pending();
+const pending = await hundredmen_get_pending();
 
 // Check overall health
-const stats = await inspector_get_stats();
+const stats = await hundredmen_get_stats();
 
 console.log(`
-📊 Inspector Dashboard
+📊 Hundredmen Dashboard
 ─────────────────────
 Total Calls:    ${stats.interceptor.totalCalls}
 Approved:       ${stats.interceptor.approvedCalls}
@@ -319,5 +319,5 @@ Apache 2.0 - See [LICENSE](../LICENSE)
 ## 🔗 Links
 
 - **GitHub:** https://github.com/Tyox-all/Weave_Protocol
-- **npm:** https://www.npmjs.com/package/@weave_protocol/inspector
+- **npm:** https://www.npmjs.com/package/@weave_protocol/hundredmen
 - **Main README:** [Weave Protocol](../README.md)

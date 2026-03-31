@@ -1,12 +1,12 @@
 {
-  "name": "@weave_protocol/inspector",
+  "name": "@weave_protocol/hundredmen",
   "version": "1.0.0",
   "description": "Real-time MCP security proxy - intercepts, scans, and gates AI agent tool calls",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "weave-inspector": "dist/index.js"
+    "weave-hundredmen": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",
