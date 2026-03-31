@@ -18,6 +18,10 @@ import { AnalyzerEngine } from './analyzers/index.js';
 import { NotificationHub } from './notifications/index.js';
 import { registerAllTools } from './tools/index.js';
 
+// Threat Intelligence imports
+import { threatIntel, ThreatIntelManager } from './threat-intel-manager.js';
+import { threatIntelTools, createThreatIntelToolHandlers } from './threat-intel-tools.js';
+
 // ============================================================================
 // Configuration Loading
 // ============================================================================
@@ -81,6 +85,44 @@ function loadConfig(): MundConfig {
 }
 
 // ============================================================================
+// Threat Intelligence Tool Registration
+// ============================================================================
+
+function registerThreatIntelTools(server: McpServer): void {
+  const handlers = createThreatIntelToolHandlers(threatIntel);
+
+  // Register each threat intel tool
+  for (const tool of threatIntelTools) {
+    server.tool(
+      tool.name,
+      tool.description,
+      tool.inputSchema,
+      async (args: any) => {
+        const handler = handlers[tool.name as keyof typeof handlers];
+        if (!handler) {
+          return {
+            content: [{ type: 'text', text: JSON.stringify({ error: `Unknown tool: ${tool.name}` }) }]
+          };
+        }
+        
+        try {
+          const result = await handler(args);
+          return {
+            content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
+          };
+        } catch (error) {
+          return {
+            content: [{ type: 'text', text: JSON.stringify({ 
+              error: error instanceof Error ? error.message : String(error) 
+            }) }]
+          };
+        }
+      }
+    );
+  }
+}
+
+// ============================================================================
 // Server Initialization
 // ============================================================================
 
@@ -88,7 +130,7 @@ async function createMundServer(config: MundConfig): Promise<McpServer> {
   // Create MCP server
   const server = new McpServer({
     name: 'mund-mcp-server',
-    version: '0.1.0'
+    version: '0.2.0'
   });
 
   // Initialize storage
@@ -111,15 +153,22 @@ async function createMundServer(config: MundConfig): Promise<McpServer> {
     }
   }
 
-  // Register all tools
+  // Register all core tools
   registerAllTools(server, storage, rules, analyzer, notificationHub, config.block_mode);
 
+  // Register threat intelligence tools
+  registerThreatIntelTools(server);
+
+  // Get threat intel status for logging
+  const intelStatus = threatIntel.getStatus();
+
   // Log startup info
-  console.error(`Mund Guardian Protocol v0.1.0`);
+  console.error(`Mund Guardian Protocol v0.2.0`);
   console.error(`- Transport: ${config.transport}`);
   console.error(`- Storage: ${config.storage_type}`);
   console.error(`- Block Mode: ${config.block_mode ? 'enabled' : 'disabled'}`);
   console.error(`- Rules Loaded: ${rules.filter(r => r.enabled).length}`);
+  console.error(`- Threat Intel: ${intelStatus.patterns.total} patterns from ${intelStatus.sources.enabled} sources`);
   console.error(`- Notifiers: ${notificationHub.getNotifierNames().join(', ') || 'none'}`);
 
   return server;
@@ -145,7 +194,12 @@ async function runHTTP(config: MundConfig): Promise<void> {
 
   // Health check endpoint
   app.get('/health', (_req, res) => {
-    res.json({ status: 'ok', version: '0.1.0' });
+    res.json({ status: 'ok', version: '0.2.0' });
+  });
+
+  // Threat intel status endpoint
+  app.get('/intel/status', (_req, res) => {
+    res.json(threatIntel.getStatus());
   });
 
   // MCP endpoint
@@ -211,6 +265,11 @@ Environment Variables:
   MUND_WEBHOOK_URL            Generic webhook URL
   MUND_WEBHOOK_HEADERS        JSON string of webhook headers
 
+Threat Intelligence:
+  Built-in threat patterns with MITRE ATT&CK mapping.
+  Use mund_intel_status to check coverage.
+  Use mund_update_threat_intel to pull latest patterns.
+
 Examples:
   # Run as stdio server (for MCP clients)
   mund-mcp
@@ -224,7 +283,7 @@ Examples:
   # Run in block mode
   mund-mcp --block
 
-For more information, visit: https://github.com/your-org/mund-mcp
+For more information, visit: https://github.com/Tyox-all/Weave_Protocol
 `);
 }
 
@@ -238,7 +297,7 @@ async function main(): Promise<void> {
   }
 
   if (args.includes('--version') || args.includes('-v')) {
-    console.log('0.1.0');
+    console.log('0.2.0');
     process.exit(0);
   }
 
@@ -283,3 +342,11 @@ main().catch(error => {
   console.error('Fatal error:', error);
   process.exit(1);
 });
+
+// ============================================================================
+// Exports for programmatic use
+// ============================================================================
+
+export { ThreatIntelManager, threatIntel } from './threat-intel-manager.js';
+export { threatIntelTools, createThreatIntelToolHandlers } from './threat-intel-tools.js';
+export * from './threat-intel-types.js';

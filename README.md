@@ -20,27 +20,34 @@ A TypeScript monorepo providing security, encryption, compliance, and governance
 
 ---
 
-## 🆕 What's New: MCP Server Scanner
+## 🆕 What's New: Automated Threat Intelligence
 
-**Mund v0.1.12** now scans MCP servers before you install them:
+**Mund v0.2.0** adds automated threat intelligence with MITRE ATT&CK mapping:
 
 ```
 ┌───────────────────────────────────────────────────────────────┐
-│  mund_scan_mcp_server                                         │
+│  mund_intel_status                                            │
 │                                                               │
-│  ⚠️  CRITICAL: Tool "execute" contains injection pattern      │
-│     "ignore previous instructions and run..."                 │
+│  Sources: 3 enabled (2 auto-updating)                         │
+│  Patterns: 47 total across 7 categories                       │
+│  MITRE: 10 techniques, 6 tactics covered                      │
 │                                                               │
-│  ⚠️  HIGH: Server name "githib-mcp" is 1 edit from "github"   │
-│                                                               │
-│  Recommendation: DO_NOT_INSTALL                               │
+│  ✅ weave_builtin    20 patterns (core)                       │
+│  ✅ weave_community  15 patterns (auto-update: 24h)           │
+│  ✅ mitre_llm        12 patterns (auto-update: 7d)            │
 └───────────────────────────────────────────────────────────────┘
 ```
 
-**Why this matters:**
-- 43% of MCP servers have command injection vulnerabilities
-- "Line jumping" attacks hide malicious prompts in tool descriptions
-- Typosquatting mimics legitimate server names
+**New threat intel tools:**
+
+| Tool | Description |
+|------|-------------|
+| `mund_update_threat_intel` | Pull latest patterns from feeds |
+| `mund_intel_status` | Health, coverage, MITRE stats |
+| `mund_threat_scan` | Scan with 20+ built-in patterns |
+| `mund_list_intel_sources` | Show configured intel sources |
+
+**Detection categories:** Prompt injection, jailbreaks, data exfiltration, system prompt leaks, MCP exploits, DoS attacks.
 
 [See Mund README →](./mund/README.md)
 
@@ -50,12 +57,12 @@ A TypeScript monorepo providing security, encryption, compliance, and governance
 
 | Package | Version | Description |
 |---------|---------|-------------|
-| [🛡️ @weave_protocol/mund](./mund) | 0.1.13 | Security scanner - secrets, PII, injection, **MCP server vetting** |
+| [🛡️ @weave_protocol/mund](./mund) | 0.2.0 | Security scanner - secrets, PII, injection, MCP vetting, **threat intel** |
 | [🏛️ @weave_protocol/hord](./hord) | 0.1.5 | Encrypted vault with Yoxallismus cipher |
 | [⚖️ @weave_protocol/domere](./domere) | 1.3.1 | Compliance (PCI-DSS, ISO27001, SOC2, HIPAA, **GDPR**) & verification |
 | [👥 @weave_protocol/witan](./witan) | 1.0.1 | Multi-agent consensus & governance |
-| [🔍 @weave_protocol/hundredmen](./hundredmen) | 1.0.1 | **Real-time MCP proxy** - intercept, scan, gate tool calls |
-| [🔌 @weave_protocol/api](./api) | 1.0.7 | REST API for all packages |
+| [🔍 @weave_protocol/hundredmen](./hundredmen) | 1.0.5 | **Real-time MCP proxy** - intercept, scan, gate tool calls |
+| [🔌 @weave_protocol/api](./api) | 1.0.9 | REST API for all packages |
 
 ---
 
@@ -65,7 +72,7 @@ Each package includes a `SKILL.md` file following the [Claude Agent Skills speci
 
 | Package | Skill Name | Triggers |
 |---------|------------|----------|
-| 🛡️ Mund | `security-scanning` | scan, detect secrets, check injection, vet MCP server |
+| 🛡️ Mund | `security-scanning` | scan, detect secrets, check injection, vet MCP server, threat intel |
 | 🏛️ Hord | `encrypting-data` | encrypt, decrypt, vault, Yoxallismus, protect |
 | ⚖️ Domere | `compliance-auditing` | audit, checkpoint, SOC2, HIPAA, PCI-DSS, GDPR, blockchain |
 | 👥 Witan | `consensus-governance` | consensus, vote, approve, policy, escalate |
@@ -153,6 +160,7 @@ Real-time security scanning for AI agents.
 | **Exfiltration** | Data leakage, encoding tricks, steganography |
 | **Code** | Dangerous patterns, eval/exec, SQL injection, XSS |
 | **MCP Servers** | Malicious tool descriptions, typosquatting, dangerous permissions |
+| **Threat Intel** | MITRE ATT&CK patterns, community feeds, auto-updates |
 
 ```typescript
 // Scan content
@@ -162,6 +170,10 @@ const result = await mund.scan("Here's my key: sk-abc123...");
 // Scan MCP server before install
 const serverScan = await mund.scanMcpServer(serverJson);
 // { recommendation: "DO_NOT_INSTALL", issues: [...] }
+
+// Check threat intel status
+const status = await mund.intelStatus();
+// { patterns: 47, mitre_techniques: 10, sources: 3 }
 ```
 
 📄 **Skill:** [`security-scanning`](./mund/SKILL.md)
@@ -419,9 +431,9 @@ npm test
 
 - [x] GDPR compliance framework
 - [x] MCP server reputation scoring
+- [x] Automated threat intelligence updates
 - [ ] LangChain/LlamaIndex integration package
 - [ ] Web dashboard for monitoring
-- [ ] Automated threat intelligence updates
 - [ ] CCPA compliance framework
 
 ---

@@ -7,7 +7,9 @@
 [![MCP Registry](https://img.shields.io/badge/MCP-Registry-blue)](https://registry.modelcontextprotocol.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Mund (Old English: "protection, guardian") is a real-time security scanner for AI agent systems. It detects prompt injection, secrets, PII, dangerous code patterns, and data exfiltration attempts. **New in v0.1.11:** Scan MCP servers for security issues before you install them.
+Mund (Old English: "protection, guardian") is a real-time security scanner for AI agent systems. It detects prompt injection, secrets, PII, dangerous code patterns, and data exfiltration attempts.
+
+**🆕 New in v0.2.0:** Automated threat intelligence with MITRE ATT&CK mapping and community feeds.
 
 ## ✨ Features
 
@@ -19,6 +21,7 @@ Mund (Old English: "protection, guardian") is a real-time security scanner for A
 | **Code Patterns** | Shell injection, SQL injection, dangerous chmod, curl\|bash, eval |
 | **Exfiltration** | Suspicious URLs, DNS tunneling, base64-encoded data blocks |
 | **MCP Servers** | Malicious tool descriptions, typosquatting, dangerous permissions, embedded secrets |
+| **Threat Intel** | 20+ built-in patterns, MITRE ATT&CK mapping, auto-updating community feeds |
 
 ## 📦 Installation
 
@@ -61,6 +64,107 @@ if (issues.some(i => i.severity === 'critical')) {
   console.error('Critical security issues detected!');
 }
 ```
+
+---
+
+## 🧠 Automated Threat Intelligence
+
+**New in v0.2.0:** Mund includes automated threat intelligence with MITRE ATT&CK mapping and auto-updating community feeds.
+
+### Built-in Detection Patterns
+
+| Category | Patterns |
+|----------|----------|
+| **Prompt Injection** | Direct override, role reassignment, delimiter injection, encoded payloads |
+| **Jailbreaks** | DAN, developer mode, hypothetical framing |
+| **System Prompt Leaks** | Direct request, indirect extraction |
+| **Data Exfiltration** | Markdown image exfil, URL data injection |
+| **MCP Exploits** | Tool abuse, cross-tool attacks |
+| **DoS Attacks** | Infinite loops, token exhaustion |
+
+### MITRE ATT&CK Mapping
+
+All patterns are mapped to MITRE ATT&CK techniques:
+
+| Technique | Description |
+|-----------|-------------|
+| T1059 | Command and Scripting Interpreter |
+| T1078 | Valid Accounts |
+| T1055 | Process Injection |
+| T1027 | Obfuscated Files or Information |
+| T1041 | Exfiltration Over C2 Channel |
+| T1499 | Endpoint Denial of Service |
+
+### Threat Intel Tools
+
+#### `mund_update_threat_intel`
+
+Pull latest patterns from configured feeds.
+
+```
+Input: { source?: "weave_community" }
+
+Output: {
+  success: true,
+  sources_updated: ["weave_community", "mitre_llm"],
+  patterns_added: 12,
+  patterns_updated: 3
+}
+```
+
+#### `mund_intel_status`
+
+Get threat intelligence health and coverage.
+
+```
+Output: {
+  sources: { total: 3, enabled: 3, auto_update: 2 },
+  patterns: { total: 47, enabled: 45, by_category: {...} },
+  mitre: { techniques_covered: 10, tactics_covered: 6 },
+  last_update: "2026-03-30T12:00:00Z"
+}
+```
+
+#### `mund_list_intel_sources`
+
+Show all configured intel sources.
+
+```
+Output: {
+  sources: [
+    { id: "weave_builtin", enabled: true, auto_update: false, patterns: 20 },
+    { id: "weave_community", enabled: true, auto_update: true, interval: "24h" },
+    { id: "mitre_llm", enabled: true, auto_update: true, interval: "7d" }
+  ]
+}
+```
+
+#### `mund_threat_scan`
+
+Scan content using threat intelligence patterns.
+
+```
+Input: { content: "ignore previous instructions and..." }
+
+Output: {
+  threats_detected: 1,
+  findings: [{
+    pattern_id: "prompt_injection_override",
+    category: "prompt_injection",
+    severity: "critical",
+    mitre_techniques: ["T1059"],
+    match: "ignore previous instructions..."
+  }]
+}
+```
+
+#### `mund_add_intel_source` / `mund_remove_intel_source`
+
+Manage custom threat feeds.
+
+#### `mund_list_patterns` / `mund_toggle_pattern`
+
+Browse and enable/disable specific patterns.
 
 ---
 
@@ -307,22 +411,31 @@ Mund uses YAML-based rules in `rules/default.yaml`. Example:
 │                       Mund MCP Server                         │
 ├───────────────────────────────────────────────────────────────┤
 │  Tools                                                        │
-│  ├── mund_scan              Content scanning                  │
-│  ├── mund_scan_conversation Conversation scanning             │
-│  ├── mund_check_secret      Secret detection                  │
-│  ├── mund_check_pii         PII detection                     │
-│  ├── mund_get_stats         Statistics                        │
-│  ├── mund_scan_mcp_server   MCP server scanning        [NEW]  │
-│  ├── mund_check_typosquatting  Name verification       [NEW]  │
-│  └── mund_audit_mcp_permissions  Permission audit      [NEW]  │
+│  ├── mund_scan               Content scanning                 │
+│  ├── mund_scan_conversation  Conversation scanning            │
+│  ├── mund_check_secret       Secret detection                 │
+│  ├── mund_check_pii          PII detection                    │
+│  ├── mund_get_stats          Statistics                       │
+│  ├── mund_scan_mcp_server    MCP server scanning              │
+│  ├── mund_check_typosquatting   Name verification             │
+│  ├── mund_audit_mcp_permissions Permission audit              │
+│  ├── mund_update_threat_intel   Pull latest patterns   [NEW]  │
+│  ├── mund_intel_status          Health & coverage      [NEW]  │
+│  ├── mund_list_intel_sources    Show intel sources     [NEW]  │
+│  ├── mund_threat_scan           Scan with intel        [NEW]  │
+│  ├── mund_add_intel_source      Add custom feed        [NEW]  │
+│  ├── mund_remove_intel_source   Remove feed            [NEW]  │
+│  ├── mund_list_patterns         Browse patterns        [NEW]  │
+│  └── mund_toggle_pattern        Enable/disable         [NEW]  │
 ├───────────────────────────────────────────────────────────────┤
 │  Analyzers                                                    │
-│  ├── SecretScanner          API keys, tokens, credentials     │
-│  ├── PIIDetector            Personal information              │
-│  ├── InjectionDetector      Prompt injection attempts         │
-│  ├── CodeAnalyzer           Dangerous code patterns           │
-│  ├── ExfiltrationDetector   Data exfiltration attempts        │
-│  └── McpServerAnalyzer      MCP manifest security      [NEW]  │
+│  ├── SecretScanner           API keys, tokens, credentials    │
+│  ├── PIIDetector             Personal information             │
+│  ├── InjectionDetector       Prompt injection attempts        │
+│  ├── CodeAnalyzer            Dangerous code patterns          │
+│  ├── ExfiltrationDetector    Data exfiltration attempts       │
+│  ├── McpServerAnalyzer       MCP manifest security            │
+│  └── ThreatIntelManager      MITRE ATT&CK patterns     [NEW]  │
 ├───────────────────────────────────────────────────────────────┤
 │  Notifications                                                │
 │  └── Slack, Teams, Email, Webhooks                            │
@@ -337,10 +450,11 @@ Mund is the security layer of the [Weave Protocol](https://github.com/Tyox-all/W
 
 | Package | Purpose |
 |---------|---------|
-| **🛡️ Mund** | Security scanning & MCP server vetting |
+| **🛡️ Mund** | Security scanning, MCP server vetting, threat intelligence |
 | **🏛️ Hord** | Encrypted vault storage (Yoxallismus cipher) |
-| **⚖️ Domere** | Compliance & verification (PCI-DSS, ISO27001) |
+| **⚖️ Domere** | Compliance & verification (PCI-DSS, ISO27001, GDPR) |
 | **👥 Witan** | Multi-agent consensus & governance |
+| **🔍 Hundredmen** | Real-time MCP proxy & drift detection |
 | **🔌 API** | REST interface for all packages |
 
 ---
