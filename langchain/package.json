@@ -63,7 +63,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Tyox-all/Weave_Protocol.git",
+    "url": "git+https://github.com/Tyox-all/Weave_Protocol.git",
     "directory": "langchain"
   },
   "homepage": "https://github.com/Tyox-all/Weave_Protocol/tree/main/langchain#readme",
