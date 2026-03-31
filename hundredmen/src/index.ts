@@ -120,16 +120,6 @@ main().catch((error) => {
   process.exit(1);
 });
 
-// Re-export classes for API integration
-export { Interceptor } from './interceptor.js';
-export { ReputationManager } from './reputation.js';
-export * from './types.js';
-
-// Re-export for API integration
-export { Interceptor } from './interceptor.js';
-export { ReputationManager } from './reputation.js';
-export * from './types.js';
-
 // Re-export for API integration
 export { Interceptor } from './interceptor.js';
 export { ReputationManager } from './reputation.js';
