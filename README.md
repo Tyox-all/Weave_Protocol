@@ -12,6 +12,8 @@
 [![npm](https://img.shields.io/npm/dm/@weave_protocol/witan.svg)](https://www.npmjs.com/package/@weave_protocol/witan)
 [![npm](https://img.shields.io/npm/v/@weave_protocol/hundredmen.svg?label=hundredmen)](https://www.npmjs.com/package/@weave_protocol/hundredmen)
 [![npm](https://img.shields.io/npm/dm/@weave_protocol/hundredmen.svg)](https://www.npmjs.com/package/@weave_protocol/hundredmen)
+[![npm](https://img.shields.io/npm/v/@weave_protocol/langchain.svg?label=langchain)](https://www.npmjs.com/package/@weave_protocol/langchain)
+[![npm](https://img.shields.io/npm/dm/@weave_protocol/langchain.svg)](https://www.npmjs.com/package/@weave_protocol/langchain)
 [![npm](https://img.shields.io/npm/v/@weave_protocol/api.svg?label=api)](https://www.npmjs.com/package/@weave_protocol/api)
 [![npm](https://img.shields.io/npm/dm/@weave_protocol/api.svg)](https://www.npmjs.com/package/@weave_protocol/api)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -20,9 +22,31 @@ A TypeScript monorepo providing security, encryption, compliance, and governance
 
 ---
 
-## 🆕 What's New: Automated Threat Intelligence
+## 🆕 What's New
 
-**Mund v0.2.0** adds automated threat intelligence with MITRE ATT&CK mapping:
+### LangChain.js Integration (v1.0.0)
+
+Drop-in security for LangChain.js applications:
+
+```typescript
+import { WeaveSecurityCallback } from '@weave_protocol/langchain';
+
+const chain = new LLMChain({
+  llm: new ChatOpenAI(),
+  prompt,
+  callbacks: [new WeaveSecurityCallback({ action: 'block' })],
+});
+
+// Threats in input/output automatically blocked
+await chain.invoke({ question: 'Ignore previous instructions...' });
+// Error: [WeaveSecurityCallback] Blocked: Threat detected
+```
+
+**Features:** Callback handler, secure tool wrappers, RAG document scanning, PII redaction
+
+[See LangChain README →](./langchain/README.md)
+
+### Automated Threat Intelligence (Mund v0.2.0)
 
 ```
 ┌───────────────────────────────────────────────────────────────┐
@@ -38,16 +62,7 @@ A TypeScript monorepo providing security, encryption, compliance, and governance
 └───────────────────────────────────────────────────────────────┘
 ```
 
-**New threat intel tools:**
-
-| Tool | Description |
-|------|-------------|
-| `mund_update_threat_intel` | Pull latest patterns from feeds |
-| `mund_intel_status` | Health, coverage, MITRE stats |
-| `mund_threat_scan` | Scan with 20+ built-in patterns |
-| `mund_list_intel_sources` | Show configured intel sources |
-
-**Detection categories:** Prompt injection, jailbreaks, data exfiltration, system prompt leaks, MCP exploits, DoS attacks.
+**New threat intel tools:** `mund_update_threat_intel`, `mund_intel_status`, `mund_threat_scan`, `mund_list_intel_sources`
 
 [See Mund README →](./mund/README.md)
 
@@ -62,6 +77,7 @@ A TypeScript monorepo providing security, encryption, compliance, and governance
 | [⚖️ @weave_protocol/domere](./domere) | 1.3.1 | Compliance (PCI-DSS, ISO27001, SOC2, HIPAA, **GDPR**) & verification |
 | [👥 @weave_protocol/witan](./witan) | 1.0.1 | Multi-agent consensus & governance |
 | [🔍 @weave_protocol/hundredmen](./hundredmen) | 1.0.5 | **Real-time MCP proxy** - intercept, scan, gate tool calls |
+| [🔗 @weave_protocol/langchain](./langchain) | 1.0.0 | **LangChain.js** security callbacks & tool wrappers |
 | [🔌 @weave_protocol/api](./api) | 1.0.9 | REST API for all packages |
 
 ---
@@ -77,6 +93,7 @@ Each package includes a `SKILL.md` file following the [Claude Agent Skills speci
 | ⚖️ Domere | `compliance-auditing` | audit, checkpoint, SOC2, HIPAA, PCI-DSS, GDPR, blockchain |
 | 👥 Witan | `consensus-governance` | consensus, vote, approve, policy, escalate |
 | 🔍 Hundredmen | `security-inspection` | intercept, drift, reputation, approve, block, live feed |
+| 🔗 Langchain | `langchain-security` | LangChain, callback, secure tool, RAG security, PII redaction |
 | 🔌 API | `weave-api-calling` | REST API, HTTP endpoint, curl, fetch |
 
 **Installation:**
@@ -104,7 +121,7 @@ Once installed, Claude automatically invokes the appropriate skill when you ask 
 ### Install All Packages
 
 ```bash
-npm install @weave_protocol/mund @weave_protocol/hord @weave_protocol/domere @weave_protocol/hundredmen
+npm install @weave_protocol/mund @weave_protocol/hord @weave_protocol/domere @weave_protocol/hundredmen @weave_protocol/langchain
 ```
 
 ### Claude Desktop Integration
@@ -328,6 +345,40 @@ if (call.status === 'approved') {
 
 ---
 
+### 🔗 Langchain - The Bridge
+
+Security integration for LangChain.js applications.
+
+| Category | Features |
+|----------|----------|
+| **Callbacks** | Drop-in `WeaveSecurityCallback` for any chain/agent |
+| **Tool Wrappers** | Wrap tools with threat scanning and approval gates |
+| **Retrievers** | Scan RAG documents, auto-redact PII |
+| **Presets** | Strict, warning, and production configurations |
+
+```typescript
+import { WeaveSecurityCallback, createSecureRetriever } from '@weave_protocol/langchain';
+
+// Callback for any LangChain component
+const callback = new WeaveSecurityCallback({
+  action: 'block',        // block | warn | log
+  minSeverity: 'medium',
+  scanTools: true,
+  scanRetrievers: true,
+});
+
+// Secure RAG retriever with PII redaction
+const secureRetriever = createSecureRetriever(vectorStore.asRetriever(), {
+  name: 'company-docs',
+  scanDocuments: true,
+  redactSensitive: true,
+});
+```
+
+📄 **Skill:** [`langchain-security`](./langchain/SKILL.md)
+
+---
+
 ## 🏗️ Architecture
 
 ```
@@ -345,10 +396,10 @@ if (call.status === 'approved') {
 │       │             │             │             │             │
 │       └─────────────┴─────────────┴─────────────┘             │
 │                           │                                   │
-│  ┌──────────────┐   ┌─────┴─────┐                             │
-│  │🔍 Hundredmen │   │  🔌 API   │                             │
-│  │  Watchers    │   │   REST    │                             │
-│  └──────────────┘   └───────────┘                             │
+│  ┌──────────────┐   ┌─────┴─────┐   ┌──────────────┐          │
+│  │🔍 Hundredmen │   │  🔌 API   │   │ 🔗 Langchain │          │
+│  │  Watchers    │   │   REST    │   │   Bridge     │          │
+│  └──────────────┘   └───────────┘   └──────────────┘          │
 │                                                               │
 └───────────────────────────────────────────────────────────────┘
 ```
@@ -394,6 +445,7 @@ Weave Protocol implements defense-in-depth:
 3. **⚖️ Domere** logs all actions with tamper-evident checksums
 4. **👥 Witan** requires consensus for high-risk operations
 5. **🔍 Hundredmen** intercepts and gates tool calls in real-time
+6. **🔗 Langchain** secures LangChain.js chains and agents
 
 ### CORS Model Integration
 
@@ -420,6 +472,7 @@ cd mund && npm install && npm run build
 cd ../hord && npm install && npm run build
 cd ../domere && npm install && npm run build
 cd ../hundredmen && npm install && npm run build
+cd ../langchain && npm install && npm run build
 
 # Run tests
 npm test
@@ -432,7 +485,8 @@ npm test
 - [x] GDPR compliance framework
 - [x] MCP server reputation scoring
 - [x] Automated threat intelligence updates
-- [ ] LangChain/LlamaIndex integration package
+- [x] LangChain.js integration package
+- [ ] Python/LlamaIndex integration
 - [ ] Web dashboard for monitoring
 - [ ] CCPA compliance framework
 
@@ -458,6 +512,7 @@ Apache 2.0 - See [LICENSE](LICENSE)
 - **npm (domere):** https://www.npmjs.com/package/@weave_protocol/domere
 - **npm (witan):** https://www.npmjs.com/package/@weave_protocol/witan
 - **npm (hundredmen):** https://www.npmjs.com/package/@weave_protocol/hundredmen
+- **npm (langchain):** https://www.npmjs.com/package/@weave_protocol/langchain
 - **MCP Registry:** https://registry.modelcontextprotocol.io (search "mund")
 
 ---
