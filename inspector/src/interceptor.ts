@@ -232,6 +232,7 @@ export function detectDrift(
         description: `New risky capabilities: ${riskyNew.join(', ')}`,
       });
       maxSeverity = 'high';
+      if (level === 'critical') maxSeverity = 'critical';
     }
   }
   
