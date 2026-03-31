@@ -1,56 +1,104 @@
-# 🔍 @weave_protocol/inspector
+# 🕸️ Weave Protocol
 
-**Real-Time MCP Security Proxy for AI Agents**
+**Enterprise Security Suite for AI Agents**
 
-[![npm](https://img.shields.io/npm/v/@weave_protocol/inspector.svg)](https://www.npmjs.com/package/@weave_protocol/inspector)
-[![npm](https://img.shields.io/npm/dm/@weave_protocol/inspector.svg)](https://www.npmjs.com/package/@weave_protocol/inspector)
+[![npm](https://img.shields.io/npm/v/@weave_protocol/mund.svg?label=mund)](https://www.npmjs.com/package/@weave_protocol/mund)
+[![npm](https://img.shields.io/npm/dm/@weave_protocol/mund.svg)](https://www.npmjs.com/package/@weave_protocol/mund)
+[![npm](https://img.shields.io/npm/v/@weave_protocol/hord.svg?label=hord)](https://www.npmjs.com/package/@weave_protocol/hord)
+[![npm](https://img.shields.io/npm/dm/@weave_protocol/hord.svg)](https://www.npmjs.com/package/@weave_protocol/hord)
+[![npm](https://img.shields.io/npm/v/@weave_protocol/domere.svg?label=domere)](https://www.npmjs.com/package/@weave_protocol/domere)
+[![npm](https://img.shields.io/npm/dm/@weave_protocol/domere.svg)](https://www.npmjs.com/package/@weave_protocol/domere)
+[![npm](https://img.shields.io/npm/v/@weave_protocol/witan.svg?label=witan)](https://www.npmjs.com/package/@weave_protocol/witan)
+[![npm](https://img.shields.io/npm/dm/@weave_protocol/witan.svg)](https://www.npmjs.com/package/@weave_protocol/witan)
+[![npm](https://img.shields.io/npm/v/@weave_protocol/hundredmen.svg?label=hundredmen)](https://www.npmjs.com/package/@weave_protocol/hundredmen)
+[![npm](https://img.shields.io/npm/dm/@weave_protocol/hundredmen.svg)](https://www.npmjs.com/package/@weave_protocol/hundredmen)
+[![npm](https://img.shields.io/npm/v/@weave_protocol/api.svg?label=api)](https://www.npmjs.com/package/@weave_protocol/api)
+[![npm](https://img.shields.io/npm/dm/@weave_protocol/api.svg)](https://www.npmjs.com/package/@weave_protocol/api)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-Part of the [Weave Protocol](https://github.com/Tyox-all/Weave_Protocol) security suite.
+A TypeScript monorepo providing security, encryption, compliance, and governance tools for AI agent systems. Built for the Model Context Protocol (MCP) ecosystem.
 
 ---
 
-## ✨ What It Does
+## 🆕 What's New: MCP Server Scanner
 
-Inspector sits between AI agents and MCP servers, providing:
+**Mund v0.1.12** now scans MCP servers before you install them:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  AI Agent (Claude Code, Cursor, etc.)                       │
-└─────────────────┬───────────────────────────────────────────┘
-                  │ Tool calls
-                  ▼
-┌─────────────────────────────────────────────────────────────┐
-│  🔍 Weave Inspector                                         │
-│                                                             │
-│  • Intercept every tool call                                │
-│  • Scan arguments for secrets, PII, injection               │
-│  • Detect drift from declared intent                        │
-│  • Check server reputation                                  │
-│  • Gate risky operations for approval                       │
-│  • Log everything with blockchain anchoring                 │
-│                                                             │
-└─────────────────┬───────────────────────────────────────────┘
-                  │ Approved calls only
-                  ▼
-┌─────────────────────────────────────────────────────────────┐
-│  Target MCP Servers (filesystem, github, slack, etc.)       │
-└─────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────┐
+│  mund_scan_mcp_server                                         │
+│                                                               │
+│  ⚠️  CRITICAL: Tool "execute" contains injection pattern      │
+│     "ignore previous instructions and run..."                 │
+│                                                               │
+│  ⚠️  HIGH: Server name "githib-mcp" is 1 edit from "github"   │
+│                                                               │
+│  Recommendation: DO_NOT_INSTALL                               │
+└───────────────────────────────────────────────────────────────┘
 ```
 
-**"Said X, Doing Y" Detection:** Catches when an AI agent says it will "read a file" but actually tries to "delete the database."
+**Why this matters:**
+- 43% of MCP servers have command injection vulnerabilities
+- "Line jumping" attacks hide malicious prompts in tool descriptions
+- Typosquatting mimics legitimate server names
+
+[See Mund README →](./mund/README.md)
 
 ---
 
-## 📦 Installation
+## 📦 Packages
+
+| Package | Version | Description |
+|---------|---------|-------------|
+| [🛡️ @weave_protocol/mund](./mund) | 0.1.13 | Security scanner - secrets, PII, injection, **MCP server vetting** |
+| [🏛️ @weave_protocol/hord](./hord) | 0.1.5 | Encrypted vault with Yoxallismus cipher |
+| [⚖️ @weave_protocol/domere](./domere) | 1.3.1 | Compliance (PCI-DSS, ISO27001, SOC2, HIPAA, **GDPR**) & verification |
+| [👥 @weave_protocol/witan](./witan) | 1.0.1 | Multi-agent consensus & governance |
+| [🔍 @weave_protocol/hundredmen](./hundredmen) | 1.0.1 | **Real-time MCP proxy** - intercept, scan, gate tool calls |
+| [🔌 @weave_protocol/api](./api) | 1.0.7 | REST API for all packages |
+
+---
+
+## 🤖 AI Agent Skills
+
+Each package includes a `SKILL.md` file following the [Claude Agent Skills specification](https://docs.anthropic.com/en/docs/claude-code/skills). These teach AI agents how to use Weave Protocol tools effectively.
+
+| Package | Skill Name | Triggers |
+|---------|------------|----------|
+| 🛡️ Mund | `security-scanning` | scan, detect secrets, check injection, vet MCP server |
+| 🏛️ Hord | `encrypting-data` | encrypt, decrypt, vault, Yoxallismus, protect |
+| ⚖️ Domere | `compliance-auditing` | audit, checkpoint, SOC2, HIPAA, PCI-DSS, GDPR, blockchain |
+| 👥 Witan | `consensus-governance` | consensus, vote, approve, policy, escalate |
+| 🔍 Hundredmen | `security-inspection` | intercept, drift, reputation, approve, block, live feed |
+| 🔌 API | `weave-api-calling` | REST API, HTTP endpoint, curl, fetch |
+
+**Installation:**
+
+Copy skill files to your Claude skills directory:
 
 ```bash
-npm install @weave_protocol/inspector
+# Clone repo
+git clone https://github.com/Tyox-all/Weave_Protocol.git
+
+# Copy skills to Claude Code
+mkdir -p ~/.claude/skills/weave-protocol
+cp Weave_Protocol/*/SKILL.md ~/.claude/skills/weave-protocol/
+
+# Or for Claude.ai (upload as custom skills)
+# Settings > Features > Custom Skills > Upload ZIP
 ```
+
+Once installed, Claude automatically invokes the appropriate skill when you ask it to scan content, encrypt data, create compliance checkpoints, or coordinate multi-agent consensus.
 
 ---
 
 ## 🚀 Quick Start
+
+### Install All Packages
+
+```bash
+npm install @weave_protocol/mund @weave_protocol/hord @weave_protocol/domere @weave_protocol/hundredmen
+```
 
 ### Claude Desktop Integration
 
@@ -59,39 +107,191 @@ Add to `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "inspector": {
+    "mund": {
       "command": "npx",
-      "args": ["-y", "@weave_protocol/inspector"]
+      "args": ["-y", "@weave_protocol/mund"]
+    },
+    "hord": {
+      "command": "npx",
+      "args": ["-y", "@weave_protocol/hord"]
+    },
+    "domere": {
+      "command": "npx",
+      "args": ["-y", "@weave_protocol/domere"]
+    },
+    "hundredmen": {
+      "command": "npx",
+      "args": ["-y", "@weave_protocol/hundredmen"]
     }
   }
 }
 ```
 
-### Basic Usage
+### MCP Registry
+
+Mund is available on the official MCP Registry:
+
+```bash
+# Search for it
+https://registry.modelcontextprotocol.io
+# Server ID: io.github.Tyox-all/mund
+```
+
+---
+
+## ✨ Package Details
+
+### 🛡️ Mund - The Guardian
+
+Real-time security scanning for AI agents.
+
+| Category | Features |
+|----------|----------|
+| **Secrets** | API keys, tokens, passwords, certificates (30+ patterns) |
+| **PII** | SSN, credit cards, emails, phone numbers, addresses |
+| **Injection** | Prompt injection, jailbreak attempts, instruction override |
+| **Exfiltration** | Data leakage, encoding tricks, steganography |
+| **Code** | Dangerous patterns, eval/exec, SQL injection, XSS |
+| **MCP Servers** | Malicious tool descriptions, typosquatting, dangerous permissions |
 
 ```typescript
-import { Interceptor, ReputationManager } from '@weave_protocol/inspector';
+// Scan content
+const result = await mund.scan("Here's my key: sk-abc123...");
+// { safe: false, issues: [{ severity: "critical", ... }] }
 
-// Create components
+// Scan MCP server before install
+const serverScan = await mund.scanMcpServer(serverJson);
+// { recommendation: "DO_NOT_INSTALL", issues: [...] }
+```
+
+📄 **Skill:** [`security-scanning`](./mund/SKILL.md)
+
+---
+
+### 🏛️ Hord - The Vault
+
+Encrypted storage with the Yoxallismus dual-tumbler cipher.
+
+| Category | Features |
+|----------|----------|
+| **Encryption** | AES-256-GCM, ChaCha20-Poly1305 |
+| **Key Derivation** | Argon2id with configurable parameters |
+| **Yoxallismus** | Dual-layer tumbler/deadbolt obfuscation |
+| **Memory Safety** | Secure buffer handling, auto-zeroing |
+| **MCP Server** | Claude Desktop integration, vault management tools |
+
+```typescript
+import { YoxallismusCipher } from '@weave_protocol/hord';
+
+const cipher = new YoxallismusCipher('master-key');
+
+// Lock (encrypt + obfuscate)
+const locked = await cipher.lock(sensitiveData);
+
+// Unlock (de-obfuscate + decrypt)
+const unlocked = await cipher.unlock(locked);
+```
+
+**Yoxallismus Cipher:** A dual-layer encryption combining AES-256-GCM with tumbler/deadbolt obfuscation. Data is first encrypted, then the ciphertext is scrambled using position-dependent transformations that require both the key and the original encryption context to reverse.
+
+📄 **Skill:** [`encrypting-data`](./hord/SKILL.md)
+
+---
+
+### ⚖️ Domere - The Judge
+
+Enterprise-grade verification, orchestration, compliance, and audit infrastructure.
+
+| Category | Features |
+|----------|----------|
+| **Verification** | Intent tracking, drift detection, execution replay, multi-agent handoff |
+| **Orchestration** | Task scheduler, agent registry, shared state with locks |
+| **Compliance** | SOC2, HIPAA, PCI-DSS, ISO27001, **GDPR** checkpoints & reporting |
+| **Blockchain** | Solana & Ethereum anchoring for immutable audit trails |
+
+**Blockchain Anchoring:**
+- Solana Mainnet: `6g7raTAHU2h331VKtfVtkS5pmuvR8vMYwjGsZF1CUj2o`
+- Solana Devnet: `BeCYVJYfbUu3k2TPGmh9VoGWeJwzm2hg2NdtnvbdBNCj`
+- Ethereum: `0xAA8b52adD3CEce6269d14C6335a79df451543820`
+
+```typescript
+import { ComplianceManager } from '@weave_protocol/domere';
+
+const compliance = new ComplianceManager(['pci-dss', 'iso27001', 'soc2', 'hipaa']);
+
+// Create tamper-evident checkpoint
+const checkpoint = await compliance.createCheckpoint({
+  action: 'data_access',
+  resource: 'customer_records',
+  actor: 'agent-001'
+});
+
+// Generate audit report
+const report = await compliance.generateReport('pci-dss', {
+  startDate: '2024-01-01',
+  endDate: '2024-12-31'
+});
+```
+
+📄 **Skill:** [`compliance-auditing`](./domere/SKILL.md)
+
+---
+
+### 👥 Witan - The Council
+
+Multi-agent consensus and governance.
+
+| Category | Features |
+|----------|----------|
+| **Consensus** | Unanimous, majority, weighted, quorum protocols |
+| **Policy** | Rule enforcement, permission management, escalation |
+| **Communication** | Agent bus, broadcast, point-to-point messaging |
+| **Recovery** | Failure detection, automatic failover, state recovery |
+
+```typescript
+import { ConsensusEngine, PolicyEngine } from '@weave_protocol/witan';
+
+const consensus = new ConsensusEngine({
+  protocol: 'weighted_majority',
+  threshold: 0.66,
+  timeout: 30000
+});
+
+// Propose action requiring consensus
+const result = await consensus.propose({
+  action: 'deploy_to_production',
+  requiredApprovals: ['security-agent', 'qa-agent', 'ops-agent']
+});
+```
+
+📄 **Skill:** [`consensus-governance`](./witan/SKILL.md)
+
+---
+
+### 🔍 Hundredmen - The Watchers
+
+Real-time MCP security proxy that intercepts, scans, and gates AI agent tool calls.
+
+| Category | Features |
+|----------|----------|
+| **Interception** | Proxy all MCP tool calls in real-time |
+| **Drift Detection** | "Said X, doing Y" analysis - catch unauthorized actions |
+| **Reputation** | Server trust scores, community reports, malicious detection |
+| **Manual Gates** | Require approval for high-risk operations |
+| **Live Feed** | Real-time stream of agent activity |
+
+```typescript
+import { Interceptor, ReputationManager } from '@weave_protocol/hundredmen';
+
 const interceptor = new Interceptor({
   mode: 'active',           // 'passive' | 'active' | 'strict'
-  scanEnabled: true,
   driftDetectionEnabled: true,
   reputationEnabled: true,
   minReputationScore: 30,
 });
 
-const reputationManager = new ReputationManager();
-
-// Wire them together
-interceptor.setReputationChecker(async (serverId) => {
-  return reputationManager.getScore(serverId);
-});
-
-// Create a session
+// Create session and declare intent
 const session = interceptor.createSession('my-agent');
-
-// Declare intent (enables drift detection)
 interceptor.declareIntent(session.id, 'Read and summarize the README file');
 
 // Intercept a tool call
@@ -102,10 +302,9 @@ const call = await interceptor.intercept(
   { path: '/README.md' }
 );
 
+// Check decision
 if (call.status === 'approved') {
   // Execute the actual call
-  // ...
-  interceptor.recordResult(call.id, result);
 } else if (call.status === 'pending') {
   console.log('Manual approval required:', call.decisionReason);
 } else {
@@ -113,211 +312,142 @@ if (call.status === 'approved') {
 }
 ```
 
----
-
-## 🛠️ MCP Tools
-
-### Session Management
-
-| Tool | Purpose |
-|------|---------|
-| `inspector_create_session` | Start inspection session |
-| `inspector_declare_intent` | Declare what you plan to do |
-| `inspector_end_session` | End session and get summary |
-
-### Live Feed & History
-
-| Tool | Purpose |
-|------|---------|
-| `inspector_get_live_feed` | Real-time stream of intercepted calls |
-| `inspector_get_call_history` | Query historical call data |
-| `inspector_diff_intent` | "Said X, doing Y" analysis |
-
-### Manual Approval
-
-| Tool | Purpose |
-|------|---------|
-| `inspector_get_pending` | List calls waiting for approval |
-| `inspector_approve_call` | Manually approve a pending call |
-| `inspector_block_call` | Manually block a pending call |
-
-### Reputation
-
-| Tool | Purpose |
-|------|---------|
-| `inspector_check_reputation` | Get server trust score |
-| `inspector_report_suspicious` | Report bad behavior |
-| `inspector_get_server_stats` | Detailed server analytics |
-| `inspector_list_servers` | List all known servers |
-
-### Configuration
-
-| Tool | Purpose |
-|------|---------|
-| `inspector_set_policy` | Configure inspection rules |
-| `inspector_get_config` | View current settings |
-| `inspector_get_stats` | Overall statistics |
+📄 **Skill:** [`security-inspection`](./hundredmen/SKILL.md)
 
 ---
 
-## 🔒 Inspection Modes
+## 🏗️ Architecture
 
-| Mode | Behavior |
-|------|----------|
-| **passive** | Log everything, block nothing |
-| **active** | Block critical issues, require approval for high-risk |
-| **strict** | Block all high-risk operations automatically |
-
-```typescript
-// Set mode via tool
-inspector_set_policy({ mode: 'strict' })
-
-// Or programmatically
-interceptor.setConfig({ mode: 'strict' });
+```
+┌───────────────────────────────────────────────────────────────┐
+│                       AI Agent System                         │
+├───────────────────────────────────────────────────────────────┤
+│                                                               │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐      │
+│  │  🛡️ Mund │  │ 🏛️ Hord  │  │ ⚖️ Domere│  │ 👥 Witan │      │
+│  │ Guardian │  │  Vault   │  │  Judge   │  │ Council  │      │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘      │
+│       │             │             │             │             │
+│  Security      Encryption    Compliance     Consensus        │
+│  Scanning      Storage       Verification   Governance       │
+│       │             │             │             │             │
+│       └─────────────┴─────────────┴─────────────┘             │
+│                           │                                   │
+│  ┌──────────────┐   ┌─────┴─────┐                             │
+│  │🔍 Hundredmen │   │  🔌 API   │                             │
+│  │  Watchers    │   │   REST    │                             │
+│  └──────────────┘   └───────────┘                             │
+│                                                               │
+└───────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 📊 Reputation Scoring
+## 🔌 REST API
 
-Servers are scored 0-100 based on:
+The `@weave_protocol/api` package provides HTTP endpoints for all functionality:
 
-| Factor | Weight | Description |
-|--------|--------|-------------|
-| **Trust** | 30% | Verification status, age, known good |
-| **Security** | 40% | Blocked calls, scan results |
-| **Community** | 15% | User reports, confirmed issues |
-| **Reliability** | 15% | Success rate, response time |
+```bash
+# Start the API server
+npx @weave_protocol/api
 
-### Pre-loaded Trusted Servers
-
-```
-anthropic/filesystem     - 95
-anthropic/github         - 95
-anthropic/slack          - 90
-modelcontextprotocol/*   - 85-90
+# Or with Docker
+docker run -p 3000:3000 weave-protocol/api
 ```
 
-### Automatic Detection
+**Endpoints:**
 
-- Malicious name patterns (hack, exploit, etc.) → Start at 10
-- Typosquatting detection → Flag for review
-- Unknown servers → Start at 50
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/mund/scan` | Scan content for security issues |
+| POST | `/mund/scan-mcp-server` | Scan MCP server manifest |
+| POST | `/hord/encrypt` | Encrypt data |
+| POST | `/hord/decrypt` | Decrypt data |
+| POST | `/hord/yoxallismus/lock` | Lock with Yoxallismus cipher |
+| POST | `/hord/yoxallismus/unlock` | Unlock with Yoxallismus cipher |
+| POST | `/domere/checkpoint` | Create compliance checkpoint |
+| GET | `/domere/compliance/frameworks` | List available frameworks |
+| POST | `/domere/compliance/report` | Generate compliance report |
+
+📄 **Skill:** [`weave-api-calling`](./api/SKILL.md)
 
 ---
 
-## 🎯 Drift Detection
+## 🔐 Security Model
 
-Compares declared intent against actual tool calls:
+Weave Protocol implements defense-in-depth:
 
-```typescript
-// Declare intent
-inspector_declare_intent({
-  session_id: 'abc123',
-  intent: 'Read and summarize the README file'
-});
+1. **🛡️ Mund** scans all inputs for threats before processing
+2. **🏛️ Hord** encrypts sensitive data at rest and in transit
+3. **⚖️ Domere** logs all actions with tamper-evident checksums
+4. **👥 Witan** requires consensus for high-risk operations
+5. **🔍 Hundredmen** intercepts and gates tool calls in real-time
 
-// Later, if the agent tries to:
-// - Delete files → DRIFT DETECTED (scope expansion)
-// - Access payment data → DRIFT DETECTED (data access)
-// - Execute code → DRIFT DETECTED (capability escalation)
-```
+### CORS Model Integration
 
-Drift severity:
-- **Low**: Minor deviation, auto-approved
-- **Medium**: Requires review in active mode
-- **High**: Blocked in strict mode, requires approval in active
-- **Critical**: Always blocked
+The Weave Protocol maps to the CORS Model for AI agent security:
+
+| CORS Layer | Weave Package | Function |
+|------------|---------------|----------|
+| **Origin Validation** | 🛡️ Mund | Validates input sources, detects injection |
+| **Context Integrity** | 🏛️ Hord | Protects data integrity through encryption |
+| **Deterministic Enforcement** | ⚖️ Domere | Ensures consistent policy application |
+| **Runtime Interception** | 🔍 Hundredmen | Gates tool calls, detects drift |
 
 ---
 
-## 🔌 Integration with Mund & Domere
+## 🛠️ Development
 
-Inspector integrates with other Weave Protocol packages:
+```bash
+# Clone
+git clone https://github.com/Tyox-all/Weave_Protocol.git
+cd Weave_Protocol
 
-```typescript
-import { Interceptor } from '@weave_protocol/inspector';
-import { scan } from '@weave_protocol/mund';
-import { ComplianceManager } from '@weave_protocol/domere';
+# Install dependencies (each package)
+cd mund && npm install && npm run build
+cd ../hord && npm install && npm run build
+cd ../domere && npm install && npm run build
+cd ../hundredmen && npm install && npm run build
 
-const interceptor = new Interceptor();
-const compliance = new ComplianceManager(['soc2']);
-
-// Use Mund for scanning
-interceptor.setScanner(async (content) => {
-  const result = await scan(content);
-  return {
-    safe: result.safe,
-    issues: result.issues,
-    scannedAt: new Date(),
-    scanDurationMs: 0,
-  };
-});
-
-// Use Domere for blockchain anchoring
-interceptor.setBlockchainAnchor(async (data) => {
-  const checkpoint = await compliance.createCheckpoint({
-    action: 'tool_call',
-    resource: 'mcp',
-    actor: 'inspector',
-    metadata: data,
-  });
-  return checkpoint.id;
-});
+# Run tests
+npm test
 ```
 
 ---
 
-## 📈 Example: Security Dashboard
+## 🗺️ Roadmap
 
-```typescript
-// Get live feed for dashboard
-const feed = await inspector_get_live_feed({ limit: 50 });
-
-// Show pending approvals
-const pending = await inspector_get_pending();
-
-// Check overall health
-const stats = await inspector_get_stats();
-
-console.log(`
-📊 Inspector Dashboard
-─────────────────────
-Total Calls:    ${stats.interceptor.totalCalls}
-Approved:       ${stats.interceptor.approvedCalls}
-Blocked:        ${stats.interceptor.blockedCalls}
-Pending:        ${stats.interceptor.pendingCalls}
-Active Sessions: ${stats.interceptor.activeSessions}
-
-🏢 Server Health
-─────────────────────
-Total Servers:  ${stats.reputation.total_servers}
-Verified:       ${stats.reputation.verified_servers}
-Malicious:      ${stats.reputation.malicious_servers}
-Low Rep:        ${stats.reputation.low_reputation_servers}
-`);
-```
+- [x] GDPR compliance framework
+- [x] MCP server reputation scoring
+- [ ] LangChain/LlamaIndex integration package
+- [ ] Web dashboard for monitoring
+- [ ] Automated threat intelligence updates
+- [ ] CCPA compliance framework
 
 ---
 
-## 🤖 AI Agent Skill
+## 🤝 Contributing
 
-This package includes a `SKILL.md` for Claude AI integration.
-
-**Skill name:** `security-inspection`
-
-**Triggers:** inspect, intercept, drift, reputation, approve, block, live feed
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
 ## 📄 License
 
-Apache 2.0 - See [LICENSE](../LICENSE)
+Apache 2.0 - See [LICENSE](LICENSE)
 
 ---
 
 ## 🔗 Links
 
 - **GitHub:** https://github.com/Tyox-all/Weave_Protocol
-- **npm:** https://www.npmjs.com/package/@weave_protocol/inspector
-- **Main README:** [Weave Protocol](../README.md)
+- **npm (mund):** https://www.npmjs.com/package/@weave_protocol/mund
+- **npm (hord):** https://www.npmjs.com/package/@weave_protocol/hord
+- **npm (domere):** https://www.npmjs.com/package/@weave_protocol/domere
+- **npm (witan):** https://www.npmjs.com/package/@weave_protocol/witan
+- **npm (hundredmen):** https://www.npmjs.com/package/@weave_protocol/hundredmen
+- **MCP Registry:** https://registry.modelcontextprotocol.io (search "mund")
+
+---
+
+*Built with ❤️ for the AI agent ecosystem.*
