@@ -129,3 +129,8 @@ export * from './types.js';
 export { Interceptor } from './interceptor.js';
 export { ReputationManager } from './reputation.js';
 export * from './types.js';
+
+// Re-export for API integration
+export { Interceptor } from './interceptor.js';
+export { ReputationManager } from './reputation.js';
+export * from './types.js';
