@@ -106,7 +106,7 @@ router.get('/feed', (req: Request, res: Response) => {
     success: true,
     count: calls.length,
     timestamp: new Date(),
-    calls: calls.map(c => ({
+    calls: calls.map((c: any) => ({
       id: c.id,
       timestamp: c.timestamp,
       server: c.sourceServer,
@@ -132,7 +132,7 @@ router.get('/pending', (_req: Request, res: Response) => {
   res.json({
     success: true,
     count: pending.length,
-    pending: pending.map(c => ({
+    pending: pending.map((c: any) => ({
       id: c.id,
       timestamp: c.timestamp,
       server: c.sourceServer,
@@ -307,7 +307,7 @@ router.get('/session/:id/drift', (req: Request, res: Response) => {
   }
   
   const calls = interceptor.getCallHistory({ sessionId: id });
-  const driftCalls = calls.filter(c => c.driftDetected);
+  const driftCalls = calls.filter((c: any) => c.driftDetected);
   
   res.json({
     success: true,
@@ -318,7 +318,7 @@ router.get('/session/:id/drift', (req: Request, res: Response) => {
     drift_rate: calls.length > 0 
       ? `${(driftCalls.length / calls.length * 100).toFixed(1)}%` 
       : '0%',
-    drift_calls: driftCalls.map(c => ({
+    drift_calls: driftCalls.map((c: any) => ({
       id: c.id,
       tool: c.tool,
       inferred_intent: c.intent?.inferredIntent,
@@ -417,13 +417,13 @@ router.get('/servers', (req: Request, res: Response) => {
   }
   
   if (minScore && filter !== 'low_reputation') {
-    servers = servers.filter(s => s.overallScore >= minScore);
+    servers = servers.filter((s: any) => s.overallScore >= minScore);
   }
   
   res.json({
     success: true,
     count: servers.length,
-    servers: servers.map(s => ({
+    servers: servers.map((s: any) => ({
       server_id: s.serverId,
       server_name: s.serverName,
       overall_score: s.overallScore,
