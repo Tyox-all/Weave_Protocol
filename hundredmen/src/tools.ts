@@ -11,7 +11,7 @@ import {
   CallStatus,
   RiskLevel,
   ReportType,
-  InspectorConfig,
+  HundredmenConfig,
   IntentCategory,
   PolicyAction,
 } from './types.js';
@@ -695,7 +695,7 @@ export function createHundredmenToolHandlers(
       require_approval_for?: IntentCategory[];
       drift_threshold?: number;
     }) => {
-      const config: Partial<InspectorConfig> = {};
+      const config: Partial<HundredmenConfig> = {};
       
       if (params.mode) config.mode = params.mode;
       if (params.min_reputation_score !== undefined) config.minReputationScore = params.min_reputation_score;
