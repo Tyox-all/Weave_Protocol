@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/api",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "Universal REST API for Weave Protocol Security Suite - works with OpenAI, Gemini, LangChain, and any HTTP client",
   "type": "module",
   "main": "dist/index.js",
@@ -44,5 +44,9 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Tyox-all/Weave_Protocol.git"
   }
 }
