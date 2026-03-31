@@ -1,97 +1,56 @@
-# 🕸️ Weave Protocol
+# 🔍 @weave_protocol/inspector
 
-**Enterprise Security Suite for AI Agents**
+**Real-Time MCP Security Proxy for AI Agents**
 
-[![npm](https://img.shields.io/npm/v/@weave_protocol/mund.svg?label=mund)](https://www.npmjs.com/package/@weave_protocol/mund)
-[![npm](https://img.shields.io/npm/dm/@weave_protocol/mund.svg)](https://www.npmjs.com/package/@weave_protocol/mund)
-[![npm](https://img.shields.io/npm/v/@weave_protocol/hord.svg?label=hord)](https://www.npmjs.com/package/@weave_protocol/hord)
-[![npm](https://img.shields.io/npm/dm/@weave_protocol/hord.svg)](https://www.npmjs.com/package/@weave_protocol/hord)
-[![npm](https://img.shields.io/npm/v/@weave_protocol/domere.svg?label=domere)](https://www.npmjs.com/package/@weave_protocol/domere)
-[![npm](https://img.shields.io/npm/dm/@weave_protocol/domere.svg)](https://www.npmjs.com/package/@weave_protocol/domere)
-[![npm](https://img.shields.io/npm/v/@weave_protocol/witan.svg?label=witan)](https://www.npmjs.com/package/@weave_protocol/witan)
-[![npm](https://img.shields.io/npm/dm/@weave_protocol/witan.svg)](https://www.npmjs.com/package/@weave_protocol/witan)
-[![npm](https://img.shields.io/npm/v/@weave_protocol/api.svg?label=api)](https://www.npmjs.com/package/@weave_protocol/api)
-[![npm](https://img.shields.io/npm/dm/@weave_protocol/api.svg)](https://www.npmjs.com/package/@weave_protocol/api)
+[![npm](https://img.shields.io/npm/v/@weave_protocol/inspector.svg)](https://www.npmjs.com/package/@weave_protocol/inspector)
+[![npm](https://img.shields.io/npm/dm/@weave_protocol/inspector.svg)](https://www.npmjs.com/package/@weave_protocol/inspector)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-A TypeScript monorepo providing security, encryption, compliance, and governance tools for AI agent systems. Built for the Model Context Protocol (MCP) ecosystem.
+Part of the [Weave Protocol](https://github.com/Tyox-all/Weave_Protocol) security suite.
 
 ---
 
-## 🆕 What's New: GDPR Compliance
+## ✨ What It Does
 
-**Domere v1.3.0** adds comprehensive GDPR support with 11 new MCP tools:
+Inspector sits between AI agents and MCP servers, providing:
 
 ```
-┌───────────────────────────────────────────────────────────────┐
-│  🇪🇺 GDPR Compliance Tools                                    │
-│                                                               │
-│  ✓ Consent Management (Article 6, 7)                          │
-│  ✓ Data Subject Access Requests (Article 15-22)               │
-│  ✓ Right to Erasure (Article 17)                              │
-│  ✓ Data Portability (Article 20)                              │
-│  ✓ 72-Hour Breach Notification (Article 33-34)                │
-│  ✓ Automated Decision Tracking (Article 22)                   │
-│  ✓ Retention Policy Enforcement (Article 5)                   │
-│  ✓ Processing Records (Article 30)                            │
-└───────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  AI Agent (Claude Code, Cursor, etc.)                       │
+└─────────────────┬───────────────────────────────────────────┘
+                  │ Tool calls
+                  ▼
+┌─────────────────────────────────────────────────────────────┐
+│  🔍 Weave Inspector                                         │
+│                                                             │
+│  • Intercept every tool call                                │
+│  • Scan arguments for secrets, PII, injection               │
+│  • Detect drift from declared intent                        │
+│  • Check server reputation                                  │
+│  • Gate risky operations for approval                       │
+│  • Log everything with blockchain anchoring                 │
+│                                                             │
+└─────────────────┬───────────────────────────────────────────┘
+                  │ Approved calls only
+                  ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Target MCP Servers (filesystem, github, slack, etc.)       │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-[See Domere README →](./domere/README.md)
+**"Said X, Doing Y" Detection:** Catches when an AI agent says it will "read a file" but actually tries to "delete the database."
 
 ---
 
-## 📦 Packages
-
-| Package | Version | Description |
-|---------|---------|-------------|
-| [🛡️ @weave_protocol/mund](./mund) | 0.1.13 | Security scanner - secrets, PII, injection, **MCP server vetting** |
-| [🏛️ @weave_protocol/hord](./hord) | 0.1.5 | Encrypted vault with Yoxallismus cipher |
-| [⚖️ @weave_protocol/domere](./domere) | 1.3.0 | Compliance (SOC2, HIPAA, PCI-DSS, ISO27001, **GDPR**) & verification |
-| [👥 @weave_protocol/witan](./witan) | 1.0.1 | Multi-agent consensus & governance |
-| [🔌 @weave_protocol/api](./api) | 1.0.7 | REST API for all packages |
-
----
-
-## 🤖 AI Agent Skills
-
-Each package includes a `SKILL.md` file following the [Claude Agent Skills specification](https://docs.anthropic.com/en/docs/claude-code/skills). These teach AI agents how to use Weave Protocol tools effectively.
-
-| Package | Skill Name | Triggers |
-|---------|------------|----------|
-| 🛡️ Mund | `security-scanning` | scan, detect secrets, check injection, vet MCP server |
-| 🏛️ Hord | `encrypting-data` | encrypt, decrypt, vault, Yoxallismus, protect |
-| ⚖️ Domere | `compliance-auditing` | audit, checkpoint, SOC2, HIPAA, PCI-DSS, ISO27001, **GDPR**, consent, DSAR, breach |
-| 👥 Witan | `consensus-governance` | consensus, vote, approve, policy, escalate |
-| 🔌 API | `weave-api-calling` | REST API, HTTP endpoint, curl, fetch |
-
-**Installation:**
-
-Copy skill files to your Claude skills directory:
+## 📦 Installation
 
 ```bash
-# Clone repo
-git clone https://github.com/Tyox-all/Weave_Protocol.git
-
-# Copy skills to Claude Code
-mkdir -p ~/.claude/skills/weave-protocol
-cp Weave_Protocol/*/SKILL.md ~/.claude/skills/weave-protocol/
-
-# Or for Claude.ai (upload as custom skills)
-# Settings > Features > Custom Skills > Upload ZIP
+npm install @weave_protocol/inspector
 ```
-
-Once installed, Claude automatically invokes the appropriate skill when you ask it to scan content, encrypt data, create compliance checkpoints, or coordinate multi-agent consensus.
 
 ---
 
 ## 🚀 Quick Start
-
-### Install All Packages
-
-```bash
-npm install @weave_protocol/mund @weave_protocol/hord @weave_protocol/domere
-```
 
 ### Claude Desktop Integration
 
@@ -100,306 +59,265 @@ Add to `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "mund": {
+    "inspector": {
       "command": "npx",
-      "args": ["-y", "@weave_protocol/mund"]
-    },
-    "hord": {
-      "command": "npx",
-      "args": ["-y", "@weave_protocol/hord"]
-    },
-    "domere": {
-      "command": "npx",
-      "args": ["-y", "@weave_protocol/domere"]
+      "args": ["-y", "@weave_protocol/inspector"]
     }
   }
 }
 ```
 
-### MCP Registry
-
-Mund is available on the official MCP Registry:
-
-```bash
-# Search for it
-https://registry.modelcontextprotocol.io
-# Server ID: io.github.Tyox-all/mund
-```
-
----
-
-## ✨ Package Details
-
-### 🛡️ Mund - The Guardian
-
-Real-time security scanning for AI agents.
-
-| Category | Features |
-|----------|----------|
-| **Secrets** | API keys, tokens, passwords, certificates (30+ patterns) |
-| **PII** | SSN, credit cards, emails, phone numbers, addresses |
-| **Injection** | Prompt injection, jailbreak attempts, instruction override |
-| **Exfiltration** | Data leakage, encoding tricks, steganography |
-| **Code** | Dangerous patterns, eval/exec, SQL injection, XSS |
-| **MCP Servers** | Malicious tool descriptions, typosquatting, dangerous permissions |
+### Basic Usage
 
 ```typescript
-// Scan content
-const result = await mund.scan("Here's my key: sk-abc123...");
-// { safe: false, issues: [{ severity: "critical", ... }] }
+import { Interceptor, ReputationManager } from '@weave_protocol/inspector';
 
-// Scan MCP server before install
-const serverScan = await mund.scanMcpServer(serverJson);
-// { recommendation: "DO_NOT_INSTALL", issues: [...] }
+// Create components
+const interceptor = new Interceptor({
+  mode: 'active',           // 'passive' | 'active' | 'strict'
+  scanEnabled: true,
+  driftDetectionEnabled: true,
+  reputationEnabled: true,
+  minReputationScore: 30,
+});
+
+const reputationManager = new ReputationManager();
+
+// Wire them together
+interceptor.setReputationChecker(async (serverId) => {
+  return reputationManager.getScore(serverId);
+});
+
+// Create a session
+const session = interceptor.createSession('my-agent');
+
+// Declare intent (enables drift detection)
+interceptor.declareIntent(session.id, 'Read and summarize the README file');
+
+// Intercept a tool call
+const call = await interceptor.intercept(
+  session.id,
+  'filesystem',
+  'read_file',
+  { path: '/README.md' }
+);
+
+if (call.status === 'approved') {
+  // Execute the actual call
+  // ...
+  interceptor.recordResult(call.id, result);
+} else if (call.status === 'pending') {
+  console.log('Manual approval required:', call.decisionReason);
+} else {
+  console.log('Blocked:', call.decisionReason);
+}
 ```
-
-📄 **Skill:** [`security-scanning`](./mund/SKILL.md)
 
 ---
 
-### 🏛️ Hord - The Vault
+## 🛠️ MCP Tools
 
-Encrypted storage with the Yoxallismus dual-tumbler cipher.
+### Session Management
 
-| Category | Features |
-|----------|----------|
-| **Encryption** | AES-256-GCM, ChaCha20-Poly1305 |
-| **Key Derivation** | Argon2id with configurable parameters |
-| **Yoxallismus** | Dual-layer tumbler/deadbolt obfuscation |
-| **Memory Safety** | Secure buffer handling, auto-zeroing |
-| **MCP Server** | Claude Desktop integration, vault management tools |
+| Tool | Purpose |
+|------|---------|
+| `inspector_create_session` | Start inspection session |
+| `inspector_declare_intent` | Declare what you plan to do |
+| `inspector_end_session` | End session and get summary |
+
+### Live Feed & History
+
+| Tool | Purpose |
+|------|---------|
+| `inspector_get_live_feed` | Real-time stream of intercepted calls |
+| `inspector_get_call_history` | Query historical call data |
+| `inspector_diff_intent` | "Said X, doing Y" analysis |
+
+### Manual Approval
+
+| Tool | Purpose |
+|------|---------|
+| `inspector_get_pending` | List calls waiting for approval |
+| `inspector_approve_call` | Manually approve a pending call |
+| `inspector_block_call` | Manually block a pending call |
+
+### Reputation
+
+| Tool | Purpose |
+|------|---------|
+| `inspector_check_reputation` | Get server trust score |
+| `inspector_report_suspicious` | Report bad behavior |
+| `inspector_get_server_stats` | Detailed server analytics |
+| `inspector_list_servers` | List all known servers |
+
+### Configuration
+
+| Tool | Purpose |
+|------|---------|
+| `inspector_set_policy` | Configure inspection rules |
+| `inspector_get_config` | View current settings |
+| `inspector_get_stats` | Overall statistics |
+
+---
+
+## 🔒 Inspection Modes
+
+| Mode | Behavior |
+|------|----------|
+| **passive** | Log everything, block nothing |
+| **active** | Block critical issues, require approval for high-risk |
+| **strict** | Block all high-risk operations automatically |
 
 ```typescript
-import { YoxallismusCipher } from '@weave_protocol/hord';
+// Set mode via tool
+inspector_set_policy({ mode: 'strict' })
 
-const cipher = new YoxallismusCipher('master-key');
-
-// Lock (encrypt + obfuscate)
-const locked = await cipher.lock(sensitiveData);
-
-// Unlock (de-obfuscate + decrypt)
-const unlocked = await cipher.unlock(locked);
+// Or programmatically
+interceptor.setConfig({ mode: 'strict' });
 ```
-
-**Yoxallismus Cipher:** A dual-layer encryption combining AES-256-GCM with tumbler/deadbolt obfuscation. Data is first encrypted, then the ciphertext is scrambled using position-dependent transformations that require both the key and the original encryption context to reverse.
-
-📄 **Skill:** [`encrypting-data`](./hord/SKILL.md)
 
 ---
 
-### ⚖️ Domere - The Judge
+## 📊 Reputation Scoring
 
-Enterprise-grade verification, orchestration, compliance, and audit infrastructure.
+Servers are scored 0-100 based on:
 
-| Category | Features |
-|----------|----------|
-| **Verification** | Intent tracking, drift detection, execution replay, multi-agent handoff |
-| **Orchestration** | Task scheduler, agent registry, shared state with locks |
-| **Compliance** | SOC2, HIPAA, PCI-DSS, ISO27001, **GDPR** checkpoints & reporting |
-| **Blockchain** | Solana & Ethereum anchoring for immutable audit trails |
-| **GDPR** | Consent, DSAR, erasure, portability, breach notification, Article 22 |
+| Factor | Weight | Description |
+|--------|--------|-------------|
+| **Trust** | 30% | Verification status, age, known good |
+| **Security** | 40% | Blocked calls, scan results |
+| **Community** | 15% | User reports, confirmed issues |
+| **Reliability** | 15% | Success rate, response time |
 
-**Blockchain Anchoring:**
-- Solana Mainnet: `6g7raTAHU2h331VKtfVtkS5pmuvR8vMYwjGsZF1CUj2o`
-- Solana Devnet: `BeCYVJYfbUu3k2TPGmh9VoGWeJwzm2hg2NdtnvbdBNCj`
-- Ethereum: `0xAA8b52adD3CEce6269d14C6335a79df451543820`
+### Pre-loaded Trusted Servers
+
+```
+anthropic/filesystem     - 95
+anthropic/github         - 95
+anthropic/slack          - 90
+modelcontextprotocol/*   - 85-90
+```
+
+### Automatic Detection
+
+- Malicious name patterns (hack, exploit, etc.) → Start at 10
+- Typosquatting detection → Flag for review
+- Unknown servers → Start at 50
+
+---
+
+## 🎯 Drift Detection
+
+Compares declared intent against actual tool calls:
 
 ```typescript
-import { ComplianceManager, GDPRManager } from '@weave_protocol/domere';
-
-// Traditional compliance checkpoint
-const compliance = new ComplianceManager(['pci-dss', 'iso27001', 'soc2', 'hipaa']);
-const checkpoint = await compliance.createCheckpoint({
-  action: 'data_access',
-  resource: 'customer_records',
-  actor: 'agent-001'
+// Declare intent
+inspector_declare_intent({
+  session_id: 'abc123',
+  intent: 'Read and summarize the README file'
 });
 
-// GDPR consent management
-const gdpr = new GDPRManager({ name: 'Acme Corp', email: 'dpo@acme.com' });
-const consent = gdpr.recordConsent({
-  subjectId: 'user-123',
-  purpose: 'marketing',
-  legalBasis: 'consent',
-  granted: true,
-  source: 'web_form',
-  version: '2.1'
-});
-
-// Handle DSAR (30-day deadline automatic)
-const dsar = gdpr.createDSAR({
-  subjectId: 'user-123',
-  type: 'access'
-});
+// Later, if the agent tries to:
+// - Delete files → DRIFT DETECTED (scope expansion)
+// - Access payment data → DRIFT DETECTED (data access)
+// - Execute code → DRIFT DETECTED (capability escalation)
 ```
 
-📄 **Skill:** [`compliance-auditing`](./domere/SKILL.md)
+Drift severity:
+- **Low**: Minor deviation, auto-approved
+- **Medium**: Requires review in active mode
+- **High**: Blocked in strict mode, requires approval in active
+- **Critical**: Always blocked
 
 ---
 
-### 👥 Witan - The Council
+## 🔌 Integration with Mund & Domere
 
-Multi-agent consensus and governance.
-
-| Category | Features |
-|----------|----------|
-| **Consensus** | Unanimous, majority, weighted, quorum protocols |
-| **Policy** | Rule enforcement, permission management, escalation |
-| **Communication** | Agent bus, broadcast, point-to-point messaging |
-| **Recovery** | Failure detection, automatic failover, state recovery |
+Inspector integrates with other Weave Protocol packages:
 
 ```typescript
-import { ConsensusEngine, PolicyEngine } from '@weave_protocol/witan';
+import { Interceptor } from '@weave_protocol/inspector';
+import { scan } from '@weave_protocol/mund';
+import { ComplianceManager } from '@weave_protocol/domere';
 
-const consensus = new ConsensusEngine({
-  protocol: 'weighted_majority',
-  threshold: 0.66,
-  timeout: 30000
+const interceptor = new Interceptor();
+const compliance = new ComplianceManager(['soc2']);
+
+// Use Mund for scanning
+interceptor.setScanner(async (content) => {
+  const result = await scan(content);
+  return {
+    safe: result.safe,
+    issues: result.issues,
+    scannedAt: new Date(),
+    scanDurationMs: 0,
+  };
 });
 
-// Propose action requiring consensus
-const result = await consensus.propose({
-  action: 'deploy_to_production',
-  requiredApprovals: ['security-agent', 'qa-agent', 'ops-agent']
+// Use Domere for blockchain anchoring
+interceptor.setBlockchainAnchor(async (data) => {
+  const checkpoint = await compliance.createCheckpoint({
+    action: 'tool_call',
+    resource: 'mcp',
+    actor: 'inspector',
+    metadata: data,
+  });
+  return checkpoint.id;
 });
 ```
 
-📄 **Skill:** [`consensus-governance`](./witan/SKILL.md)
-
 ---
 
-## 🏗️ Architecture
+## 📈 Example: Security Dashboard
 
-```
-┌───────────────────────────────────────────────────────────────┐
-│                       AI Agent System                         │
-├───────────────────────────────────────────────────────────────┤
-│                                                               │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐      │
-│  │  🛡️ Mund │  │ 🏛️ Hord  │  │ ⚖️ Domere│  │ 👥 Witan │      │
-│  │ Guardian │  │  Vault   │  │  Judge   │  │ Council  │      │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘      │
-│       │             │             │             │             │
-│  Security      Encryption    Compliance     Consensus        │
-│  Scanning      Storage       Verification   Governance       │
-│       │             │             │             │             │
-│       └─────────────┴─────────────┴─────────────┘             │
-│                           │                                   │
-│                     ┌─────┴─────┐                             │
-│                     │  🔌 API   │                             │
-│                     │   REST    │                             │
-│                     └───────────┘                             │
-│                                                               │
-└───────────────────────────────────────────────────────────────┘
-```
+```typescript
+// Get live feed for dashboard
+const feed = await inspector_get_live_feed({ limit: 50 });
 
----
+// Show pending approvals
+const pending = await inspector_get_pending();
 
-## 🔌 REST API
+// Check overall health
+const stats = await inspector_get_stats();
 
-The `@weave_protocol/api` package provides HTTP endpoints for all functionality:
+console.log(`
+📊 Inspector Dashboard
+─────────────────────
+Total Calls:    ${stats.interceptor.totalCalls}
+Approved:       ${stats.interceptor.approvedCalls}
+Blocked:        ${stats.interceptor.blockedCalls}
+Pending:        ${stats.interceptor.pendingCalls}
+Active Sessions: ${stats.interceptor.activeSessions}
 
-```bash
-# Start the API server
-npx @weave_protocol/api
-
-# Or with Docker
-docker run -p 3000:3000 weave-protocol/api
-```
-
-**Endpoints:**
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/mund/scan` | Scan content for security issues |
-| POST | `/mund/scan-mcp-server` | Scan MCP server manifest |
-| POST | `/hord/encrypt` | Encrypt data |
-| POST | `/hord/decrypt` | Decrypt data |
-| POST | `/hord/yoxallismus/lock` | Lock with Yoxallismus cipher |
-| POST | `/hord/yoxallismus/unlock` | Unlock with Yoxallismus cipher |
-| POST | `/domere/checkpoint` | Create compliance checkpoint |
-| GET | `/domere/compliance/frameworks` | List available frameworks |
-| POST | `/domere/compliance/report` | Generate compliance report |
-| POST | `/domere/gdpr/consent` | Record/check consent |
-| POST | `/domere/gdpr/dsar` | Handle DSAR requests |
-| POST | `/domere/gdpr/breach` | Report/manage breaches |
-| POST | `/domere/gdpr/report` | Generate GDPR report |
-
-📄 **Skill:** [`weave-api-calling`](./api/SKILL.md)
-
----
-
-## 🔒 Security Model
-
-Weave Protocol implements defense-in-depth:
-
-1. **🛡️ Mund** scans all inputs for threats before processing
-2. **🏛️ Hord** encrypts sensitive data at rest and in transit
-3. **⚖️ Domere** logs all actions with tamper-evident checksums
-4. **👥 Witan** requires consensus for high-risk operations
-
-### CORS Model Integration
-
-The Weave Protocol maps to the CORS Model for AI agent security:
-
-| CORS Layer | Weave Package | Function |
-|------------|---------------|----------|
-| **Origin Validation** | 🛡️ Mund | Validates input sources, detects injection |
-| **Context Integrity** | 🏛️ Hord | Protects data integrity through encryption |
-| **Deterministic Enforcement** | ⚖️ Domere | Ensures consistent policy application |
-
----
-
-## 🛠️ Development
-
-```bash
-# Clone
-git clone https://github.com/Tyox-all/Weave_Protocol.git
-cd Weave_Protocol
-
-# Install dependencies (each package)
-cd mund && npm install && npm run build
-cd ../hord && npm install && npm run build
-cd ../domere && npm install && npm run build
-
-# Run tests
-npm test
+🏢 Server Health
+─────────────────────
+Total Servers:  ${stats.reputation.total_servers}
+Verified:       ${stats.reputation.verified_servers}
+Malicious:      ${stats.reputation.malicious_servers}
+Low Rep:        ${stats.reputation.low_reputation_servers}
+`);
 ```
 
 ---
 
-## 🗺️ Roadmap
+## 🤖 AI Agent Skill
 
-- [x] ~~GDPR compliance framework~~ ✅ **Shipped in v1.3.0**
-- [ ] LangChain/LlamaIndex integration package
-- [ ] Web dashboard for monitoring
-- [ ] MCP server reputation scoring
-- [ ] Automated threat intelligence updates
-- [ ] CCPA compliance framework
+This package includes a `SKILL.md` for Claude AI integration.
 
----
+**Skill name:** `security-inspection`
 
-## 🤝 Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+**Triggers:** inspect, intercept, drift, reputation, approve, block, live feed
 
 ---
 
 ## 📄 License
 
-Apache 2.0 - See [LICENSE](LICENSE)
+Apache 2.0 - See [LICENSE](../LICENSE)
 
 ---
 
 ## 🔗 Links
 
 - **GitHub:** https://github.com/Tyox-all/Weave_Protocol
-- **npm (mund):** https://www.npmjs.com/package/@weave_protocol/mund
-- **npm (hord):** https://www.npmjs.com/package/@weave_protocol/hord
-- **npm (domere):** https://www.npmjs.com/package/@weave_protocol/domere
-- **npm (witan):** https://www.npmjs.com/package/@weave_protocol/witan
-- **MCP Registry:** https://registry.modelcontextprotocol.io (search "mund")
-
----
-
-*Built with ❤️ for the AI agent ecosystem.*
+- **npm:** https://www.npmjs.com/package/@weave_protocol/inspector
+- **Main README:** [Weave Protocol](../README.md)
