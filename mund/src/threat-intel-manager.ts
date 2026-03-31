@@ -1,20 +1,20 @@
 /**
  * Threat Intelligence Manager
- * 
- * Manages threat intelligence sources, patterns, and updates
- * with MITRE ATT&CK mapping support.
+ * @weave_protocol/mund
  */
 
 import type {
-  ThreatPattern,
-  ThreatCategory,
-  MITRETechnique,
   IntelSource,
+  IntelSourceConfig,
+  IntelCategory,
+  ThreatPattern,
+  PatternMatch,
+  IntelUpdateResult,
+  BulkUpdateResult,
   IntelStatus,
+  ThreatScanConfig,
   ThreatScanResult,
-  ThreatFinding,
-  PatternUpdateResult,
-  SourceUpdateResult,
+  Severity,
 } from './threat-intel-types.js';
 
 // ============================================================================
@@ -25,287 +25,318 @@ const BUILTIN_PATTERNS: ThreatPattern[] = [
   // Prompt Injection patterns
   {
     id: 'pi_direct_override',
+    sourceId: 'weave_builtin',
+    category: 'prompt_injection',
     name: 'Direct Instruction Override',
     description: 'Attempts to directly override previous instructions',
-    category: 'prompt_injection',
+    patternType: 'regex',
+    pattern: 'ignore\\s+(all\\s+)?(previous|prior|above|earlier)\\s+(instructions|prompts|context)',
     severity: 'critical',
-    pattern: /ignore\s+(all\s+)?(previous|prior|above|earlier)\s+(instructions|prompts|context)/i,
-    mitre_techniques: ['T1059'],
-    source: 'weave_builtin',
+    confidence: 0.95,
+    mitreId: 'T1059',
+    mitreTactic: 'Execution',
+    mitreTechnique: 'Command and Scripting Interpreter',
+    tags: ['injection', 'override'],
     enabled: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
   {
     id: 'pi_role_reassignment',
-    name: 'Role Reassignment Attack',
+    sourceId: 'weave_builtin',
     category: 'prompt_injection',
+    name: 'Role Reassignment Attack',
+    description: 'Attempts to reassign the AI role',
+    patternType: 'regex',
+    pattern: 'you\\s+are\\s+(now|actually|really)\\s+(a|an|the)\\s+\\w+',
     severity: 'critical',
-    pattern: /you\s+are\s+(now|actually|really)\s+(a|an|the)\s+\w+/i,
-    mitre_techniques: ['T1078'],
-    source: 'weave_builtin',
+    confidence: 0.9,
+    mitreId: 'T1078',
+    mitreTactic: 'Defense Evasion',
+    mitreTechnique: 'Valid Accounts',
+    tags: ['injection', 'role'],
     enabled: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
   {
     id: 'pi_delimiter_injection',
-    name: 'Delimiter Injection',
+    sourceId: 'weave_builtin',
     category: 'prompt_injection',
+    name: 'Delimiter Injection',
+    description: 'Uses code blocks to inject system-level commands',
+    patternType: 'regex',
+    pattern: '```\\s*(system|admin|root|sudo)',
     severity: 'high',
-    pattern: /```\s*(system|admin|root|sudo)/i,
-    mitre_techniques: ['T1055'],
-    source: 'weave_builtin',
+    confidence: 0.85,
+    mitreId: 'T1055',
+    mitreTactic: 'Defense Evasion',
+    mitreTechnique: 'Process Injection',
+    tags: ['injection', 'delimiter'],
     enabled: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
   {
     id: 'pi_encoded_payload',
-    name: 'Encoded Payload Detection',
+    sourceId: 'weave_builtin',
     category: 'prompt_injection',
+    name: 'Encoded Payload Detection',
+    description: 'Detects base64 encoded payloads that may contain instructions',
+    patternType: 'regex',
+    pattern: 'base64[:\\s]+[A-Za-z0-9+/=]{50,}',
     severity: 'high',
-    pattern: /base64[:\s]+[A-Za-z0-9+/=]{50,}/i,
-    mitre_techniques: ['T1027'],
-    source: 'weave_builtin',
+    confidence: 0.8,
+    mitreId: 'T1027',
+    mitreTactic: 'Defense Evasion',
+    mitreTechnique: 'Obfuscated Files or Information',
+    tags: ['injection', 'encoding'],
     enabled: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
 
   // Jailbreak patterns
   {
     id: 'jb_dan',
-    name: 'DAN Jailbreak',
+    sourceId: 'weave_builtin',
     category: 'jailbreak',
+    name: 'DAN Jailbreak',
+    description: 'Do Anything Now jailbreak attempt',
+    patternType: 'regex',
+    pattern: '\\b(DAN|Do\\s+Anything\\s+Now)\\b',
     severity: 'critical',
-    pattern: /\b(DAN|Do\s+Anything\s+Now)\b/i,
-    mitre_techniques: ['T1548'],
-    source: 'weave_builtin',
+    confidence: 0.95,
+    mitreId: 'T1548',
+    mitreTactic: 'Privilege Escalation',
+    mitreTechnique: 'Abuse Elevation Control Mechanism',
+    tags: ['jailbreak', 'dan'],
     enabled: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
   {
     id: 'jb_developer_mode',
-    name: 'Developer Mode Exploit',
+    sourceId: 'weave_builtin',
     category: 'jailbreak',
+    name: 'Developer Mode Exploit',
+    description: 'Attempts to enable developer or debug mode',
+    patternType: 'regex',
+    pattern: 'enable\\s+(developer|debug|admin|root)\\s+mode',
     severity: 'critical',
-    pattern: /enable\s+(developer|debug|admin|root)\s+mode/i,
-    mitre_techniques: ['T1548'],
-    source: 'weave_builtin',
+    confidence: 0.9,
+    mitreId: 'T1548',
+    mitreTactic: 'Privilege Escalation',
+    mitreTechnique: 'Abuse Elevation Control Mechanism',
+    tags: ['jailbreak', 'developer'],
     enabled: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
   {
     id: 'jb_hypothetical',
-    name: 'Hypothetical Framing',
+    sourceId: 'weave_builtin',
     category: 'jailbreak',
+    name: 'Hypothetical Framing',
+    description: 'Uses hypothetical scenarios to bypass restrictions',
+    patternType: 'regex',
+    pattern: 'hypothetically|in\\s+theory|imagine\\s+if|pretend\\s+(that\\s+)?you',
     severity: 'medium',
-    pattern: /hypothetically|in\s+theory|imagine\s+if|pretend\s+(that\s+)?you/i,
-    mitre_techniques: ['T1059'],
-    source: 'weave_builtin',
+    confidence: 0.7,
+    tags: ['jailbreak', 'hypothetical'],
     enabled: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
 
   // System Prompt Leak patterns
   {
     id: 'spl_direct_request',
-    name: 'Direct System Prompt Request',
+    sourceId: 'weave_builtin',
     category: 'system_prompt_leak',
+    name: 'Direct System Prompt Request',
+    description: 'Direct request to reveal system prompt',
+    patternType: 'regex',
+    pattern: '(?:show|reveal|display|print|output|tell\\s+me)\\s+(?:your\\s+)?(?:system\\s+)?(?:prompt|instructions|rules)',
     severity: 'high',
-    pattern: /(?:show|reveal|display|print|output|tell\s+me)\s+(?:your\s+)?(?:system\s+)?(?:prompt|instructions|rules)/i,
-    mitre_techniques: ['T1082'],
-    source: 'weave_builtin',
+    confidence: 0.9,
+    mitreId: 'T1082',
+    mitreTactic: 'Discovery',
+    mitreTechnique: 'System Information Discovery',
+    tags: ['leak', 'system_prompt'],
     enabled: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
   {
     id: 'spl_indirect_extraction',
-    name: 'Indirect System Prompt Extraction',
+    sourceId: 'weave_builtin',
     category: 'system_prompt_leak',
+    name: 'Indirect System Prompt Extraction',
+    description: 'Indirect attempts to extract system prompt',
+    patternType: 'regex',
+    pattern: 'what\\s+(?:were\\s+you|are\\s+you)\\s+(?:told|instructed|programmed)\\s+to',
     severity: 'medium',
-    pattern: /what\s+(?:were\s+you|are\s+you)\s+(?:told|instructed|programmed)\s+to/i,
-    mitre_techniques: ['T1082'],
-    source: 'weave_builtin',
+    confidence: 0.75,
+    mitreId: 'T1082',
+    mitreTactic: 'Discovery',
+    mitreTechnique: 'System Information Discovery',
+    tags: ['leak', 'extraction'],
     enabled: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
 
   // Data Exfiltration patterns
   {
     id: 'exfil_markdown_image',
-    name: 'Markdown Image Exfiltration',
+    sourceId: 'weave_builtin',
     category: 'data_exfiltration',
+    name: 'Markdown Image Exfiltration',
+    description: 'Uses markdown images to exfiltrate data via URL parameters',
+    patternType: 'regex',
+    pattern: '!\\[.*?\\]\\(https?:\\/\\/[^\\s)]+\\?[^)]*(?:data|token|key|secret|password|auth)',
     severity: 'critical',
-    pattern: /!\[.*?\]\(https?:\/\/[^\s)]+\?[^)]*(?:data|token|key|secret|password|auth)/i,
-    mitre_techniques: ['T1041'],
-    source: 'weave_builtin',
+    confidence: 0.95,
+    mitreId: 'T1041',
+    mitreTactic: 'Exfiltration',
+    mitreTechnique: 'Exfiltration Over C2 Channel',
+    tags: ['exfiltration', 'markdown'],
     enabled: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
   {
     id: 'exfil_url_injection',
-    name: 'URL Data Injection',
+    sourceId: 'weave_builtin',
     category: 'data_exfiltration',
+    name: 'URL Data Injection',
+    description: 'Attempts to inject data into URLs for exfiltration',
+    patternType: 'regex',
+    pattern: '(?:fetch|curl|wget|request)\\s+.*https?:\\/\\/[^\\s]+\\?.*(?:=\\$|=\\{|=`)',
     severity: 'high',
-    pattern: /(?:fetch|curl|wget|request)\s+.*https?:\/\/[^\s]+\?.*(?:=\$|=\{|=`)/i,
-    mitre_techniques: ['T1041'],
-    source: 'weave_builtin',
+    confidence: 0.85,
+    mitreId: 'T1041',
+    mitreTactic: 'Exfiltration',
+    mitreTechnique: 'Exfiltration Over C2 Channel',
+    tags: ['exfiltration', 'url'],
     enabled: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
 
   // PII Extraction patterns
   {
     id: 'pii_harvesting',
-    name: 'PII Harvesting Request',
+    sourceId: 'weave_builtin',
     category: 'pii_extraction',
+    name: 'PII Harvesting Request',
+    description: 'Attempts to harvest personally identifiable information',
+    patternType: 'regex',
+    pattern: '(?:list|show|give|tell)\\s+(?:me\\s+)?(?:all\\s+)?(?:the\\s+)?(?:users?|customers?|employees?|people).*(?:names?|emails?|phones?|addresses?|ssn|social\\s+security)',
     severity: 'high',
-    pattern: /(?:list|show|give|tell)\s+(?:me\s+)?(?:all\s+)?(?:the\s+)?(?:users?|customers?|employees?|people).*(?:names?|emails?|phones?|addresses?|ssn|social\s+security)/i,
-    mitre_techniques: ['T1005'],
-    source: 'weave_builtin',
+    confidence: 0.85,
+    mitreId: 'T1005',
+    mitreTactic: 'Collection',
+    mitreTechnique: 'Data from Local System',
+    tags: ['pii', 'harvesting'],
     enabled: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
 
   // MCP Exploit patterns
   {
     id: 'mcp_tool_abuse',
-    name: 'MCP Tool Abuse',
+    sourceId: 'weave_builtin',
     category: 'mcp_exploit',
+    name: 'MCP Tool Abuse',
+    description: 'Attempts to abuse MCP tools maliciously',
+    patternType: 'regex',
+    pattern: '(?:call|invoke|execute|run)\\s+(?:the\\s+)?(?:tool|function|mcp)\\s+.*(?:with|using)\\s+(?:malicious|dangerous|harmful)',
     severity: 'critical',
-    pattern: /(?:call|invoke|execute|run)\s+(?:the\s+)?(?:tool|function|mcp)\s+.*(?:with|using)\s+(?:malicious|dangerous|harmful)/i,
-    mitre_techniques: ['T1059'],
-    source: 'weave_builtin',
+    confidence: 0.9,
+    mitreId: 'T1059',
+    mitreTactic: 'Execution',
+    mitreTechnique: 'Command and Scripting Interpreter',
+    tags: ['mcp', 'abuse'],
     enabled: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
   {
     id: 'mcp_cross_tool',
-    name: 'Cross-Tool Attack',
+    sourceId: 'weave_builtin',
     category: 'mcp_exploit',
+    name: 'Cross-Tool Attack',
+    description: 'Chains tool outputs to perform unauthorized actions',
+    patternType: 'regex',
+    pattern: '(?:use|call)\\s+(?:tool\\s+)?(?:output|result)\\s+(?:from|of)\\s+\\w+\\s+(?:as|for)\\s+(?:input|argument)\\s+(?:to|for)\\s+\\w+',
     severity: 'high',
-    pattern: /(?:use|call)\s+(?:tool\s+)?(?:output|result)\s+(?:from|of)\s+\w+\s+(?:as|for)\s+(?:input|argument)\s+(?:to|for)\s+\w+/i,
-    mitre_techniques: ['T1055'],
-    source: 'weave_builtin',
+    confidence: 0.8,
+    mitreId: 'T1055',
+    mitreTactic: 'Defense Evasion',
+    mitreTechnique: 'Process Injection',
+    tags: ['mcp', 'chain'],
     enabled: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
 
   // DoS patterns
   {
     id: 'dos_infinite_loop',
-    name: 'Infinite Loop Trigger',
+    sourceId: 'weave_builtin',
     category: 'dos_attack',
+    name: 'Infinite Loop Trigger',
+    description: 'Attempts to trigger infinite loops',
+    patternType: 'regex',
+    pattern: '(?:repeat|loop|continue)\\s+(?:this\\s+)?(?:forever|infinitely|until\\s+I\\s+say\\s+stop)',
     severity: 'high',
-    pattern: /(?:repeat|loop|continue)\s+(?:this\s+)?(?:forever|infinitely|until\s+I\s+say\s+stop)/i,
-    mitre_techniques: ['T1499'],
-    source: 'weave_builtin',
+    confidence: 0.9,
+    mitreId: 'T1499',
+    mitreTactic: 'Impact',
+    mitreTechnique: 'Endpoint Denial of Service',
+    tags: ['dos', 'loop'],
     enabled: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
   {
     id: 'dos_token_exhaustion',
-    name: 'Token Exhaustion',
+    sourceId: 'weave_builtin',
     category: 'dos_attack',
+    name: 'Token Exhaustion',
+    description: 'Attempts to exhaust token limits',
+    patternType: 'regex',
+    pattern: '(?:generate|create|write)\\s+(?:a\\s+)?(?:very\\s+)?(?:long|huge|massive|enormous)\\s+(?:response|output|text)',
     severity: 'medium',
-    pattern: /(?:generate|create|write)\s+(?:a\s+)?(?:very\s+)?(?:long|huge|massive|enormous)\s+(?:response|output|text)/i,
-    mitre_techniques: ['T1499'],
-    source: 'weave_builtin',
+    confidence: 0.75,
+    mitreId: 'T1499',
+    mitreTactic: 'Impact',
+    mitreTechnique: 'Endpoint Denial of Service',
+    tags: ['dos', 'token'],
     enabled: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    version: '1.0.0',
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
 ];
-
-// ============================================================================
-// MITRE ATT&CK Mappings
-// ============================================================================
-
-const MITRE_TECHNIQUES: Record<string, MITRETechnique> = {
-  T1059: {
-    id: 'T1059',
-    name: 'Command and Scripting Interpreter',
-    tactic: 'execution',
-    description: 'Adversaries may abuse command and script interpreters to execute commands, scripts, or binaries.',
-    url: 'https://attack.mitre.org/techniques/T1059/',
-  },
-  T1078: {
-    id: 'T1078',
-    name: 'Valid Accounts',
-    tactic: 'defense_evasion',
-    description: 'Adversaries may obtain and abuse credentials of existing accounts.',
-    url: 'https://attack.mitre.org/techniques/T1078/',
-  },
-  T1055: {
-    id: 'T1055',
-    name: 'Process Injection',
-    tactic: 'defense_evasion',
-    description: 'Adversaries may inject code into processes to evade process-based defenses.',
-    url: 'https://attack.mitre.org/techniques/T1055/',
-  },
-  T1027: {
-    id: 'T1027',
-    name: 'Obfuscated Files or Information',
-    tactic: 'defense_evasion',
-    description: 'Adversaries may attempt to make an executable or file difficult to discover or analyze.',
-    url: 'https://attack.mitre.org/techniques/T1027/',
-  },
-  T1041: {
-    id: 'T1041',
-    name: 'Exfiltration Over C2 Channel',
-    tactic: 'exfiltration',
-    description: 'Adversaries may steal data by exfiltrating it over an existing command and control channel.',
-    url: 'https://attack.mitre.org/techniques/T1041/',
-  },
-  T1082: {
-    id: 'T1082',
-    name: 'System Information Discovery',
-    tactic: 'discovery',
-    description: 'An adversary may attempt to get detailed information about the operating system and hardware.',
-    url: 'https://attack.mitre.org/techniques/T1082/',
-  },
-  T1499: {
-    id: 'T1499',
-    name: 'Endpoint Denial of Service',
-    tactic: 'impact',
-    description: 'Adversaries may perform Endpoint Denial of Service (DoS) attacks to degrade or block availability.',
-    url: 'https://attack.mitre.org/techniques/T1499/',
-  },
-  T1548: {
-    id: 'T1548',
-    name: 'Abuse Elevation Control Mechanism',
-    tactic: 'privilege_escalation',
-    description: 'Adversaries may circumvent mechanisms designed to control elevated privileges.',
-    url: 'https://attack.mitre.org/techniques/T1548/',
-  },
-  T1005: {
-    id: 'T1005',
-    name: 'Data from Local System',
-    tactic: 'collection',
-    description: 'Adversaries may search local system sources to find files of interest.',
-    url: 'https://attack.mitre.org/techniques/T1005/',
-  },
-  T1567: {
-    id: 'T1567',
-    name: 'Exfiltration Over Web Service',
-    tactic: 'exfiltration',
-    description: 'Adversaries may use an existing, legitimate external Web service to exfiltrate data.',
-    url: 'https://attack.mitre.org/techniques/T1567/',
-  },
-};
 
 // ============================================================================
 // Default Intel Sources
@@ -315,58 +346,42 @@ const DEFAULT_SOURCES: IntelSource[] = [
   {
     id: 'weave_builtin',
     name: 'Weave Built-in Patterns',
-    type: 'builtin',
+    type: 'weave_official',
+    description: 'Core threat patterns maintained by Weave Protocol',
     enabled: true,
-    auto_update: false,
-    patterns_count: BUILTIN_PATTERNS.length,
+    autoUpdate: false,
+    updateIntervalHours: 0,
+    patternCount: BUILTIN_PATTERNS.length,
     version: '1.0.0',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    categories: ['prompt_injection', 'jailbreak', 'data_exfiltration', 'system_prompt_leak', 'pii_extraction', 'mcp_exploit', 'dos_attack'],
   },
   {
     id: 'weave_community',
     name: 'Weave Community Blocklist',
-    type: 'url',
+    type: 'community_blocklist',
     url: 'https://raw.githubusercontent.com/Tyox-all/weave-intel/main/blocklist.json',
+    description: 'Community-contributed threat patterns',
     enabled: true,
-    auto_update: true,
-    update_interval: 86400000, // 24 hours
-    patterns_count: 0,
+    autoUpdate: true,
+    updateIntervalHours: 24,
+    patternCount: 0,
     version: '0.0.0',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    categories: [],
   },
   {
     id: 'mitre_llm',
     name: 'MITRE ATT&CK for LLMs',
-    type: 'url',
+    type: 'mitre_attack',
     url: 'https://raw.githubusercontent.com/Tyox-all/weave-intel/main/mitre-llm.json',
+    description: 'MITRE ATT&CK techniques adapted for LLM threats',
     enabled: true,
-    auto_update: true,
-    update_interval: 604800000, // 7 days
-    patterns_count: 0,
+    autoUpdate: true,
+    updateIntervalHours: 168, // 7 days
+    patternCount: 0,
     version: '0.0.0',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    categories: [],
   },
 ];
-
-// ============================================================================
-// Feed Data Type
-// ============================================================================
-
-interface FeedData {
-  patterns?: Array<{
-    id?: string;
-    name?: string;
-    description?: string;
-    category?: ThreatCategory;
-    severity?: 'critical' | 'high' | 'medium' | 'low' | 'info';
-    pattern?: string;
-    mitre_techniques?: string[];
-  }>;
-  version?: string;
-}
 
 // ============================================================================
 // Threat Intelligence Manager
@@ -375,19 +390,14 @@ interface FeedData {
 export class ThreatIntelManager {
   private patterns: Map<string, ThreatPattern> = new Map();
   private sources: Map<string, IntelSource> = new Map();
-  private mitreTechniques: Map<string, MITRETechnique> = new Map();
-  private lastUpdate: Date = new Date();
+  private initialized: boolean = false;
+  private lastGlobalUpdate?: Date;
 
   constructor() {
     this.initialize();
   }
 
   private initialize(): void {
-    // Load MITRE techniques
-    for (const [id, technique] of Object.entries(MITRE_TECHNIQUES)) {
-      this.mitreTechniques.set(id, technique);
-    }
-
     // Load default sources
     for (const source of DEFAULT_SOURCES) {
       this.sources.set(source.id, { ...source });
@@ -397,6 +407,9 @@ export class ThreatIntelManager {
     for (const pattern of BUILTIN_PATTERNS) {
       this.patterns.set(pattern.id, { ...pattern });
     }
+
+    this.initialized = true;
+    this.lastGlobalUpdate = new Date();
   }
 
   // ==========================================================================
@@ -404,14 +417,14 @@ export class ThreatIntelManager {
   // ==========================================================================
 
   getPatterns(options?: {
-    enabled_only?: boolean;
-    category?: ThreatCategory;
-    source?: string;
-    mitre_technique?: string;
+    enabledOnly?: boolean;
+    category?: IntelCategory;
+    sourceId?: string;
+    minSeverity?: Severity;
   }): ThreatPattern[] {
     let patterns = Array.from(this.patterns.values());
 
-    if (options?.enabled_only) {
+    if (options?.enabledOnly) {
       patterns = patterns.filter(p => p.enabled);
     }
 
@@ -419,14 +432,14 @@ export class ThreatIntelManager {
       patterns = patterns.filter(p => p.category === options.category);
     }
 
-    if (options?.source) {
-      patterns = patterns.filter(p => p.source === options.source);
+    if (options?.sourceId) {
+      patterns = patterns.filter(p => p.sourceId === options.sourceId);
     }
 
-    if (options?.mitre_technique) {
-      patterns = patterns.filter(p => 
-        p.mitre_techniques?.includes(options.mitre_technique!)
-      );
+    if (options?.minSeverity) {
+      const severityOrder: Severity[] = ['low', 'medium', 'high', 'critical'];
+      const minIndex = severityOrder.indexOf(options.minSeverity);
+      patterns = patterns.filter(p => severityOrder.indexOf(p.severity) >= minIndex);
     }
 
     return patterns;
@@ -436,60 +449,16 @@ export class ThreatIntelManager {
     return this.patterns.get(id);
   }
 
-  togglePattern(id: string, enabled: boolean): PatternUpdateResult {
+  togglePattern(id: string, enabled: boolean): { success: boolean; error?: string } {
     const pattern = this.patterns.get(id);
     if (!pattern) {
       return { success: false, error: `Pattern not found: ${id}` };
     }
 
     pattern.enabled = enabled;
-    pattern.updated_at = new Date().toISOString();
+    pattern.updatedAt = new Date();
 
-    return {
-      success: true,
-      pattern_id: id,
-      enabled,
-    };
-  }
-
-  addPattern(pattern: Omit<ThreatPattern, 'created_at' | 'updated_at'>): PatternUpdateResult {
-    if (this.patterns.has(pattern.id)) {
-      return { success: false, error: `Pattern already exists: ${pattern.id}` };
-    }
-
-    const now = new Date().toISOString();
-    const newPattern: ThreatPattern = {
-      ...pattern,
-      created_at: now,
-      updated_at: now,
-    };
-
-    this.patterns.set(pattern.id, newPattern);
-
-    return {
-      success: true,
-      pattern_id: pattern.id,
-      enabled: pattern.enabled,
-    };
-  }
-
-  removePattern(id: string): PatternUpdateResult {
-    const pattern = this.patterns.get(id);
-    if (!pattern) {
-      return { success: false, error: `Pattern not found: ${id}` };
-    }
-
-    // Don't allow removing built-in patterns
-    if (pattern.source === 'weave_builtin') {
-      return { success: false, error: 'Cannot remove built-in patterns' };
-    }
-
-    this.patterns.delete(id);
-
-    return {
-      success: true,
-      pattern_id: id,
-    };
+    return { success: true };
   }
 
   // ==========================================================================
@@ -504,82 +473,124 @@ export class ThreatIntelManager {
     return this.sources.get(id);
   }
 
-  addSource(source: Omit<IntelSource, 'created_at' | 'updated_at' | 'patterns_count'>): SourceUpdateResult {
-    if (this.sources.has(source.id)) {
-      return { success: false, error: `Source already exists: ${source.id}` };
+  addSource(config: IntelSourceConfig): { success: boolean; error?: string } {
+    if (this.sources.has(config.id)) {
+      return { success: false, error: `Source already exists: ${config.id}` };
     }
 
-    const now = new Date().toISOString();
     const newSource: IntelSource = {
-      ...source,
-      patterns_count: 0,
-      created_at: now,
-      updated_at: now,
+      id: config.id,
+      name: config.name,
+      type: config.type,
+      url: config.url,
+      description: config.description,
+      enabled: config.enabled ?? true,
+      autoUpdate: config.autoUpdate ?? true,
+      updateIntervalHours: config.updateIntervalHours ?? 24,
+      patternCount: 0,
+      version: '0.0.0',
+      categories: config.categories ?? [],
     };
 
-    this.sources.set(source.id, newSource);
-
-    return {
-      success: true,
-      source_id: source.id,
-    };
+    this.sources.set(config.id, newSource);
+    return { success: true };
   }
 
-  removeSource(id: string): SourceUpdateResult {
+  removeSource(id: string): { success: boolean; error?: string } {
     const source = this.sources.get(id);
     if (!source) {
       return { success: false, error: `Source not found: ${id}` };
     }
 
-    // Don't allow removing built-in source
-    if (source.type === 'builtin') {
-      return { success: false, error: 'Cannot remove built-in source' };
+    if (source.type === 'weave_official') {
+      return { success: false, error: 'Cannot remove official Weave sources' };
     }
 
     // Remove all patterns from this source
     for (const [patternId, pattern] of this.patterns) {
-      if (pattern.source === id) {
+      if (pattern.sourceId === id) {
         this.patterns.delete(patternId);
       }
     }
 
     this.sources.delete(id);
-
-    return {
-      success: true,
-      source_id: id,
-    };
+    return { success: true };
   }
 
   // ==========================================================================
   // Update Management
   // ==========================================================================
 
-  async updateSource(sourceId: string, force: boolean = false): Promise<SourceUpdateResult> {
+  async updateSource(sourceId: string, force: boolean = false): Promise<IntelUpdateResult> {
+    const startTime = Date.now();
     const source = this.sources.get(sourceId);
+    
     if (!source) {
-      return { success: false, error: `Source not found: ${sourceId}` };
+      return {
+        sourceId,
+        sourceName: 'Unknown',
+        success: false,
+        previousVersion: '',
+        newVersion: '',
+        patternsAdded: 0,
+        patternsUpdated: 0,
+        patternsRemoved: 0,
+        totalPatterns: 0,
+        timestamp: new Date(),
+        error: `Source not found: ${sourceId}`,
+        duration_ms: Date.now() - startTime,
+      };
     }
 
-    if (source.type === 'builtin') {
-      return { success: true, source_id: sourceId, patterns_added: 0, patterns_updated: 0 };
+    if (source.type === 'weave_official') {
+      return {
+        sourceId,
+        sourceName: source.name,
+        success: true,
+        previousVersion: source.version,
+        newVersion: source.version,
+        patternsAdded: 0,
+        patternsUpdated: 0,
+        patternsRemoved: 0,
+        totalPatterns: this.countPatternsForSource(sourceId),
+        timestamp: new Date(),
+        duration_ms: Date.now() - startTime,
+      };
     }
 
     if (!source.url) {
-      return { success: false, error: 'Source has no URL configured' };
+      return {
+        sourceId,
+        sourceName: source.name,
+        success: false,
+        previousVersion: source.version,
+        newVersion: source.version,
+        patternsAdded: 0,
+        patternsUpdated: 0,
+        patternsRemoved: 0,
+        totalPatterns: this.countPatternsForSource(sourceId),
+        timestamp: new Date(),
+        error: 'Source has no URL configured',
+        duration_ms: Date.now() - startTime,
+      };
     }
 
     // Check if update is needed
-    if (!force && source.last_update) {
-      const lastUpdate = new Date(source.last_update).getTime();
-      const interval = source.update_interval || 86400000;
-      if (Date.now() - lastUpdate < interval) {
+    if (!force && source.lastUpdated) {
+      const hoursSinceUpdate = (Date.now() - source.lastUpdated.getTime()) / (1000 * 60 * 60);
+      if (hoursSinceUpdate < source.updateIntervalHours) {
         return {
+          sourceId,
+          sourceName: source.name,
           success: true,
-          source_id: sourceId,
-          patterns_added: 0,
-          patterns_updated: 0,
-          message: 'Update not needed yet',
+          previousVersion: source.version,
+          newVersion: source.version,
+          patternsAdded: 0,
+          patternsUpdated: 0,
+          patternsRemoved: 0,
+          totalPatterns: this.countPatternsForSource(sourceId),
+          timestamp: new Date(),
+          duration_ms: Date.now() - startTime,
         };
       }
     }
@@ -587,16 +598,30 @@ export class ThreatIntelManager {
     try {
       const response = await fetch(source.url);
       if (!response.ok) {
-        return { success: false, error: `Failed to fetch: ${response.statusText}` };
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const data = await response.json() as FeedData;
+      const data = await response.json() as {
+        version?: string;
+        patterns?: Array<{
+          id: string;
+          name: string;
+          description?: string;
+          category?: IntelCategory;
+          severity?: Severity;
+          pattern: string;
+          mitreId?: string;
+          mitreTactic?: string;
+          mitreTechnique?: string;
+          tags?: string[];
+        }>;
+      };
+
+      const previousVersion = source.version;
       let patternsAdded = 0;
       let patternsUpdated = 0;
 
       if (data.patterns && Array.isArray(data.patterns)) {
-        const now = new Date().toISOString();
-
         for (const p of data.patterns) {
           if (!p.id || !p.pattern) continue;
 
@@ -605,17 +630,22 @@ export class ThreatIntelManager {
 
           const pattern: ThreatPattern = {
             id: patternId,
-            name: p.name || p.id,
-            description: p.description,
+            sourceId,
             category: p.category || 'prompt_injection',
+            name: p.name || p.id,
+            description: p.description || '',
+            patternType: 'regex',
+            pattern: p.pattern,
             severity: p.severity || 'medium',
-            pattern: new RegExp(p.pattern, 'i'),
-            mitre_techniques: p.mitre_techniques,
-            source: sourceId,
+            confidence: 0.8,
+            mitreId: p.mitreId,
+            mitreTactic: p.mitreTactic,
+            mitreTechnique: p.mitreTechnique,
+            tags: p.tags || [],
             enabled: true,
-            created_at: existing?.created_at || now,
-            updated_at: now,
             version: data.version || '1.0.0',
+            createdAt: existing?.createdAt || new Date(),
+            updatedAt: new Date(),
           };
 
           this.patterns.set(patternId, pattern);
@@ -629,105 +659,171 @@ export class ThreatIntelManager {
       }
 
       // Update source metadata
-      source.last_update = new Date().toISOString();
-      source.patterns_count = this.countPatternsForSource(sourceId);
+      source.lastUpdated = new Date();
+      source.patternCount = this.countPatternsForSource(sourceId);
       source.version = data.version || '1.0.0';
-      source.updated_at = new Date().toISOString();
+      source.lastError = undefined;
 
-      this.lastUpdate = new Date();
+      this.lastGlobalUpdate = new Date();
 
       return {
+        sourceId,
+        sourceName: source.name,
         success: true,
-        source_id: sourceId,
-        patterns_added: patternsAdded,
-        patterns_updated: patternsUpdated,
+        previousVersion,
+        newVersion: source.version,
+        patternsAdded,
+        patternsUpdated,
+        patternsRemoved: 0,
+        totalPatterns: source.patternCount,
+        timestamp: new Date(),
+        duration_ms: Date.now() - startTime,
       };
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      source.lastError = errorMsg;
+
       return {
+        sourceId,
+        sourceName: source.name,
         success: false,
-        error: `Update failed: ${error instanceof Error ? error.message : String(error)}`,
+        previousVersion: source.version,
+        newVersion: source.version,
+        patternsAdded: 0,
+        patternsUpdated: 0,
+        patternsRemoved: 0,
+        totalPatterns: this.countPatternsForSource(sourceId),
+        timestamp: new Date(),
+        error: errorMsg,
+        duration_ms: Date.now() - startTime,
       };
     }
   }
 
-  async updateAllSources(force: boolean = false): Promise<SourceUpdateResult[]> {
-    const results: SourceUpdateResult[] = [];
+  async updateAllSources(force: boolean = false): Promise<BulkUpdateResult> {
+    const startTime = Date.now();
+    const results: IntelUpdateResult[] = [];
 
     for (const source of this.sources.values()) {
-      if (source.auto_update || force) {
+      if (source.autoUpdate || force) {
         const result = await this.updateSource(source.id, force);
         results.push(result);
       }
     }
 
-    return results;
+    return {
+      totalSources: results.length,
+      successfulUpdates: results.filter(r => r.success).length,
+      failedUpdates: results.filter(r => !r.success).length,
+      totalPatternsAdded: results.reduce((sum, r) => sum + r.patternsAdded, 0),
+      totalPatternsUpdated: results.reduce((sum, r) => sum + r.patternsUpdated, 0),
+      totalPatternsRemoved: results.reduce((sum, r) => sum + r.patternsRemoved, 0),
+      results,
+      timestamp: new Date(),
+      duration_ms: Date.now() - startTime,
+    };
   }
 
   private countPatternsForSource(sourceId: string): number {
-    return Array.from(this.patterns.values()).filter(p => p.source === sourceId).length;
+    return Array.from(this.patterns.values()).filter(p => p.sourceId === sourceId).length;
   }
 
   // ==========================================================================
   // Scanning
   // ==========================================================================
 
-  scan(content: string, options?: {
-    categories?: ThreatCategory[];
-    min_severity?: 'critical' | 'high' | 'medium' | 'low' | 'info';
-  }): ThreatScanResult {
-    const findings: ThreatFinding[] = [];
-    const severityOrder = ['info', 'low', 'medium', 'high', 'critical'];
-    const minSeverityIndex = options?.min_severity 
-      ? severityOrder.indexOf(options.min_severity) 
+  scan(content: string, config?: ThreatScanConfig): ThreatScanResult {
+    const startTime = Date.now();
+    const matches: PatternMatch[] = [];
+    const severityOrder: Severity[] = ['low', 'medium', 'high', 'critical'];
+
+    const minSeverityIndex = config?.minSeverity 
+      ? severityOrder.indexOf(config.minSeverity) 
       : 0;
+
+    const minConfidence = config?.minConfidence ?? 0;
 
     for (const pattern of this.patterns.values()) {
       if (!pattern.enabled) continue;
 
       // Filter by category
-      if (options?.categories && !options.categories.includes(pattern.category)) {
+      if (config?.categories && !config.categories.includes(pattern.category)) {
         continue;
       }
 
       // Filter by severity
-      const severityIndex = severityOrder.indexOf(pattern.severity);
-      if (severityIndex < minSeverityIndex) continue;
+      if (severityOrder.indexOf(pattern.severity) < minSeverityIndex) continue;
+
+      // Filter by confidence
+      if (pattern.confidence < minConfidence) continue;
 
       // Check pattern
-      const regex = pattern.pattern instanceof RegExp 
-        ? pattern.pattern 
-        : new RegExp(pattern.pattern, 'i');
-      
-      const match = content.match(regex);
-      if (match) {
-        findings.push({
-          pattern_id: pattern.id,
-          pattern_name: pattern.name,
-          category: pattern.category,
-          severity: pattern.severity,
-          mitre_techniques: pattern.mitre_techniques,
-          match: match[0].substring(0, 100),
-          match_index: match.index || 0,
-          source: pattern.source,
-        });
+      try {
+        const regex = new RegExp(pattern.pattern, 'gi');
+        let match;
+        while ((match = regex.exec(content)) !== null) {
+          matches.push({
+            patternId: pattern.id,
+            patternName: pattern.name,
+            category: pattern.category,
+            severity: pattern.severity,
+            confidence: pattern.confidence,
+            matchedText: match[0].substring(0, 100),
+            position: { start: match.index, end: match.index + match[0].length },
+            mitreId: pattern.mitreId,
+            mitreTactic: pattern.mitreTactic,
+            recommendation: `Review content for ${pattern.category} attempt`,
+          });
+
+          if (config?.maxMatches && matches.length >= config.maxMatches) break;
+        }
+      } catch {
+        // Invalid regex, skip
       }
+
+      if (config?.maxMatches && matches.length >= config.maxMatches) break;
     }
 
     // Sort by severity (critical first)
-    findings.sort((a, b) => 
+    matches.sort((a, b) => 
       severityOrder.indexOf(b.severity) - severityOrder.indexOf(a.severity)
     );
 
+    // Build summary
+    const bySeverity: Record<Severity, number> = { low: 0, medium: 0, high: 0, critical: 0 };
+    const byCategory: Record<string, number> = {};
+    const mitreTechniques: string[] = [];
+
+    for (const m of matches) {
+      bySeverity[m.severity]++;
+      byCategory[m.category] = (byCategory[m.category] || 0) + 1;
+      if (m.mitreId && !mitreTechniques.includes(m.mitreId)) {
+        mitreTechniques.push(m.mitreId);
+      }
+    }
+
+    const highestSeverity = matches.length > 0 ? matches[0].severity : null;
+
     return {
-      threats_detected: findings.length,
-      findings,
-      scan_time: new Date().toISOString(),
-      patterns_checked: Array.from(this.patterns.values()).filter(p => p.enabled).length,
+      scanned: true,
+      content_length: content.length,
+      matches,
+      summary: {
+        total_matches: matches.length,
+        by_severity: bySeverity,
+        by_category: byCategory,
+        highest_severity: highestSeverity,
+        mitre_techniques: mitreTechniques,
+      },
+      recommendations: matches.length > 0 
+        ? [`Found ${matches.length} potential threat(s). Review flagged content.`]
+        : ['No threats detected.'],
+      scan_duration_ms: Date.now() - startTime,
     };
   }
 
   // ==========================================================================
-  // Status & Info
+  // Status
   // ==========================================================================
 
   getStatus(): IntelStatus {
@@ -736,64 +832,84 @@ export class ThreatIntelManager {
     const enabledPatterns = patterns.filter(p => p.enabled);
 
     // Count by category
-    const byCategory: Record<ThreatCategory, number> = {
+    const byCategory: Record<IntelCategory, number> = {
       prompt_injection: 0,
       jailbreak: 0,
       data_exfiltration: 0,
-      system_prompt_leak: 0,
+      privilege_escalation: 0,
+      social_engineering: 0,
+      malicious_code: 0,
       pii_extraction: 0,
-      mcp_exploit: 0,
+      system_prompt_leak: 0,
       dos_attack: 0,
-      other: 0,
+      mcp_exploit: 0,
     };
+
+    const bySeverity: Record<Severity, number> = { low: 0, medium: 0, high: 0, critical: 0 };
+    const bySource: Record<string, number> = {};
+    const mitreTactics = new Set<string>();
+    const mitreTechniques = new Set<string>();
+    const categories = new Set<IntelCategory>();
 
     for (const pattern of enabledPatterns) {
       byCategory[pattern.category]++;
+      bySeverity[pattern.severity]++;
+      bySource[pattern.sourceId] = (bySource[pattern.sourceId] || 0) + 1;
+      categories.add(pattern.category);
+      if (pattern.mitreTactic) mitreTactics.add(pattern.mitreTactic);
+      if (pattern.mitreId) mitreTechniques.add(pattern.mitreId);
     }
 
-    // Count MITRE coverage
-    const mitreTechniques = new Set<string>();
-    const mitreTactics = new Set<string>();
+    // Check health
+    const staleSources: string[] = [];
+    const failedSources: string[] = [];
+    let oldestUpdate: Date | undefined;
 
-    for (const pattern of enabledPatterns) {
-      if (pattern.mitre_techniques) {
-        for (const techId of pattern.mitre_techniques) {
-          mitreTechniques.add(techId);
-          const technique = this.mitreTechniques.get(techId);
-          if (technique) {
-            mitreTactics.add(technique.tactic);
-          }
+    for (const source of sources) {
+      if (source.lastError) failedSources.push(source.id);
+      if (source.autoUpdate && source.lastUpdated) {
+        const hoursSinceUpdate = (Date.now() - source.lastUpdated.getTime()) / (1000 * 60 * 60);
+        if (hoursSinceUpdate > source.updateIntervalHours * 2) {
+          staleSources.push(source.id);
+        }
+        if (!oldestUpdate || source.lastUpdated < oldestUpdate) {
+          oldestUpdate = source.lastUpdated;
         }
       }
     }
 
+    const healthStatus = failedSources.length > 0 ? 'degraded' 
+      : staleSources.length > 0 ? 'stale' 
+      : 'healthy';
+
     return {
+      initialized: this.initialized,
+      lastGlobalUpdate: this.lastGlobalUpdate,
       sources: {
         total: sources.length,
         enabled: sources.filter(s => s.enabled).length,
-        auto_update: sources.filter(s => s.auto_update).length,
+        autoUpdate: sources.filter(s => s.autoUpdate).length,
       },
       patterns: {
         total: patterns.length,
-        enabled: enabledPatterns.length,
-        by_category: byCategory,
+        byCategory,
+        bySeverity,
+        bySource,
       },
-      mitre: {
-        techniques_covered: mitreTechniques.size,
-        tactics_covered: mitreTactics.size,
-        techniques: Array.from(mitreTechniques),
-        tactics: Array.from(mitreTactics),
+      coverage: {
+        mitreAttack: {
+          tactics: mitreTactics.size,
+          techniques: mitreTechniques.size,
+        },
+        categories: Array.from(categories),
       },
-      last_update: this.lastUpdate.toISOString(),
+      health: {
+        status: healthStatus,
+        oldestUpdate,
+        staleSources,
+        failedSources,
+      },
     };
-  }
-
-  getMITRETechnique(id: string): MITRETechnique | undefined {
-    return this.mitreTechniques.get(id);
-  }
-
-  getMITRETechniques(): MITRETechnique[] {
-    return Array.from(this.mitreTechniques.values());
   }
 }
 

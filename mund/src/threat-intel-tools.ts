@@ -1,13 +1,11 @@
 /**
  * Threat Intelligence MCP Tools
- * 
- * MCP tool definitions and handlers for threat intelligence.
- * Uses Zod schemas as required by the MCP SDK.
+ * @weave_protocol/mund
  */
 
 import { z } from 'zod';
 import type { ThreatIntelManager } from './threat-intel-manager.js';
-import type { ThreatCategory, IntelSourceType } from './threat-intel-types.js';
+import type { IntelCategory, IntelSourceType } from './threat-intel-types.js';
 
 // ============================================================================
 // Zod Schemas for Tool Inputs
@@ -29,10 +27,11 @@ export const IntelStatusSchema = {
 export const AddIntelSourceSchema = {
   id: z.string().describe('Unique source identifier'),
   name: z.string().describe('Human-readable name'),
-  type: z.enum(['url', 'file', 'api']).describe('Source type'),
+  type: z.enum(['mitre_attack', 'community_blocklist', 'custom', 'weave_official']).describe('Source type'),
   url: z.string().optional().describe('URL for remote sources'),
+  description: z.string().describe('Source description'),
   auto_update: z.boolean().default(true).describe('Enable auto-updates'),
-  update_interval: z.number().default(86400000).describe('Update interval in ms'),
+  update_interval_hours: z.number().default(24).describe('Update interval in hours'),
 };
 
 export const RemoveIntelSourceSchema = {
@@ -43,18 +42,19 @@ export const ThreatScanSchema = {
   content: z.string().describe('Content to scan'),
   categories: z.array(z.enum([
     'prompt_injection', 'jailbreak', 'data_exfiltration',
-    'system_prompt_leak', 'pii_extraction', 'mcp_exploit',
-    'dos_attack', 'other'
+    'privilege_escalation', 'social_engineering', 'malicious_code',
+    'pii_extraction', 'system_prompt_leak', 'dos_attack', 'mcp_exploit'
   ])).optional().describe('Filter by categories'),
-  min_severity: z.enum(['critical', 'high', 'medium', 'low', 'info']).optional().describe('Minimum severity'),
+  min_severity: z.enum(['critical', 'high', 'medium', 'low']).optional().describe('Minimum severity'),
+  min_confidence: z.number().min(0).max(1).optional().describe('Minimum confidence (0-1)'),
 };
 
 export const ListPatternsSchema = {
-  source: z.string().optional().describe('Filter by source'),
+  source_id: z.string().optional().describe('Filter by source'),
   category: z.enum([
     'prompt_injection', 'jailbreak', 'data_exfiltration',
-    'system_prompt_leak', 'pii_extraction', 'mcp_exploit',
-    'dos_attack', 'other'
+    'privilege_escalation', 'social_engineering', 'malicious_code',
+    'pii_extraction', 'system_prompt_leak', 'dos_attack', 'mcp_exploit'
   ]).optional().describe('Filter by category'),
   enabled_only: z.boolean().default(true).describe('Only show enabled patterns'),
 };
@@ -65,10 +65,10 @@ export const TogglePatternSchema = {
 };
 
 // ============================================================================
-// Tool Definitions
+// Tool Definitions (exported as threatIntelTools)
 // ============================================================================
 
-export const threatIntelToolDefs = [
+export const threatIntelTools = [
   {
     name: 'mund_update_threat_intel',
     description: 'Pull latest threat patterns from configured intelligence feeds. Updates MITRE ATT&CK mappings and community blocklists.',
@@ -121,12 +121,7 @@ export function createThreatIntelToolHandlers(manager: ThreatIntelManager) {
       if (args.source_id) {
         return await manager.updateSource(args.source_id, args.force || false);
       }
-      const results = await manager.updateAllSources(args.force || false);
-      return {
-        success: true,
-        sources_updated: results.length,
-        results,
-      };
+      return await manager.updateAllSources(args.force || false);
     },
 
     mund_list_intel_sources: (args: { enabled_only?: boolean }) => {
@@ -140,11 +135,12 @@ export function createThreatIntelToolHandlers(manager: ThreatIntelManager) {
           name: s.name,
           type: s.type,
           enabled: s.enabled,
-          auto_update: s.auto_update,
-          patterns_count: s.patterns_count,
+          autoUpdate: s.autoUpdate,
+          patternCount: s.patternCount,
           version: s.version,
-          last_update: s.last_update,
-          update_interval: s.update_interval,
+          lastUpdated: s.lastUpdated,
+          updateIntervalHours: s.updateIntervalHours,
+          lastError: s.lastError,
         })),
       };
     },
@@ -154,12 +150,13 @@ export function createThreatIntelToolHandlers(manager: ThreatIntelManager) {
       if (args.include_patterns) {
         return {
           ...status,
-          patterns_detail: manager.getPatterns({ enabled_only: true }).map(p => ({
+          patterns_detail: manager.getPatterns({ enabledOnly: true }).map(p => ({
             id: p.id,
             name: p.name,
             category: p.category,
             severity: p.severity,
-            source: p.source,
+            sourceId: p.sourceId,
+            mitreId: p.mitreId,
           })),
         };
       }
@@ -171,18 +168,18 @@ export function createThreatIntelToolHandlers(manager: ThreatIntelManager) {
       name: string;
       type: IntelSourceType;
       url?: string;
+      description: string;
       auto_update?: boolean;
-      update_interval?: number;
+      update_interval_hours?: number;
     }) => {
       return manager.addSource({
         id: args.id,
         name: args.name,
         type: args.type,
         url: args.url,
-        enabled: true,
-        auto_update: args.auto_update ?? true,
-        update_interval: args.update_interval ?? 86400000,
-        version: '0.0.0',
+        description: args.description,
+        autoUpdate: args.auto_update ?? true,
+        updateIntervalHours: args.update_interval_hours ?? 24,
       });
     },
 
@@ -192,24 +189,26 @@ export function createThreatIntelToolHandlers(manager: ThreatIntelManager) {
 
     mund_threat_scan: (args: {
       content: string;
-      categories?: ThreatCategory[];
-      min_severity?: 'critical' | 'high' | 'medium' | 'low' | 'info';
+      categories?: IntelCategory[];
+      min_severity?: 'critical' | 'high' | 'medium' | 'low';
+      min_confidence?: number;
     }) => {
       return manager.scan(args.content, {
         categories: args.categories,
-        min_severity: args.min_severity,
+        minSeverity: args.min_severity,
+        minConfidence: args.min_confidence,
       });
     },
 
     mund_list_patterns: (args: {
-      source?: string;
-      category?: ThreatCategory;
+      source_id?: string;
+      category?: IntelCategory;
       enabled_only?: boolean;
     }) => {
       const patterns = manager.getPatterns({
-        source: args.source,
+        sourceId: args.source_id,
         category: args.category,
-        enabled_only: args.enabled_only ?? true,
+        enabledOnly: args.enabled_only ?? true,
       });
       return {
         count: patterns.length,
@@ -218,8 +217,10 @@ export function createThreatIntelToolHandlers(manager: ThreatIntelManager) {
           name: p.name,
           category: p.category,
           severity: p.severity,
-          mitre_techniques: p.mitre_techniques,
-          source: p.source,
+          confidence: p.confidence,
+          mitreId: p.mitreId,
+          mitreTactic: p.mitreTactic,
+          sourceId: p.sourceId,
           enabled: p.enabled,
         })),
       };

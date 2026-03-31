@@ -2,8 +2,6 @@
 /**
  * Mund - The Guardian Protocol
  * Main Entry Point
- * 
- * An MCP-based security monitoring protocol for agentic AI systems.
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -21,7 +19,7 @@ import { registerAllTools } from './tools/index.js';
 // Threat Intelligence imports
 import { threatIntel } from './threat-intel-manager.js';
 import { 
-  threatIntelToolDefs, 
+  threatIntelTools, 
   createThreatIntelToolHandlers,
   UpdateThreatIntelSchema,
   ListIntelSourcesSchema,
@@ -115,7 +113,7 @@ function registerThreatIntelTools(server: McpServer): void {
   };
 
   // Register each threat intel tool with Zod schema
-  for (const tool of threatIntelToolDefs) {
+  for (const tool of threatIntelTools) {
     const schema = schemaMap[tool.name];
     if (!schema) continue;
 
@@ -374,5 +372,5 @@ main().catch(error => {
 // ============================================================================
 
 export { ThreatIntelManager, threatIntel } from './threat-intel-manager.js';
-export { threatIntelToolDefs, createThreatIntelToolHandlers } from './threat-intel-tools.js';
+export { threatIntelTools, createThreatIntelToolHandlers } from './threat-intel-tools.js';
 export * from './threat-intel-types.js';
