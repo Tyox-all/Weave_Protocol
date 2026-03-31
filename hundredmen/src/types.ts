@@ -1,6 +1,6 @@
 /**
- * Inspector Types and Interfaces
- * @weave_protocol/inspector
+ * Hundredmen Types and Interfaces
+ * @weave_protocol/hundredmen
  * 
  * Real-time MCP security proxy - intercepts, scans, and gates tool calls
  */
@@ -100,7 +100,7 @@ export interface ScanIssue {
 // Policy Types
 // ============================================================================
 
-export interface InspectorPolicy {
+export interface HundredmenPolicy {
   id: string;
   name: string;
   description?: string;
@@ -260,7 +260,7 @@ export interface DriftDeviation {
 // Session Types
 // ============================================================================
 
-export interface InspectorSession {
+export interface HundredmenSession {
   id: string;
   agentId?: string;
   startedAt: Date;
@@ -352,7 +352,7 @@ export interface RollbackAction {
 // Configuration Types
 // ============================================================================
 
-export interface InspectorConfig {
+export interface HundredmenConfig {
   // Core
   enabled: boolean;
   mode: 'passive' | 'active' | 'strict';
@@ -390,7 +390,7 @@ export interface InspectorConfig {
   logRetentionDays: number;
 }
 
-export const DEFAULT_CONFIG: InspectorConfig = {
+export const DEFAULT_CONFIG: HundredmenConfig = {
   enabled: true,
   mode: 'active',
   

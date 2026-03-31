@@ -1,6 +1,6 @@
 /**
  * Reputation Manager
- * @weave_protocol/inspector
+ * @weave_protocol/hundredmen
  * 
  * Tracks and scores MCP server trustworthiness
  */

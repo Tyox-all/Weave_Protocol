@@ -20,7 +20,7 @@ import {
 // Tool Definitions
 // ============================================================================
 
-export const inspectorTools = [
+export const hundredmenTools = [
   // --------------------------------------------------------------------------
   // Session Management
   // --------------------------------------------------------------------------
@@ -373,7 +373,7 @@ Use when: monitoring system health, generating reports.`,
 // Tool Handlers
 // ============================================================================
 
-export function createInspectorToolHandlers(
+export function createHundredmenToolHandlers(
   interceptor: Interceptor,
   reputationManager: ReputationManager
 ) {
@@ -738,4 +738,4 @@ export function createInspectorToolHandlers(
   };
 }
 
-export default inspectorTools;
+export default hundredmenTools;

@@ -1,6 +1,6 @@
 /**
  * Core Interceptor
- * @weave_protocol/inspector
+ * @weave_protocol/hundredmen
  * 
  * Intercepts MCP tool calls, analyzes them, and gates execution
  */
@@ -18,11 +18,11 @@ import {
   ScanIssue,
   DriftAnalysis,
   DriftDeviation,
-  InspectorConfig,
+  HundredmenConfig,
   DEFAULT_CONFIG,
   LiveFeedEvent,
   LiveFeedEventType,
-  InspectorSession,
+  HundredmenSession,
 } from './types.js';
 
 // ============================================================================
@@ -277,8 +277,8 @@ export function detectDrift(
 // ============================================================================
 
 export class Interceptor extends EventEmitter {
-  private config: InspectorConfig;
-  private sessions: Map<string, InspectorSession> = new Map();
+  private config: HundredmenConfig;
+  private sessions: Map<string, HundredmenSession> = new Map();
   private calls: Map<string, InterceptedCall> = new Map();
   private pendingApprovals: Map<string, InterceptedCall> = new Map();
   
@@ -287,7 +287,7 @@ export class Interceptor extends EventEmitter {
   private reputationChecker?: (serverId: string) => Promise<number>;
   private blockchainAnchor?: (data: unknown) => Promise<string>;
   
-  constructor(config: Partial<InspectorConfig> = {}) {
+  constructor(config: Partial<HundredmenConfig> = {}) {
     super();
     this.config = { ...DEFAULT_CONFIG, ...config };
   }
@@ -296,11 +296,11 @@ export class Interceptor extends EventEmitter {
   // Configuration
   // ==========================================================================
   
-  setConfig(config: Partial<InspectorConfig>): void {
+  setConfig(config: Partial<HundredmenConfig>): void {
     this.config = { ...this.config, ...config };
   }
   
-  getConfig(): InspectorConfig {
+  getConfig(): HundredmenConfig {
     return { ...this.config };
   }
   
@@ -320,8 +320,8 @@ export class Interceptor extends EventEmitter {
   // Session Management
   // ==========================================================================
   
-  createSession(agentId?: string): InspectorSession {
-    const session: InspectorSession = {
+  createSession(agentId?: string): HundredmenSession {
+    const session: HundredmenSession = {
       id: randomUUID(),
       agentId,
       startedAt: new Date(),
@@ -339,7 +339,7 @@ export class Interceptor extends EventEmitter {
     return session;
   }
   
-  getSession(sessionId: string): InspectorSession | undefined {
+  getSession(sessionId: string): HundredmenSession | undefined {
     return this.sessions.get(sessionId);
   }
   
@@ -494,7 +494,7 @@ export class Interceptor extends EventEmitter {
       tool,
       arguments: args,
       decision: 'auto_approved',
-      decisionReason: 'Inspector disabled',
+      decisionReason: 'Hundredmen disabled',
       decisionAt: new Date(),
       status: 'approved',
     };
