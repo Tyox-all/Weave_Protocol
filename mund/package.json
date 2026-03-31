@@ -4,7 +4,7 @@
   "description": "The Guardian Protocol - MCP-based security monitoring for agentic AI systems",
   "main": "dist/index.js",
   "bin": {
-    "mund-mcp": "./dist/index.js"
+    "mund-mcp": "dist/index.js"
   },
   "type": "module",
   "scripts": {
@@ -20,7 +20,7 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Tyox-all/Weave_Protocol.git"
+    "url": "git+https://github.com/Tyox-all/Weave_Protocol.git"
   },
   "engines": {
     "node": ">=20.0.0"

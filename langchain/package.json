@@ -1,0 +1,76 @@
+{
+  "name": "@weave_protocol/langchain",
+  "version": "1.0.0",
+  "description": "LangChain.js security integration for Weave Protocol - callbacks, tool wrappers, and retriever guards",
+  "author": "Trent Yoxall",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "SKILL.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "@langchain/core": ">=0.2.0",
+    "zod": ">=3.22.0"
+  },
+  "peerDependenciesMeta": {
+    "@langchain/core": {
+      "optional": false
+    },
+    "zod": {
+      "optional": false
+    }
+  },
+  "devDependencies": {
+    "@langchain/core": "^0.3.0",
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3",
+    "zod": "^3.22.4"
+  },
+  "keywords": [
+    "langchain",
+    "langchain-js",
+    "security",
+    "ai-security",
+    "llm-security",
+    "prompt-injection",
+    "jailbreak-detection",
+    "mcp",
+    "model-context-protocol",
+    "weave-protocol",
+    "threat-detection",
+    "mitre-attack",
+    "rag-security",
+    "agent-security",
+    "callback-handler"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Tyox-all/Weave_Protocol.git",
+    "directory": "langchain"
+  },
+  "homepage": "https://github.com/Tyox-all/Weave_Protocol/tree/main/langchain#readme",
+  "bugs": {
+    "url": "https://github.com/Tyox-all/Weave_Protocol/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
