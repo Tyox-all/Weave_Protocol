@@ -232,7 +232,6 @@ export function detectDrift(
         description: `New risky capabilities: ${riskyNew.join(', ')}`,
       });
       maxSeverity = 'high';
-      if (level === 'critical') maxSeverity = 'critical';
     }
   }
   
@@ -251,8 +250,8 @@ export function detectDrift(
   
   // Determine recommendation
   let recommendation: 'proceed' | 'review' | 'block' = 'proceed';
-  if (maxSeverity === 'critical') recommendation = 'block';
-  else if (maxSeverity === 'high' || deviations.length >= 2) recommendation = 'review';
+  if (maxSeverity === 'high') recommendation = 'block';
+  else if (maxSeverity === 'medium' || deviations.length >= 2) recommendation = 'review';
   
   return {
     callId: call.id,
