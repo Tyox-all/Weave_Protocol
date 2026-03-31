@@ -19,8 +19,19 @@ import { NotificationHub } from './notifications/index.js';
 import { registerAllTools } from './tools/index.js';
 
 // Threat Intelligence imports
-import { threatIntel, ThreatIntelManager } from './threat-intel-manager.js';
-import { threatIntelTools, createThreatIntelToolHandlers } from './threat-intel-tools.js';
+import { threatIntel } from './threat-intel-manager.js';
+import { 
+  threatIntelToolDefs, 
+  createThreatIntelToolHandlers,
+  UpdateThreatIntelSchema,
+  ListIntelSourcesSchema,
+  IntelStatusSchema,
+  AddIntelSourceSchema,
+  RemoveIntelSourceSchema,
+  ThreatScanSchema,
+  ListPatternsSchema,
+  TogglePatternSchema,
+} from './threat-intel-tools.js';
 
 // ============================================================================
 // Configuration Loading
@@ -91,28 +102,43 @@ function loadConfig(): MundConfig {
 function registerThreatIntelTools(server: McpServer): void {
   const handlers = createThreatIntelToolHandlers(threatIntel);
 
-  // Register each threat intel tool
-  for (const tool of threatIntelTools) {
+  // Map tool names to schemas
+  const schemaMap: Record<string, Record<string, any>> = {
+    'mund_update_threat_intel': UpdateThreatIntelSchema,
+    'mund_list_intel_sources': ListIntelSourcesSchema,
+    'mund_intel_status': IntelStatusSchema,
+    'mund_add_intel_source': AddIntelSourceSchema,
+    'mund_remove_intel_source': RemoveIntelSourceSchema,
+    'mund_threat_scan': ThreatScanSchema,
+    'mund_list_patterns': ListPatternsSchema,
+    'mund_toggle_pattern': TogglePatternSchema,
+  };
+
+  // Register each threat intel tool with Zod schema
+  for (const tool of threatIntelToolDefs) {
+    const schema = schemaMap[tool.name];
+    if (!schema) continue;
+
     server.tool(
       tool.name,
       tool.description,
-      tool.inputSchema,
+      schema,
       async (args: any) => {
         const handler = handlers[tool.name as keyof typeof handlers];
         if (!handler) {
           return {
-            content: [{ type: 'text', text: JSON.stringify({ error: `Unknown tool: ${tool.name}` }) }]
+            content: [{ type: 'text' as const, text: JSON.stringify({ error: `Unknown tool: ${tool.name}` }) }]
           };
         }
         
         try {
           const result = await handler(args);
           return {
-            content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
+            content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }]
           };
         } catch (error) {
           return {
-            content: [{ type: 'text', text: JSON.stringify({ 
+            content: [{ type: 'text' as const, text: JSON.stringify({ 
               error: error instanceof Error ? error.message : String(error) 
             }) }]
           };
@@ -348,5 +374,5 @@ main().catch(error => {
 // ============================================================================
 
 export { ThreatIntelManager, threatIntel } from './threat-intel-manager.js';
-export { threatIntelTools, createThreatIntelToolHandlers } from './threat-intel-tools.js';
+export { threatIntelToolDefs, createThreatIntelToolHandlers } from './threat-intel-tools.js';
 export * from './threat-intel-types.js';
