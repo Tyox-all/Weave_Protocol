@@ -24,7 +24,7 @@ A TypeScript monorepo providing security, encryption, compliance, and governance
 
 ## 🆕 What's New
 
-### LangChain.js Integration (v1.0.0)
+### LangChain.js Integration (v1.0.1)
 
 Drop-in security for LangChain.js applications:
 
@@ -46,7 +46,7 @@ await chain.invoke({ question: 'Ignore previous instructions...' });
 
 [See LangChain README →](./langchain/README.md)
 
-### Automated Threat Intelligence (Mund v0.2.0)
+### Automated Threat Intelligence (Mund v0.2.2)
 
 ```
 ┌───────────────────────────────────────────────────────────────┐
@@ -72,13 +72,13 @@ await chain.invoke({ question: 'Ignore previous instructions...' });
 
 | Package | Version | Description |
 |---------|---------|-------------|
-| [🛡️ @weave_protocol/mund](./mund) | 0.2.0 | Security scanner - secrets, PII, injection, MCP vetting, **threat intel** |
-| [🏛️ @weave_protocol/hord](./hord) | 0.1.5 | Encrypted vault with Yoxallismus cipher |
-| [⚖️ @weave_protocol/domere](./domere) | 1.3.1 | Compliance (PCI-DSS, ISO27001, SOC2, HIPAA, **GDPR**) & verification |
-| [👥 @weave_protocol/witan](./witan) | 1.0.1 | Multi-agent consensus & governance |
-| [🔍 @weave_protocol/hundredmen](./hundredmen) | 1.0.5 | **Real-time MCP proxy** - intercept, scan, gate tool calls |
-| [🔗 @weave_protocol/langchain](./langchain) | 1.0.0 | **LangChain.js** security callbacks & tool wrappers |
-| [🔌 @weave_protocol/api](./api) | 1.0.9 | REST API for all packages |
+| [🛡️ @weave_protocol/mund](./mund) | 0.2.2 | Security scanner - secrets, PII, injection, MCP vetting, **threat intel** |
+| [🏛️ @weave_protocol/hord](./hord) | 0.1.6 | Encrypted vault with Yoxallismus cipher |
+| [⚖️ @weave_protocol/domere](./domere) | 1.3.3 | Compliance (PCI-DSS, ISO27001, SOC2, HIPAA, **GDPR**) & verification |
+| [👥 @weave_protocol/witan](./witan) | 1.0.2 | Multi-agent consensus & governance |
+| [🔍 @weave_protocol/hundredmen](./hundredmen) | 1.0.6 | **Real-time MCP proxy** - intercept, scan, gate tool calls |
+| [🔗 @weave_protocol/langchain](./langchain) | 1.0.1 | **LangChain.js** security callbacks & tool wrappers |
+| [🔌 @weave_protocol/api](./api) | 1.0.11 | REST API for all packages |
 
 ---
 
