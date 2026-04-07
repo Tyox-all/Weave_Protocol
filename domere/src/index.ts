@@ -48,3 +48,4 @@ export * from "./handoff/index.js";
 export * from "./compliance/index.js";
 export * from "./orchestration/index.js";
 export * from './gdpr-index.js';
+export * from './ccpa-index.js';
