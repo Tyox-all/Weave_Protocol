@@ -22,7 +22,7 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Tyox-all/Weave_Protocol"
+    "url": "git+https://github.com/Tyox-all/Weave_Protocol.git"
   },
   "dependencies": {
     "@weave_protocol/domere": "^1.2.1"

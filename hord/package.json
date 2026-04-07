@@ -4,7 +4,7 @@
   "description": "The Vault Protocol - Cryptographic containment and capability management for AI agents",
   "main": "dist/index.js",
   "bin": {
-    "hord-mcp": "./dist/index.js"
+    "hord-mcp": "dist/index.js"
   },
   "type": "module",
   "scripts": {
@@ -31,7 +31,7 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Tyox-all/Weave_Protocol.git",
+    "url": "git+https://github.com/Tyox-all/Weave_Protocol.git",
     "directory": "hord"
   },
   "engines": {

@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "domere": "./dist/index.js"
+    "domere": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",
@@ -35,6 +35,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Tyox-all/Weave_Protocol.git"
+    "url": "git+https://github.com/Tyox-all/Weave_Protocol.git"
   }
 }
