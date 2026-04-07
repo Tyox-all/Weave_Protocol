@@ -74,7 +74,7 @@ await chain.invoke({ question: 'Ignore previous instructions...' });
 |---------|---------|-------------|
 | [🛡️ @weave_protocol/mund](./mund) | 0.2.2 | Security scanner - secrets, PII, injection, MCP vetting, **threat intel** |
 | [🏛️ @weave_protocol/hord](./hord) | 0.1.6 | Encrypted vault with Yoxallismus cipher |
-| [⚖️ @weave_protocol/domere](./domere) | 1.3.3 | Compliance (PCI-DSS, ISO27001, SOC2, HIPAA, **GDPR**) & verification |
+| [⚖️ @weave_protocol/domere](./domere) | 1.3.4 | Compliance (PCI-DSS, ISO27001, SOC2, HIPAA, **GDPR**, **CCPA**) & verification |
 | [👥 @weave_protocol/witan](./witan) | 1.0.2 | Multi-agent consensus & governance |
 | [🔍 @weave_protocol/hundredmen](./hundredmen) | 1.0.6 | **Real-time MCP proxy** - intercept, scan, gate tool calls |
 | [🔗 @weave_protocol/langchain](./langchain) | 1.0.1 | **LangChain.js** security callbacks & tool wrappers |
@@ -488,7 +488,7 @@ npm test
 - [x] LangChain.js integration package
 - [ ] Python/LlamaIndex integration
 - [ ] Web dashboard for monitoring
-- [ ] CCPA compliance framework
+- [x] CCPA compliance framework
 
 ---
 
