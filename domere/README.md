@@ -1,6 +1,6 @@
 # ⚖️ @weave_protocol/domere
 
-**Enterprise Compliance, Verification & GDPR for AI Agents**
+**Enterprise Compliance, Verification, GDPR & CCPA for AI Agents**
 
 [![npm](https://img.shields.io/npm/v/@weave_protocol/domere.svg)](https://www.npmjs.com/package/@weave_protocol/domere)
 [![npm](https://img.shields.io/npm/dm/@weave_protocol/domere.svg)](https://www.npmjs.com/package/@weave_protocol/domere)
@@ -16,9 +16,10 @@ Part of the [Weave Protocol](https://github.com/Tyox-all/Weave_Protocol) securit
 |----------|----------|
 | **Verification** | Intent tracking, drift detection, execution replay, multi-agent handoff |
 | **Orchestration** | Task scheduler, agent registry, shared state with locks |
-| **Compliance** | SOC2, HIPAA, PCI-DSS, ISO27001, **GDPR** checkpoints & reporting |
+| **Compliance** | SOC2, HIPAA, PCI-DSS, ISO27001, **GDPR**, **CCPA** checkpoints & reporting |
 | **Blockchain** | Solana & Ethereum anchoring for immutable audit trails |
 | **GDPR** | Consent management, DSAR handling, breach notification, retention enforcement |
+| **CCPA** | Consumer requests, opt-out management, sale disclosure, annual metrics |
 
 ---
 
@@ -69,7 +70,7 @@ Add to `claude_desktop_config.json`:
 
 ## 🇪🇺 GDPR Compliance
 
-Domere v1.3.0 includes comprehensive GDPR support with 11 new MCP tools.
+Domere includes comprehensive GDPR support with 11 MCP tools.
 
 ### GDPR Tools Overview
 
@@ -92,7 +93,6 @@ Domere v1.3.0 includes comprehensive GDPR support with 11 new MCP tools.
 ```typescript
 import { GDPRManager } from '@weave_protocol/domere';
 
-// Initialize with data controller info
 const gdpr = new GDPRManager({
   name: 'Acme Corporation',
   email: 'dpo@acme.com',
@@ -100,21 +100,14 @@ const gdpr = new GDPRManager({
   dpoContact: 'Jane Smith'
 });
 
-// Record consent with full audit trail
 const consent = gdpr.recordConsent({
   subjectId: 'user-abc-123',
-  purpose: 'marketing',           // or: analytics, profiling, etc.
-  legalBasis: 'consent',          // Art 6(1)(a)
+  purpose: 'marketing',
+  legalBasis: 'consent',
   granted: true,
   source: 'web_form',
   version: '2.1.0'
 });
-
-// Check if consent is valid
-const canMarket = gdpr.hasValidConsent('user-abc-123', 'marketing');
-
-// Withdraw consent (creates audit record)
-gdpr.withdrawConsent(consent.id, 'User requested opt-out');
 ```
 
 ### Data Subject Access Requests (DSAR)
@@ -123,170 +116,148 @@ gdpr.withdrawConsent(consent.id, 'User requested opt-out');
 // Create DSAR - automatically sets 30-day deadline
 const dsar = gdpr.createDSAR({
   subjectId: 'user-abc-123',
-  type: 'access',                 // or: erasure, portability, rectification, etc.
-  verificationMethod: 'email'
-});
-
-console.log(`Due date: ${dsar.dueDate}`); // 30 days from now
-
-// Verify identity
-gdpr.verifyDSAR(dsar.id, 'privacy-team');
-
-// Process request
-gdpr.processDSAR(dsar.id, 'analyst-01');
-
-// Complete with response
-gdpr.completeDSAR(dsar.id, {
   type: 'access',
-  completedAt: new Date(),
-  dataIncluded: true,
-  dataFormat: 'json',
-  dataLocation: '/exports/user-abc-123.json'
+  verificationMethod: 'email'
 });
 
 // Check for overdue requests
 const overdue = gdpr.getOverdueDSARs();
-if (overdue.length > 0) {
-  console.warn(`⚠️ ${overdue.length} DSARs are past deadline!`);
-}
 ```
 
-### Right to Erasure
+---
+
+## 🇺🇸 CCPA/CPRA Compliance
+
+Domere v1.3.4+ includes comprehensive California Consumer Privacy Act (CCPA) and California Privacy Rights Act (CPRA) support with 18 MCP tools.
+
+### CCPA vs GDPR Quick Reference
+
+| Aspect | GDPR | CCPA |
+|--------|------|------|
+| Deadline | 30 days | 45 days (extendable +45) |
+| Terminology | Data Subject | Consumer |
+| Controller | Data Controller | Business |
+| Key Right | Right to Erasure | Right to Opt-Out of Sale |
+| Signal | — | Global Privacy Control (GPC) |
+
+### CCPA Tools Overview
+
+| Tool | CCPA Section | Purpose |
+|------|--------------|---------|
+| `ccpa_register_consumer` | 1798.140 | Register consumer for tracking |
+| `ccpa_get_consumer` | 1798.140 | Lookup consumer by ID or email |
+| `ccpa_record_opt_out` | 1798.120 | Record Do Not Sell/Share opt-out |
+| `ccpa_process_gpc` | 1798.135 | Process Global Privacy Control signal |
+| `ccpa_withdraw_opt_out` | 1798.120 | Consumer withdraws opt-out |
+| `ccpa_get_opt_outs` | 1798.120 | List consumer's active opt-outs |
+| `ccpa_check_opt_out` | 1798.120 | Check if opt-out is active |
+| `ccpa_submit_request` | 1798.100-106 | Submit consumer request |
+| `ccpa_verify_request` | 1798.185 | Verify consumer identity |
+| `ccpa_extend_request` | 1798.105 | Extend deadline by 45 days |
+| `ccpa_complete_request` | 1798.100-106 | Complete with response |
+| `ccpa_deny_request` | 1798.105 | Deny with valid reason |
+| `ccpa_get_pending_requests` | — | List pending requests |
+| `ccpa_get_overdue_requests` | — | List overdue requests (alert!) |
+| `ccpa_generate_report` | 1798.185 | Generate compliance report |
+| `ccpa_annual_metrics` | 1798.185(a)(7) | Required annual disclosure |
+| `ccpa_get_checkpoints` | — | Audit trail for compliance |
+| `ccpa_verify_chain` | — | Verify checkpoint integrity |
+
+### Consumer Opt-Out Management
 
 ```typescript
-// Execute erasure with audit trail
-const result = await gdpr.executeErasure('user-abc-123', 'User request');
+import { CCPAManager } from '@weave_protocol/domere';
 
-console.log(`Erased ${result.erasedRecords} records`);
-// Subject data anonymized, audit trail preserved
+const ccpa = new CCPAManager({
+  id: 'biz-001',
+  name: 'Acme Corporation',
+  address: '123 Main St, San Francisco, CA',
+  privacyPolicyUrl: 'https://acme.com/privacy',
+  doNotSellUrl: 'https://acme.com/do-not-sell',
+  contactEmail: 'privacy@acme.com',
+  meetsThreshold: true
+});
+
+// Register consumer
+const consumer = ccpa.registerConsumer({
+  email: 'user@example.com',
+  californiaResident: true
+});
+
+// Record opt-out (Do Not Sell My Personal Information)
+const optOut = ccpa.recordOptOut({
+  consumerId: consumer.id,
+  optOutType: 'sale',
+  source: 'web_form'
+});
+
+// Check if consumer has opted out
+const hasOptedOut = ccpa.hasActiveOptOut(consumer.id, 'sale');
 ```
 
-### Data Portability
+### Global Privacy Control (GPC)
 
 ```typescript
-// Export all subject data in portable format
-const exportData = gdpr.exportSubjectData('user-abc-123', 'json');
-
-// Returns:
-// - subject profile
-// - consent records
-// - DSAR history
-// - automated decisions
-// All in machine-readable format
+// Process GPC signal - automatically opts out of sale AND sharing
+const optOuts = ccpa.processGPC(consumer.id);
+console.log(`Created ${optOuts.length} opt-outs via GPC`); // 2
 ```
 
-### Data Breach Management
+### Consumer Requests (45-day deadline)
 
 ```typescript
-// Report a breach immediately upon detection
-const breach = gdpr.reportBreach({
-  description: 'Unauthorized database access detected',
-  severity: 'critical',
-  affectedSubjects: 15000,
-  affectedCategories: ['identification', 'contact', 'financial'],
-  cause: 'cyber_attack',
-  consequences: ['Identity theft risk', 'Financial fraud risk']
+// Submit Right to Know request
+const request = ccpa.submitRequest({
+  consumerId: consumer.id,
+  type: 'know_specific',
+  source: 'web_form'
 });
 
-// 72-hour deadline starts now!
-console.log(`⚠️ Must notify authority by ${new Date(breach.detectedAt.getTime() + 72*60*60*1000)}`);
+console.log(`Due: ${request.dueDate}`); // 45 days from now
 
-// Add mitigation actions
-gdpr.addBreachMitigation(breach.id, {
-  action: 'Revoked compromised credentials',
-  performedBy: 'security-team',
-  effective: true
+// Verify identity before processing
+ccpa.verifyRequest(request.id, 'email_verification');
+
+// Need more time? Extend once by 45 days
+ccpa.extendRequest(request.id, 'Complex request');
+
+// Complete with response
+ccpa.completeRequest(request.id, {
+  actions: [
+    { type: 'disclosed', dataCategory: 'identifiers', recordCount: 5 },
+    { type: 'disclosed', dataCategory: 'commercial_info', recordCount: 23 }
+  ],
+  format: 'json'
 });
-
-gdpr.addBreachMitigation(breach.id, {
-  action: 'Enabled additional monitoring',
-  performedBy: 'security-team',
-  effective: true
-});
-
-// Notify supervisory authority (within 72 hours!)
-gdpr.notifySupervisoryAuthority(breach.id, 'ICO UK', 'ICO-2024-12345');
-
-// Notify affected subjects if high risk
-gdpr.notifyAffectedSubjects(breach.id, 'email', 15000);
-
-// Close breach with lessons learned
-gdpr.closeBreach(breach.id, 
-  'SQL injection via unvalidated input',
-  ['Input validation on all endpoints', 'WAF rules updated', 'Quarterly pen testing']
-);
 ```
 
-### Retention Policy Enforcement
+### Annual Metrics Disclosure
 
 ```typescript
-// Create retention policy
-const policy = gdpr.createRetentionPolicy({
-  name: 'Customer Contact Data',
-  description: 'Contact information for inactive customers',
-  dataCategories: ['contact', 'identification'],
-  retentionPeriod: {
-    duration: 730,  // 2 years
-    unit: 'days',
-    reviewCycle: 90
-  },
-  legalBasis: 'Legitimate interest - customer service',
-  deletionMethod: 'anonymization',
-  status: 'active',
-  nextReviewDate: new Date('2025-01-01')
-});
+// Required annual disclosure per CCPA Section 1798.185(a)(7)
+const metrics = ccpa.generateAnnualMetrics(2025);
 
-// Execute retention check
-const check = gdpr.executeRetentionCheck(policy.id);
-console.log(`Deleted ${check.recordsDeleted} expired records`);
+console.log('Right to Know:', metrics.requestsToKnow);
+console.log('Right to Delete:', metrics.requestsToDelete);
+console.log('Right to Opt-Out:', metrics.requestsToOptOut);
 ```
 
-### Automated Decision Tracking (Article 22)
+### Personal Information Categories
 
-```typescript
-// Record AI-powered decision
-const decision = gdpr.recordAutomatedDecision({
-  subjectId: 'user-abc-123',
-  decisionType: 'credit_scoring',
-  algorithm: 'credit-model-v3.2',
-  inputData: ['payment_history', 'income', 'employment'],
-  outcome: 'approved',
-  significance: 'legal_effects',  // Triggers human review requirement
-  legalBasis: 'contract',
-  explanation: 'Score of 720 exceeds threshold of 650'
-});
-
-if (decision.humanReviewRequired) {
-  console.log('⚠️ Human review required per Article 22');
-  
-  // Complete human review
-  gdpr.completeHumanReview(
-    decision.id,
-    'reviewer@company.com',
-    'Approved - decision upheld after manual verification'
-  );
-}
-
-// Check pending reviews
-const pending = gdpr.getPendingHumanReviews();
-console.log(`${pending.length} decisions awaiting human review`);
-```
-
-### GDPR Reporting
-
-```typescript
-// Generate compliance report
-const report = gdpr.generateReport('full_compliance', {
-  start: new Date('2024-01-01'),
-  end: new Date('2024-12-31')
-});
-
-console.log(`Compliance Score: ${report.summary.complianceScore}%`);
-console.log(`DSARs Completed: ${report.summary.dsarCompleted}/${report.summary.dsarRequests}`);
-console.log(`Avg Response Time: ${report.summary.avgResponseTime} days`);
-console.log(`Breaches: ${report.summary.breaches}`);
-console.log(`Human Reviews: ${report.summary.humanReviews}`);
-```
+| Category | Examples |
+|----------|----------|
+| `identifiers` | Name, SSN, driver's license, passport |
+| `customer_records` | Paper/electronic customer records |
+| `protected_classifications` | Age, race, religion, sexual orientation |
+| `commercial_info` | Products purchased, purchase history |
+| `biometric` | Fingerprints, face recognition |
+| `internet_activity` | Browsing history, search history |
+| `geolocation` | Precise physical location |
+| `sensory_data` | Audio, video, thermal data |
+| `professional_info` | Employment information |
+| `education_info` | Non-public education records |
+| `inferences` | Consumer profiles, predictions |
+| `sensitive_personal_info` | CPRA sensitive categories |
 
 ---
 
@@ -295,13 +266,8 @@ console.log(`Human Reviews: ${report.summary.humanReviews}`);
 Anchor checkpoints to blockchain for immutable audit proof:
 
 ```typescript
-// Anchor to Solana
 const anchor = await compliance.anchorToBlockchain(checkpoint.id, 'solana');
 console.log(`Transaction: ${anchor.transactionId}`);
-
-// Verify later
-const verified = await compliance.verifyBlockchainAnchor(checkpoint.id);
-console.log(`Verified: ${verified.valid}`);
 ```
 
 **Blockchain Addresses:**
@@ -320,6 +286,7 @@ console.log(`Verified: ${verified.valid}`);
 | PCI-DSS | ✅ Implemented | Payment card security |
 | ISO27001 | ✅ Implemented | Information security management |
 | GDPR | ✅ Implemented | EU data protection regulation |
+| CCPA/CPRA | ✅ Implemented | California consumer privacy |
 
 ---
 
@@ -331,7 +298,6 @@ console.log(`Verified: ${verified.valid}`);
 domere_checkpoint          Create tamper-evident checkpoint
 domere_verify              Verify checkpoint integrity
 domere_compliance_report   Generate framework report
-domere_list_frameworks     List available frameworks
 domere_anchor_blockchain   Anchor to Solana/Ethereum
 ```
 
@@ -344,22 +310,41 @@ domere_gdpr_check_consent       Check consent status
 domere_gdpr_handle_dsar         Create/manage DSARs
 domere_gdpr_right_to_erasure    Execute data deletion
 domere_gdpr_data_portability    Export subject data
-domere_gdpr_log_processing      Article 30 records
 domere_gdpr_breach_notify       Breach management
 domere_gdpr_retention_check     Retention enforcement
 domere_gdpr_automated_decision  Article 22 tracking
 domere_gdpr_report              Compliance reporting
 ```
 
+### CCPA/CPRA Tools
+
+```
+ccpa_register_consumer      Register California consumer
+ccpa_get_consumer           Lookup consumer
+ccpa_record_opt_out         Do Not Sell / Do Not Share
+ccpa_process_gpc            Global Privacy Control signal
+ccpa_withdraw_opt_out       Withdraw opt-out
+ccpa_check_opt_out          Check opt-out status
+ccpa_submit_request         Submit consumer request
+ccpa_verify_request         Verify identity
+ccpa_extend_request         Extend 45-day deadline
+ccpa_complete_request       Complete with response
+ccpa_deny_request           Deny with reason
+ccpa_get_pending_requests   List pending requests
+ccpa_get_overdue_requests   Alert: overdue requests
+ccpa_generate_report        Compliance reports
+ccpa_annual_metrics         Required annual disclosure
+ccpa_get_checkpoints        Audit trail
+ccpa_verify_chain           Verify checkpoint integrity
+```
+
 ---
 
 ## 🤖 AI Agent Skill
 
-This package includes a `SKILL.md` for Claude AI integration.
-
 **Skill name:** `compliance-auditing`
 
-**Triggers:** audit, checkpoint, SOC2, HIPAA, PCI-DSS, ISO27001, GDPR, blockchain, consent, DSAR, breach, retention
+**Triggers:** audit, checkpoint, SOC2, HIPAA, PCI-DSS, ISO27001, GDPR, CCPA, CPRA, blockchain, consent, DSAR, consumer request, opt-out, breach, retention
 
 ---
 
