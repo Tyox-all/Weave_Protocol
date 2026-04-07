@@ -1,14 +1,13 @@
 ---
 name: compliance-auditing
-description: "Create compliance checkpoints, generate audit reports, and anchor to blockchain. Use when: audit, checkpoint, SOC2, HIPAA, PCI-DSS, ISO27001, GDPR, blockchain anchor, compliance report, consent management, DSAR, data breach, retention policy, automated decision."
+description: "Create compliance checkpoints, generate audit reports, and anchor to blockchain. Use when: audit, checkpoint, SOC2, HIPAA, PCI-DSS, ISO27001, GDPR, CCPA, CPRA, blockchain anchor, compliance report, consent management, DSAR, consumer request, opt-out, data breach, retention policy, automated decision."
 ---
 
 # ⚖️ Domere - Compliance & Auditing
 
-Enterprise compliance, verification, and GDPR tooling for AI agents.
+Enterprise compliance, verification, GDPR and CCPA tooling for AI agents.
 
 ## Installation
-
 ```bash
 npm install @weave_protocol/domere
 ```
@@ -40,37 +39,39 @@ npm install @weave_protocol/domere
 | `domere_gdpr_automated_decision` | Track AI decisions & human review (Art 22) |
 | `domere_gdpr_report` | Generate GDPR compliance reports |
 
+### CCPA/CPRA Tools
+
+| Tool | Purpose |
+|------|---------|
+| `ccpa_register_consumer` | Register California consumer |
+| `ccpa_record_opt_out` | Do Not Sell / Do Not Share (§1798.120) |
+| `ccpa_process_gpc` | Global Privacy Control signal (§1798.135) |
+| `ccpa_submit_request` | Submit consumer request (§1798.100-106) |
+| `ccpa_verify_request` | Verify consumer identity |
+| `ccpa_extend_request` | Extend 45-day deadline (+45 days) |
+| `ccpa_complete_request` | Complete with response |
+| `ccpa_deny_request` | Deny with valid reason |
+| `ccpa_get_overdue_requests` | Alert: overdue requests |
+| `ccpa_annual_metrics` | Required annual disclosure (§1798.185) |
+| `ccpa_generate_report` | Generate CCPA compliance reports |
+
 ## Supported Frameworks
 
 - **SOC2** - Trust Services Criteria
 - **HIPAA** - Healthcare data protection
 - **PCI-DSS** - Payment card security
 - **ISO27001** - Information security
-- **GDPR** - EU data protection
+- **GDPR** - EU data protection (30-day deadline)
+- **CCPA/CPRA** - California consumer privacy (45-day deadline)
 
 ## Usage Examples
 
-### Create Checkpoint
-
-```typescript
-import { ComplianceManager } from '@weave_protocol/domere';
-
-const compliance = new ComplianceManager(['soc2', 'gdpr']);
-const checkpoint = await compliance.createCheckpoint({
-  action: 'data_access',
-  resource: 'customer_records',
-  actor: 'agent-001'
-});
-```
-
 ### GDPR Consent Management
-
 ```typescript
 import { GDPRManager } from '@weave_protocol/domere';
 
 const gdpr = new GDPRManager({ name: 'Acme Corp', email: 'dpo@acme.com' });
 
-// Record consent
 const consent = gdpr.recordConsent({
   subjectId: 'user-123',
   purpose: 'marketing',
@@ -79,54 +80,58 @@ const consent = gdpr.recordConsent({
   source: 'web_form',
   version: '2.1'
 });
-
-// Check consent
-const hasConsent = gdpr.hasValidConsent('user-123', 'marketing');
 ```
 
-### Handle DSAR
-
+### CCPA Opt-Out Management
 ```typescript
-// Create access request
-const dsar = gdpr.createDSAR({
-  subjectId: 'user-123',
-  type: 'access',
-  verificationMethod: 'email'
-});
-// Due in 30 days per GDPR
+import { CCPAManager } from '@weave_protocol/domere';
 
-// Complete with data export
-gdpr.completeDSAR(dsar.id, {
-  type: 'access',
-  completedAt: new Date(),
-  dataIncluded: true,
-  dataFormat: 'json'
+const ccpa = new CCPAManager({
+  name: 'Acme Corp',
+  privacyPolicyUrl: 'https://acme.com/privacy',
+  doNotSellUrl: 'https://acme.com/do-not-sell',
+  contactEmail: 'privacy@acme.com'
 });
+
+// Register consumer
+const consumer = ccpa.registerConsumer({
+  email: 'user@example.com',
+  californiaResident: true
+});
+
+// Record opt-out
+ccpa.recordOptOut({
+  consumerId: consumer.id,
+  optOutType: 'sale',
+  source: 'web_form'
+});
+
+// Or process Global Privacy Control signal
+ccpa.processGPC(consumer.id); // Opts out of sale + sharing
 ```
 
-### Data Breach Response
-
+### CCPA Consumer Request
 ```typescript
-// Report breach
-const breach = gdpr.reportBreach({
-  description: 'Unauthorized database access',
-  severity: 'high',
-  affectedSubjects: 1500,
-  affectedCategories: ['identification', 'contact'],
-  cause: 'cyber_attack',
-  consequences: ['Identity theft risk']
+// Submit request - 45 day deadline
+const request = ccpa.submitRequest({
+  consumerId: consumer.id,
+  type: 'know_specific',
+  source: 'web_form'
 });
 
-// Notify authority within 72 hours
-gdpr.notifySupervisoryAuthority(breach.id, 'ICO UK', 'REF-12345');
+// Verify identity
+ccpa.verifyRequest(request.id, 'email_verification');
+
+// Complete
+ccpa.completeRequest(request.id, {
+  actions: [{ type: 'disclosed', dataCategory: 'identifiers', recordCount: 5 }],
+  format: 'json'
+});
 ```
 
 ### Blockchain Anchoring
-
 ```typescript
-// Anchor checkpoint to Solana
 const anchor = await compliance.anchorToBlockchain(checkpoint.id, 'solana');
-// Returns transaction ID for immutable proof
 ```
 
 ## Blockchain Addresses
