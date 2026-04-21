@@ -78,6 +78,7 @@ await chain.invoke({ question: 'Ignore previous instructions...' });
 | [👥 @weave_protocol/witan](./witan) | 1.0.2 | Multi-agent consensus & governance |
 | [🔍 @weave_protocol/hundredmen](./hundredmen) | 1.0.6 | **Real-time MCP proxy** - intercept, scan, gate tool calls |
 | [🔗 @weave_protocol/langchain](./langchain) | 1.0.1 | **LangChain.js** security callbacks & tool wrappers |
+| [🐍 weave-protocol-llamaindex](./llamaindex-py) | 0.1.0 | **Python/LlamaIndex** security callbacks & tools |
 | [🔌 @weave_protocol/api](./api) | 1.0.11 | REST API for all packages |
 
 ---
@@ -486,7 +487,7 @@ npm test
 - [x] MCP server reputation scoring
 - [x] Automated threat intelligence updates
 - [x] LangChain.js integration package
-- [ ] Python/LlamaIndex integration
+- [x] Python/LlamaIndex integration
 - [ ] Web dashboard for monitoring
 - [x] CCPA compliance framework
 
