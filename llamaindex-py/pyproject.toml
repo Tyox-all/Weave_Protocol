@@ -1,0 +1,75 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "weave-protocol-llamaindex"
+version = "0.1.0"
+description = "Security scanning and monitoring for LlamaIndex applications - part of Weave Protocol"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.9"
+authors = [
+    {name = "Trent Yoxall", email = "trent@weaveprotocol.dev"}
+]
+keywords = [
+    "llm",
+    "llamaindex",
+    "security",
+    "ai-safety",
+    "pii-detection",
+    "prompt-injection",
+    "rag",
+    "weave-protocol",
+    "mcp"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    "llama-index-core>=0.10.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "black>=23.0",
+    "mypy>=1.0",
+    "ruff>=0.1",
+]
+remote = [
+    "httpx>=0.24",
+]
+
+[project.urls]
+Homepage = "https://github.com/Tyox-all/Weave_Protocol"
+Documentation = "https://github.com/Tyox-all/Weave_Protocol/tree/main/llamaindex-py"
+Repository = "https://github.com/Tyox-all/Weave_Protocol"
+Issues = "https://github.com/Tyox-all/Weave_Protocol/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/weave_protocol_llamaindex"]
+
+[tool.black]
+line-length = 100
+target-version = ["py39"]
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "I", "W"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
