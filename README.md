@@ -24,6 +24,29 @@ A TypeScript monorepo providing security, encryption, compliance, and governance
 
 ## 🆕 What's New
 
+### Python/LlamaIndex Integration (v0.1.0)
+
+Security scanning for LlamaIndex applications:
+
+````python
+from weave_protocol_llamaindex import WeaveSecurityHandler
+from llama_index.core.callbacks import CallbackManager
+from llama_index.core import Settings
+
+# Attach security handler globally
+Settings.callback_manager = CallbackManager([WeaveSecurityHandler()])
+
+# All LlamaIndex operations now scanned!
+# Prompts, responses, retrievals - threats auto-blocked
+```
+
+Features: Callback handler, secure tools, secure retriever, PII redaction
+
+**[See LlamaIndex README →](./llamaindex-py)**
+
+---
+
+
 ### LangChain.js Integration (v1.0.1)
 
 Drop-in security for LangChain.js applications:
