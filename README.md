@@ -102,7 +102,7 @@ await chain.invoke({ question: 'Ignore previous instructions...' });
 | [🔍 @weave_protocol/hundredmen](./hundredmen) | 1.0.6 | **Real-time MCP proxy** - intercept, scan, gate tool calls |
 | [🔗 @weave_protocol/langchain](./langchain) | 1.0.1 | **LangChain.js** security callbacks & tool wrappers |
 | [🐍 weave-protocol-llamaindex](./llamaindex-py) | 0.1.0 | **Python/LlamaIndex** security callbacks & tools |
-| [🔌 @weave_protocol/api](./api) | 1.0.11 | REST API for all packages |
+| [🔌 @weave_protocol/api](./api) | 1.0.12 | REST API for all packages |
 
 ---
 
@@ -511,8 +511,10 @@ npm test
 - [x] Automated threat intelligence updates
 - [x] LangChain.js integration package
 - [x] Python/LlamaIndex integration
-- [ ] Web dashboard for monitoring
+- [x] Web dashboard for monitoring
 - [x] CCPA compliance framework
+
+*H2 2026 roadmap under consideration — deep dive planning session coming soon.*
 
 ---
 
