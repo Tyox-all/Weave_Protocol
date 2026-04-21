@@ -28,7 +28,7 @@ A TypeScript monorepo providing security, encryption, compliance, and governance
 
 Security scanning for LlamaIndex applications:
 
-````python
+```python
 from weave_protocol_llamaindex import WeaveSecurityHandler
 from llama_index.core.callbacks import CallbackManager
 from llama_index.core import Settings
