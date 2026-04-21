@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weave Protocol Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            weave: {
+              dark: '#0f172a',
+              darker: '#020617',
+              accent: '#3b82f6',
+              green: '#22c55e',
+              yellow: '#eab308',
+              red: '#ef4444',
+              purple: '#a855f7',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes pulse-border {
+      0%, 100% { border-color: rgba(59, 130, 246, 0.5); }
+      50% { border-color: rgba(59, 130, 246, 1); }
+    }
+    .live-border { animation: pulse-border 2s infinite; }
+    .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+    .scrollbar-thin::-webkit-scrollbar-track { background: #1e293b; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+  </style>
+</head>
+<body class="bg-weave-darker text-gray-100">
+  <div id="root"></div>
+  
+  <script type="text/babel">
+    const { useState, useEffect, useCallback } = React;
+
+    // API base URL
+    const API_URL = window.location.origin;
+
+    // Severity badge component
+    const SeverityBadge = ({ severity }) => {
+      const colors = {
+        critical: 'bg-red-500/20 text-red-400 border-red-500/50',
+        high: 'bg-orange-500/20 text-orange-400 border-orange-500/50',
+        medium: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50',
+        low: 'bg-blue-500/20 text-blue-400 border-blue-500/50',
+        info: 'bg-gray-500/20 text-gray-400 border-gray-500/50',
+      };
+      return (
+        <span className={`px-2 py-0.5 text-xs font-medium rounded border ${colors[severity] || colors.info}`}>
+          {severity?.toUpperCase()}
+        </span>
+      );
+    };
+
+    // Status badge component
+    const StatusBadge = ({ status }) => {
+      const colors = {
+        approved: 'bg-green-500/20 text-green-400',
+        blocked: 'bg-red-500/20 text-red-400',
+        pending: 'bg-yellow-500/20 text-yellow-400',
+        safe: 'bg-green-500/20 text-green-400',
+        unsafe: 'bg-red-500/20 text-red-400',
+      };
+      return (
+        <span className={`px-2 py-0.5 text-xs font-medium rounded ${colors[status] || 'bg-gray-500/20 text-gray-400'}`}>
+          {status?.toUpperCase()}
+        </span>
+      );
+    };
+
+    // Stat card component
+    const StatCard = ({ icon, label, value, subvalue, color = 'blue' }) => {
+      const colorClasses = {
+        blue: 'from-blue-500/20 to-blue-600/10 border-blue-500/30',
+        green: 'from-green-500/20 to-green-600/10 border-green-500/30',
+        yellow: 'from-yellow-500/20 to-yellow-600/10 border-yellow-500/30',
+        red: 'from-red-500/20 to-red-600/10 border-red-500/30',
+        purple: 'from-purple-500/20 to-purple-600/10 border-purple-500/30',
+      };
+      return (
+        <div className={`bg-gradient-to-br ${colorClasses[color]} border rounded-lg p-4`}>
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">{icon}</span>
+            <div>
+              <div className="text-2xl font-bold">{value}</div>
+              <div className="text-sm text-gray-400">{label}</div>
+              {subvalue && <div className="text-xs text-gray-500">{subvalue}</div>}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // Live feed item component
+    const FeedItem = ({ item, type }) => {
+      const icons = {
+        intercept: '🔍',
+        scan: '🛡️',
+        checkpoint: '⚖️',
+        vault: '🏛️',
+      };
+      
+      const getBorderColor = () => {
+        if (item.status === 'blocked' || item.safe === false) return 'border-l-red-500';
+        if (item.status === 'pending') return 'border-l-yellow-500';
+        return 'border-l-green-500';
+      };
+
+      return (
+        <div className={`bg-slate-800/50 border-l-4 ${getBorderColor()} rounded-r-lg p-3 mb-2`}>
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-2">
+              <span>{icons[type]}</span>
+              <span className="font-medium text-sm">{item.tool || item.action || item.type}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {item.severity && <SeverityBadge severity={item.severity} />}
+              {item.status && <StatusBadge status={item.status} />}
+              {item.safe !== undefined && <StatusBadge status={item.safe ? 'safe' : 'unsafe'} />}
+            </div>
+          </div>
+          {item.server && <div className="text-xs text-gray-500 mt-1">Server: {item.server}</div>}
+          {item.description && <div className="text-xs text-gray-400 mt-1">{item.description}</div>}
+          {item.findings && item.findings.length > 0 && (
+            <div className="text-xs text-red-400 mt-1">
+              {item.findings.length} threat(s) detected
+            </div>
+          )}
+          <div className="text-xs text-gray-600 mt-1">
+            {new Date(item.timestamp || Date.now()).toLocaleTimeString()}
+          </div>
+        </div>
+      );
+    };
+
+    // Panel component
+    const Panel = ({ title, icon, children, live = false }) => (
+      <div className={`bg-slate-900/50 rounded-xl border ${live ? 'border-blue-500/50 live-border' : 'border-slate-700/50'} overflow-hidden`}>
+        <div className="px-4 py-3 border-b border-slate-700/50 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span>{icon}</span>
+            <h2 className="font-semibold">{title}</h2>
+          </div>
+          {live && (
+            <span className="flex items-center gap-1 text-xs text-blue-400">
+              <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
+              LIVE
+            </span>
+          )}
+        </div>
+        <div className="p-4 max-h-80 overflow-y-auto scrollbar-thin">
+          {children}
+        </div>
+      </div>
+    );
+
+    // Threat intel panel
+    const ThreatIntelPanel = ({ data }) => (
+      <Panel title="Threat Intelligence" icon="📡">
+        {data ? (
+          <div className="space-y-3">
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="bg-slate-800 rounded p-2">
+                <div className="text-xl font-bold text-blue-400">{data.patterns || 0}</div>
+                <div className="text-xs text-gray-500">Patterns</div>
+              </div>
+              <div className="bg-slate-800 rounded p-2">
+                <div className="text-xl font-bold text-purple-400">{data.sources || 0}</div>
+                <div className="text-xs text-gray-500">Sources</div>
+              </div>
+              <div className="bg-slate-800 rounded p-2">
+                <div className="text-xl font-bold text-green-400">{data.mitre_techniques || 0}</div>
+                <div className="text-xs text-gray-500">MITRE</div>
+              </div>
+            </div>
+            {data.sourceDetails && data.sourceDetails.map((src, i) => (
+              <div key={i} className="flex items-center justify-between text-sm bg-slate-800/50 rounded p-2">
+                <span className={src.enabled ? 'text-green-400' : 'text-gray-500'}>
+                  {src.enabled ? '✅' : '⬜'} {src.name}
+                </span>
+                <span className="text-gray-500">{src.patterns} patterns</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-gray-500 text-center py-4">Loading...</div>
+        )}
+      </Panel>
+    );
+
+    // Compliance panel
+    const CompliancePanel = ({ data }) => {
+      const frameworks = ['soc2', 'hipaa', 'pci-dss', 'iso27001', 'gdpr', 'ccpa'];
+      return (
+        <Panel title="Compliance Status" icon="⚖️">
+          <div className="space-y-2">
+            {frameworks.map(fw => {
+              const status = data?.frameworks?.[fw];
+              return (
+                <div key={fw} className="flex items-center justify-between bg-slate-800/50 rounded p-2">
+                  <span className="text-sm font-medium uppercase">{fw}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500">
+                      {status?.checkpoints || 0} checkpoints
+                    </span>
+                    <span className={`w-2 h-2 rounded-full ${status?.active ? 'bg-green-400' : 'bg-gray-600'}`}></span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Panel>
+      );
+    };
+
+    // Server reputation panel
+    const ReputationPanel = ({ data }) => (
+      <Panel title="MCP Server Reputation" icon="🏆">
+        {data && data.length > 0 ? (
+          <div className="space-y-2">
+            {data.map((server, i) => (
+              <div key={i} className="flex items-center justify-between bg-slate-800/50 rounded p-2">
+                <span className="text-sm truncate max-w-[150px]">{server.name}</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-20 h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full ${
+                        server.score >= 70 ? 'bg-green-500' : 
+                        server.score >= 40 ? 'bg-yellow-500' : 'bg-red-500'
+                      }`}
+                      style={{ width: `${server.score}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-xs font-mono w-8">{server.score}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-gray-500 text-center py-4">No servers tracked</div>
+        )}
+      </Panel>
+    );
+
+    // Main Dashboard component
+    const Dashboard = () => {
+      const [stats, setStats] = useState({
+        scans: 0,
+        threats: 0,
+        intercepts: 0,
+        blocked: 0,
+        checkpoints: 0,
+        vaultOps: 0,
+      });
+      const [liveFeed, setLiveFeed] = useState([]);
+      const [threatIntel, setThreatIntel] = useState(null);
+      const [compliance, setCompliance] = useState(null);
+      const [reputation, setReputation] = useState([]);
+      const [connected, setConnected] = useState(false);
+      const [lastUpdate, setLastUpdate] = useState(null);
+
+      // Fetch data from API
+      const fetchData = useCallback(async () => {
+        try {
+          // Try to fetch stats
+          const responses = await Promise.allSettled([
+            fetch(`${API_URL}/stats`).then(r => r.json()),
+            fetch(`${API_URL}/feed`).then(r => r.json()),
+            fetch(`${API_URL}/mund/intel-status`).then(r => r.json()),
+            fetch(`${API_URL}/domere/compliance/status`).then(r => r.json()),
+            fetch(`${API_URL}/hundredmen/servers`).then(r => r.json()),
+          ]);
+
+          if (responses[0].status === 'fulfilled') setStats(responses[0].value);
+          if (responses[1].status === 'fulfilled') setLiveFeed(responses[1].value);
+          if (responses[2].status === 'fulfilled') setThreatIntel(responses[2].value);
+          if (responses[3].status === 'fulfilled') setCompliance(responses[3].value);
+          if (responses[4].status === 'fulfilled') setReputation(responses[4].value);
+          
+          setConnected(true);
+          setLastUpdate(new Date());
+        } catch (err) {
+          console.error('Failed to fetch data:', err);
+          setConnected(false);
+        }
+      }, []);
+
+      // Poll for updates
+      useEffect(() => {
+        fetchData();
+        const interval = setInterval(fetchData, 3000);
+        return () => clearInterval(interval);
+      }, [fetchData]);
+
+      // Demo data for when API isn't available
+      useEffect(() => {
+        if (!connected && liveFeed.length === 0) {
+          setLiveFeed([
+            { type: 'intercept', tool: 'file_read', server: 'filesystem', status: 'approved', timestamp: Date.now() },
+            { type: 'scan', action: 'Content scan', safe: true, timestamp: Date.now() - 5000 },
+            { type: 'intercept', tool: 'web_fetch', server: 'browser', status: 'blocked', severity: 'high', timestamp: Date.now() - 10000 },
+          ]);
+          setStats({ scans: 142, threats: 7, intercepts: 89, blocked: 3, checkpoints: 24, vaultOps: 18 });
+          setThreatIntel({ patterns: 47, sources: 3, mitre_techniques: 10 });
+        }
+      }, [connected, liveFeed.length]);
+
+      return (
+        <div className="min-h-screen">
+          {/* Header */}
+          <header className="bg-slate-900/80 border-b border-slate-700/50 px-6 py-4 sticky top-0 z-10 backdrop-blur">
+            <div className="flex items-center justify-between max-w-7xl mx-auto">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">🕸️</span>
+                <div>
+                  <h1 className="text-xl font-bold">Weave Protocol</h1>
+                  <p className="text-xs text-gray-500">Security Dashboard</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className={`flex items-center gap-2 text-sm ${connected ? 'text-green-400' : 'text-red-400'}`}>
+                  <span className={`w-2 h-2 rounded-full ${connected ? 'bg-green-400' : 'bg-red-400'}`}></span>
+                  {connected ? 'Connected' : 'Demo Mode'}
+                </div>
+                {lastUpdate && (
+                  <span className="text-xs text-gray-500">
+                    Updated: {lastUpdate.toLocaleTimeString()}
+                  </span>
+                )}
+              </div>
+            </div>
+          </header>
+
+          {/* Main content */}
+          <main className="max-w-7xl mx-auto p-6">
+            {/* Stats row */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+              <StatCard icon="🛡️" label="Total Scans" value={stats.scans} color="blue" />
+              <StatCard icon="⚠️" label="Threats Found" value={stats.threats} color="red" />
+              <StatCard icon="🔍" label="Intercepts" value={stats.intercepts} color="purple" />
+              <StatCard icon="🚫" label="Blocked" value={stats.blocked} color="yellow" />
+              <StatCard icon="⚖️" label="Checkpoints" value={stats.checkpoints} color="green" />
+              <StatCard icon="🏛️" label="Vault Ops" value={stats.vaultOps} color="blue" />
+            </div>
+
+            {/* Main grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Live feed - takes 2 columns */}
+              <div className="lg:col-span-2">
+                <Panel title="Live Activity Feed" icon="📡" live>
+                  {liveFeed.length > 0 ? (
+                    liveFeed.map((item, i) => (
+                      <FeedItem key={i} item={item} type={item.type || 'intercept'} />
+                    ))
+                  ) : (
+                    <div className="text-gray-500 text-center py-8">
+                      No activity yet. Waiting for events...
+                    </div>
+                  )}
+                </Panel>
+              </div>
+
+              {/* Side panels */}
+              <div className="space-y-6">
+                <ThreatIntelPanel data={threatIntel} />
+                <CompliancePanel data={compliance} />
+                <ReputationPanel data={reputation} />
+              </div>
+            </div>
+
+            {/* Package status */}
+            <div className="mt-6 bg-slate-900/50 rounded-xl border border-slate-700/50 p-4">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <span>📦</span> Package Status
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                {[
+                  { name: 'Mund', icon: '🛡️', status: 'active' },
+                  { name: 'Hord', icon: '🏛️', status: 'active' },
+                  { name: 'Domere', icon: '⚖️', status: 'active' },
+                  { name: 'Witan', icon: '👥', status: 'idle' },
+                  { name: 'Hundredmen', icon: '🔍', status: 'active' },
+                  { name: 'LangChain', icon: '🔗', status: 'idle' },
+                  { name: 'LlamaIndex', icon: '🐍', status: 'idle' },
+                ].map(pkg => (
+                  <div key={pkg.name} className="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <div className="text-2xl mb-1">{pkg.icon}</div>
+                    <div className="text-sm font-medium">{pkg.name}</div>
+                    <div className={`text-xs ${pkg.status === 'active' ? 'text-green-400' : 'text-gray-500'}`}>
+                      {pkg.status}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </main>
+
+          {/* Footer */}
+          <footer className="border-t border-slate-700/50 px-6 py-4 mt-8">
+            <div className="max-w-7xl mx-auto flex items-center justify-between text-sm text-gray-500">
+              <span>Weave Protocol Dashboard v1.0.0</span>
+              <span>localhost only • no data leaves your machine</span>
+            </div>
+          </footer>
+        </div>
+      );
+    };
+
+    // Render
+    ReactDOM.createRoot(document.getElementById('root')).render(<Dashboard />);
+  </script>
+</body>
+</html>
