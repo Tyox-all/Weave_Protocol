@@ -20,7 +20,9 @@ Part of the [Weave Protocol Security Suite](https://github.com/Tyox-all/Weave_Pr
 
 ## 💡 Why
 
-> The Axios package had 100M+ weekly downloads. North Korean state actors social-engineered a single maintainer and compromised it. We caught it in under 6 minutes.
+> On March 31, 2026, North Korean threat actors (tracked as UNC1069 by [Google's Threat Intelligence Group](https://cloud.google.com/blog/topics/threat-intelligence/north-korea-threat-actor-targets-axios-npm-package) and Sapphire Sleet by [Microsoft](https://www.microsoft.com/en-us/security/blog/2026/04/01/mitigating-the-axios-npm-supply-chain-compromise/)) published two malicious versions of [`axios`](https://www.npmjs.com/package/axios) — a package with ~100M weekly downloads. They had spent weeks social-engineering the lead maintainer through a fake Slack workspace and a Teams call that installed a RAT, giving them his npm credentials. The poisoned versions shipped a backdoor (WAVESHAPER.V2) for macOS, Windows, and Linux. They were live for three hours.
+
+The attack worked because nobody was checking what `npm install` was actually pulling in. The dependency had no provenance, the maintainer's account was technically valid, and `postinstall` scripts ran automatically. Every defense was downstream of the install.
 
 The better AI gets at writing code, the faster the dependency graph grows, and the more attack surface exists in the software supply chain. Tollere was built for the world where:
 
@@ -29,6 +31,17 @@ The better AI gets at writing code, the faster the dependency graph grows, and t
 - A new CVE drops every few hours
 - A "patch" version can introduce a fresh install script that exfiltrates your secrets
 
+**Tollere checks before the install completes — not after.**
+
+### Credit where it's due
+
+Tollere stands on the shoulders of the supply chain security community:
+
+- [**Socket**](https://socket.dev) — surfaced the broader pattern, identified other targeted maintainers across the npm ecosystem
+- [**Google Threat Intelligence Group (GTIG/Mandiant)**](https://cloud.google.com/blog/topics/threat-intelligence/) — attributed the campaign to UNC1069
+- [**Microsoft Threat Intelligence**](https://www.microsoft.com/en-us/security/blog/) — independent attribution to Sapphire Sleet
+- [**Jason Saayman**](https://github.com/axios/axios) — published the post-mortem, helping the entire ecosystem learn from the incident
+- [**OSV.dev**](https://osv.dev) and the [**GitHub Advisory Database**](https://github.com/advisories) — the underlying vulnerability data Tollere queries
 ---
 
 ## 📦 Installation

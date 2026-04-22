@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/tollere",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Supply chain security for AI-generated code - scans npm/pip dependencies before install for typosquats, malicious maintainers, CVEs, and suspicious version diffs",
   "type": "module",
   "main": "dist/index.js",
@@ -47,8 +47,8 @@
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "typescript": "^5.3.0"
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.3"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -58,9 +58,5 @@
     "README.md",
     "SKILL.md",
     "LICENSE"
-  ],
-  "devDependencies": {
-    "@types/node": "^25.6.0",
-    "typescript": "^6.0.3"
-  }
+  ]
 }
