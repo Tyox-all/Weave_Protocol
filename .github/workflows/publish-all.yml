@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        package: [mund, hord, domere, witan, hundredmen, langchain, api]
+        package: [mund, hord, domere, witan, hundredmen, tollere, langchain, api]
       fail-fast: false  # Continue publishing other packages if one fails
     
     steps:

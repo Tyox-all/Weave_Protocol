@@ -1,0 +1,66 @@
+{
+  "name": "@weave_protocol/tollere",
+  "version": "0.1.0",
+  "description": "Supply chain security for AI-generated code - scans npm/pip dependencies before install for typosquats, malicious maintainers, CVEs, and suspicious version diffs",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "weave-tollere": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsc --watch",
+    "test": "node --test tests/",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "supply-chain",
+    "security",
+    "npm",
+    "pypi",
+    "typosquat",
+    "cve",
+    "ai-security",
+    "ai-agents",
+    "dependency-scanning",
+    "weave-protocol",
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "agentic",
+    "vibe-coding"
+  ],
+  "author": "Trent Yoxall",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tyox-all/Weave_Protocol.git",
+    "directory": "tollere"
+  },
+  "homepage": "https://github.com/Tyox-all/Weave_Protocol/tree/main/tollere#readme",
+  "bugs": {
+    "url": "https://github.com/Tyox-all/Weave_Protocol/issues"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "SKILL.md",
+    "LICENSE"
+  ],
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.3"
+  }
+}
