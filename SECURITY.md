@@ -1,104 +1,68 @@
 # Security Policy
 
-## Supported Versions
+## Reporting a vulnerability
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 0.1.x   | :white_check_mark: |
+If you discover a security vulnerability in any Weave Protocol package, **please do not open a public GitHub issue**.
 
-## Reporting a Vulnerability
+Instead, email:
 
-We take the security of Mund seriously. If you have discovered a security vulnerability, please follow these steps:
+📧 **TYox-all@tutamail.com**
 
-### DO NOT
+Please include:
+- Which package is affected and at what version
+- A description of the vulnerability and its potential impact
+- Steps to reproduce (or a proof-of-concept if you have one)
+- Whether you've shared this with anyone else
+- Whether you'd like credit if a CVE is published
 
-- Open a public GitHub issue
-- Disclose the vulnerability publicly before it's fixed
-- Exploit the vulnerability beyond what's necessary to demonstrate it
+We aim to acknowledge receipt within **48 hours** and provide an initial assessment within **7 days**. Critical vulnerabilities affecting published packages will be patched and released within **30 days** under coordinated disclosure.
 
-### DO
+## Supported versions
 
-1. **Email us directly** at security@example.com with:
-   - A description of the vulnerability
-   - Steps to reproduce
-   - Potential impact assessment
-   - Any suggested fixes (optional)
+Only the latest minor version of each package receives security updates. As of April 2026:
 
-2. **Expect a response** within 48 hours acknowledging receipt
+| Package | Supported version |
+|---------|-------------------|
+| `@weave_protocol/mund` | 0.2.x |
+| `@weave_protocol/hord` | 0.1.x |
+| `@weave_protocol/domere` | 1.3.x |
+| `@weave_protocol/witan` | 1.0.x |
+| `@weave_protocol/hundredmen` | 1.0.x |
+| `@weave_protocol/tollere` | 0.2.x |
+| `@weave_protocol/langchain` | 1.0.x |
+| `@weave_protocol/api` | 1.0.x |
+| `weave-protocol-llamaindex` | 0.1.x |
 
-3. **Work with us** to understand and address the issue
+## Scope
 
-### What to Expect
+Vulnerabilities in scope:
 
-1. **Acknowledgment**: We'll acknowledge your report within 48 hours
-2. **Assessment**: We'll investigate and assess the severity
-3. **Fix Development**: We'll develop a fix if the issue is confirmed
-4. **Disclosure**: We'll coordinate with you on public disclosure timing
-5. **Credit**: We'll credit you in our security advisories (unless you prefer anonymity)
+- Bypasses of any security control (e.g., scanner evasion in Mund, integrity bypass in Hord, gate bypass in Hundredmen)
+- Cryptographic weaknesses in Hord (Yoxallismus, AES, Argon2 implementation)
+- Supply chain attack vectors that Tollere fails to detect
+- Privilege escalation in any package
+- Sensitive data exposure (logs, error messages, stack traces)
+- Authentication or authorization issues in the API package
 
-### Scope
+Out of scope:
 
-The following are in scope for security reports:
+- Issues in dependencies (please report upstream and notify us so we can pin)
+- Theoretical attacks without a working proof-of-concept
+- Issues requiring physical access to the developer's machine
+- Self-XSS that requires the user to paste attacker-controlled content into their own browser console
 
-- Mund MCP server
-- Detection rule bypass methods
-- Notification system vulnerabilities
-- Storage system vulnerabilities
-- Authentication/authorization issues
+## Security architecture
 
-The following are out of scope:
+For background on the defense-in-depth model and how the packages interact, see the [Security Model section in README.md](./README.md#-security-model).
 
-- Third-party dependencies (report to upstream)
-- Social engineering attacks
-- Physical attacks
-- Denial of service attacks
+## Dependency security
 
-## Security Best Practices for Users
+Tollere itself is the canonical answer for "is this package safe to install?" For the Weave Protocol monorepo's own dependencies:
 
-### Deployment
+- All published packages use **npm provenance** (Sigstore / OIDC)
+- The publish pipeline runs through GitHub Actions trusted publishing — **no long-lived npm tokens**
+- Dependency updates are reviewed before merge
 
-1. **Use environment variables** for sensitive configuration
-2. **Restrict network access** to the Mund server
-3. **Enable block mode** for production environments with critical data
-4. **Monitor alerts** and respond promptly
+## Hall of Fame
 
-### Configuration
-
-1. **Use strong API keys** if authentication is enabled
-2. **Configure minimum severity** for notifications appropriately
-3. **Review custom rules** before deployment
-4. **Keep Mund updated** to the latest version
-
-### Integration
-
-1. **Validate inputs** before passing to Mund
-2. **Handle blocked content** appropriately
-3. **Log all security events** for audit purposes
-4. **Test your integration** thoroughly
-
-## Vulnerability Response Process
-
-1. Security team receives and acknowledges report
-2. Issue is investigated and severity assessed
-3. Fix is developed and tested
-4. Security advisory is prepared
-5. Fix is released
-6. Advisory is published
-7. Reporter is credited
-
-## Security Updates
-
-Security updates are released as patch versions and announced via:
-
-- GitHub Security Advisories
-- Release notes
-- Email to registered users (if applicable)
-
-Always update to the latest patch version promptly.
-
-## Contact
-
-- Security issues: security@example.com
-- General questions: Open a GitHub discussion
-
-Thank you for helping keep Mund secure! 🛡️
+Researchers who responsibly disclose vulnerabilities will be credited here (with permission) once fixes are released.
