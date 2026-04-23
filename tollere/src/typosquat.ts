@@ -124,9 +124,13 @@ export function detectTyposquat(packageName: string): TyposquatMatch[] {
     const sim = similarity(cleanName, targetClean);
     const patternMatch = detectPatterns(cleanName, targetClean);
 
-    // Suspicious if edit distance is 1-2 OR pattern match detected
-    // AND similarity is high (avoid false positives on short names)
-    if ((dist >= 1 && dist <= 2 && sim >= 0.7) || patternMatch) {
+    // Suspicious if:
+    // - Edit distance 1 (single char typo) on any name >= 3 chars
+    // - Edit distance 2 with similarity >= 0.6 (catches char swaps like raect/react)
+    // - Pattern match detected (hyphen swaps, doubled chars, etc.)
+    const isShortNameSingleTypo = dist === 1 && targetClean.length >= 3;
+    const isReasonableTypo = dist === 2 && sim >= 0.6;
+    if (isShortNameSingleTypo || isReasonableTypo || patternMatch) {
       matches.push({
         suspectedTarget: target,
         similarity: sim,

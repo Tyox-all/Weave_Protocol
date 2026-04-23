@@ -6,7 +6,7 @@ export type Severity = "critical" | "high" | "medium" | "low" | "info";
 
 export type RiskLevel = "block" | "warn" | "allow";
 
-export type Ecosystem = "npm" | "pypi" | "cargo" | "go" | "maven";
+export type Ecosystem = "npm" | "pypi" | "cargo" | "go" | "maven" | "docker" | "vscode" | "openvsx" | "jetbrains";
 
 export interface PackageRisk {
   name: string;
@@ -39,7 +39,14 @@ export type IssueType =
   | "low_reputation"
   | "version_anomaly"
   | "dependency_confusion"
-  | "license_issue";
+  | "license_issue"
+  | "sandwich_pattern"
+  | "tag_overwrite"
+  | "phantom_tag"
+  | "suspicious_layer"
+  | "unverified_publisher"
+  | "publisher_takeover"
+  | "remote_code_fetch";
 
 export interface PackageMetadata {
   description?: string;
@@ -165,3 +172,85 @@ export const DEFAULT_CONFIG: TollereConfig = {
   blockedPackages: [],
   allowedPackages: [],
 };
+
+// ─────────────────────────────────────────────────────────
+// v0.2 - Sandwich pattern detection
+// ─────────────────────────────────────────────────────────
+
+export interface SandwichResult {
+  packageName: string;
+  versionsAnalyzed: number;
+  patternDetected: boolean;
+  pattern?: SandwichPattern;
+  riskScore: number;
+}
+
+export interface SandwichPattern {
+  introducedIn: string;        // version where pattern first appeared
+  removedIn: string;           // version where it was removed (sandwich filling)
+  reappearedIn: string;        // version where it returned
+  patternType: string;         // e.g. "remote_url_fetch", "install_script"
+  evidence: string;
+}
+
+// ─────────────────────────────────────────────────────────
+// v0.2 - Docker scanning
+// ─────────────────────────────────────────────────────────
+
+export interface DockerScanResult {
+  image: string;
+  tag: string;
+  riskScore: number;
+  riskLevel: RiskLevel;
+  issues: RiskIssue[];
+  manifest?: DockerManifest;
+  tagHistory?: TagHistoryEntry[];
+}
+
+export interface DockerManifest {
+  digest: string;
+  size: number;
+  lastUpdated?: string;
+  layers: number;
+  os?: string;
+  architecture?: string;
+}
+
+export interface TagHistoryEntry {
+  tag: string;
+  digest: string;
+  lastUpdated: string;
+  size: number;
+}
+
+// ─────────────────────────────────────────────────────────
+// v0.2 - IDE Extension scanning
+// ─────────────────────────────────────────────────────────
+
+export interface ExtensionScanResult {
+  ecosystem: "vscode" | "openvsx" | "jetbrains";
+  publisherId: string;
+  extensionName: string;
+  fullId: string;             // e.g. "ms-python.python"
+  version: string;
+  riskScore: number;
+  riskLevel: RiskLevel;
+  issues: RiskIssue[];
+  metadata: ExtensionMetadata;
+}
+
+export interface ExtensionMetadata {
+  displayName?: string;
+  description?: string;
+  publisher?: string;
+  publisherVerified?: boolean;
+  downloads?: number;
+  installs?: number;
+  rating?: number;
+  ratingCount?: number;
+  publishedAt?: string;
+  lastUpdated?: string;
+  repository?: string;
+  homepage?: string;
+  category?: string[];
+}

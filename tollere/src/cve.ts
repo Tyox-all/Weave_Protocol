@@ -53,14 +53,14 @@ interface OSVResponse {
  * Map ecosystem to OSV.dev format
  */
 function ecosystemToOSV(ecosystem: Ecosystem): string {
-  const map: Record<Ecosystem, string> = {
+  const map: Partial<Record<Ecosystem, string>> = {
     npm: "npm",
     pypi: "PyPI",
     cargo: "crates.io",
     go: "Go",
     maven: "Maven",
   };
-  return map[ecosystem];
+  return map[ecosystem] || "npm";
 }
 
 /**
