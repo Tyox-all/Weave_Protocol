@@ -28,7 +28,7 @@ Lower the barrier to getting started. Make Weave Protocol discoverable, installa
 
 ### Q4 — Differentiation
 
-Deepen technical capability and unlock more enterprise level feature for the community.
+Deepen technical capability and unlock more enterprise-level features for the community.
 
 - **Adversarial testing capability.** Red-team agents for continuous security validation.
 - **Next-generation Yoxallismus.** Substantial cipher and key-management upgrades for multi-agent and memory-rich environments.
