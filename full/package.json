@@ -1,0 +1,49 @@
+{
+  "name": "@weave_protocol/full",
+  "version": "0.1.0",
+  "description": "The complete Weave Protocol security suite for AI agents - installs all packages in one command",
+  "type": "module",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "build": "echo 'No build needed - meta-package'"
+  },
+  "keywords": [
+    "weave-protocol",
+    "ai-security",
+    "ai-agents",
+    "security",
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "bundle",
+    "meta-package"
+  ],
+  "author": "Trent Yoxall",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tyox-all/Weave_Protocol.git",
+    "directory": "full"
+  },
+  "homepage": "https://github.com/Tyox-all/Weave_Protocol/tree/main/full#readme",
+  "bugs": {
+    "url": "https://github.com/Tyox-all/Weave_Protocol/issues"
+  },
+  "dependencies": {
+    "@weave_protocol/api": "^1.0.12",
+    "@weave_protocol/domere": "^1.3.4",
+    "@weave_protocol/hord": "^0.1.6",
+    "@weave_protocol/hundredmen": "^1.0.6",
+    "@weave_protocol/langchain": "^1.0.1",
+    "@weave_protocol/mund": "^0.2.2",
+    "@weave_protocol/tollere": "^0.2.2",
+    "@weave_protocol/witan": "^1.0.2"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "README.md",
+    "LICENSE"
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "name": "@weave_protocol/cli",
+  "version": "0.1.0",
+  "description": "The weave CLI - one command to set up, audit, and run Weave Protocol security for AI agent projects",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "weave": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "node --test tests/",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "weave-protocol",
+    "ai-security",
+    "ai-agents",
+    "cli",
+    "init",
+    "scaffold",
+    "mcp",
+    "langchain",
+    "llamaindex",
+    "openai",
+    "anthropic"
+  ],
+  "author": "Trent Yoxall",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tyox-all/Weave_Protocol.git",
+    "directory": "cli"
+  },
+  "homepage": "https://github.com/Tyox-all/Weave_Protocol/tree/main/cli#readme",
+  "bugs": {
+    "url": "https://github.com/Tyox-all/Weave_Protocol/issues"
+  },
+  "dependencies": {
+    "@weave_protocol/tollere": "^0.2.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "SKILL.md",
+    "LICENSE"
+  ]
+}
