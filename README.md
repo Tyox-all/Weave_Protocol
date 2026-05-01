@@ -2,6 +2,10 @@
 
 **Enterprise Security Suite for AI Agents**
 
+[![npm](https://img.shields.io/npm/v/@weave_protocol/cli.svg?label=cli)](https://www.npmjs.com/package/@weave_protocol/cli)
+[![npm](https://img.shields.io/npm/dm/@weave_protocol/cli.svg)](https://www.npmjs.com/package/@weave_protocol/cli)
+[![npm](https://img.shields.io/npm/v/@weave_protocol/full.svg?label=full)](https://www.npmjs.com/package/@weave_protocol/full)
+[![npm](https://img.shields.io/npm/dm/@weave_protocol/full.svg)](https://www.npmjs.com/package/@weave_protocol/full)
 [![npm](https://img.shields.io/npm/v/@weave_protocol/mund.svg?label=mund)](https://www.npmjs.com/package/@weave_protocol/mund)
 [![npm](https://img.shields.io/npm/dm/@weave_protocol/mund.svg)](https://www.npmjs.com/package/@weave_protocol/mund)
 [![npm](https://img.shields.io/npm/v/@weave_protocol/hord.svg?label=hord)](https://www.npmjs.com/package/@weave_protocol/hord)
@@ -24,7 +28,44 @@ A TypeScript monorepo providing security, encryption, compliance, and governance
 
 ---
 
+## 🚀 Get started in one command
+
+```bash
+npx @weave_protocol/cli init
+```
+
+The CLI detects your framework (LangChain, LlamaIndex, MCP, OpenAI, Anthropic), asks which Weave Protocol packages you want, and scaffolds the right security middleware for your stack. Or install everything at once:
+
+```bash
+npm install @weave_protocol/full
+```
+
+---
+
 ## 🆕 What's New
+
+### 🕸️ Weave CLI v0.1.0 + Full Bundle v0.1.0
+
+The **`weave`** command-line tool is now live. One command sets up framework-specific security middleware:
+
+```bash
+weave init           # detect framework, scaffold security middleware
+weave audit          # scan dependencies (delegates to Tollere)
+weave dashboard      # launch monitoring UI
+weave doctor         # environment health check
+```
+
+**[See CLI README →](./cli)**
+
+The new `@weave_protocol/full` meta-package installs all 8 Weave Protocol packages in one shot:
+
+```typescript
+import { mund, hord, tollere, hundredmen } from '@weave_protocol/full';
+```
+
+**[See Full README →](./full)**
+
+---
 
 ### 🛂 Tollere v0.2.2 — Multi-Channel Supply Chain Security
 
@@ -52,6 +93,12 @@ Real-time security monitoring UI bundled with the API package:
 ```bash
 npx @weave_protocol/api
 # → Open http://localhost:3000/dashboard
+```
+
+Or via the CLI:
+
+```bash
+npx @weave_protocol/cli dashboard
 ```
 
 Live activity feed, threat intel status, compliance frameworks, MCP server reputation. **[See API README →](./api)**
@@ -97,12 +144,14 @@ const chain = new LLMChain({
 
 | Package | Version | Description |
 |---------|---------|-------------|
-| [🛡️ @weave_protocol/mund](./mund) | 0.2.2 | Security scanner - secrets, PII, injection, MCP vetting, **threat intel** |
+| [🕸️ @weave_protocol/cli](./cli) | 0.1.0 | **The `weave` CLI** — `init`, `audit`, `dashboard`, `doctor` |
+| [📦 @weave_protocol/full](./full) | 0.1.0 | **Bundle** — installs all packages in one command |
+| [🛡️ @weave_protocol/mund](./mund) | 0.2.2 | Security scanner — secrets, PII, injection, MCP vetting, threat intel |
 | [🏛️ @weave_protocol/hord](./hord) | 0.1.6 | Encrypted vault with Yoxallismus cipher |
 | [⚖️ @weave_protocol/domere](./domere) | 1.3.4 | Compliance (PCI-DSS, ISO27001, SOC2, HIPAA, **GDPR**, **CCPA**) & verification |
 | [👥 @weave_protocol/witan](./witan) | 1.0.2 | Multi-agent consensus & governance |
-| [🔍 @weave_protocol/hundredmen](./hundredmen) | 1.0.6 | **Real-time MCP proxy** - intercept, scan, gate tool calls |
-| [🛂 @weave_protocol/tollere](./tollere) | 0.2.2 | **Supply chain security** - npm, Docker images, IDE extensions, sandwich pattern detection |
+| [🔍 @weave_protocol/hundredmen](./hundredmen) | 1.0.6 | **Real-time MCP proxy** — intercept, scan, gate tool calls |
+| [🛂 @weave_protocol/tollere](./tollere) | 0.2.2 | **Supply chain security** — npm, Docker images, IDE extensions, sandwich pattern detection |
 | [🔗 @weave_protocol/langchain](./langchain) | 1.0.1 | **LangChain.js** security callbacks & tool wrappers |
 | [🐍 weave-protocol-llamaindex](./llamaindex-py) | 0.1.0 | **Python/LlamaIndex** security callbacks & tools |
 | [🔌 @weave_protocol/api](./api) | 1.0.12 | REST API for all packages + **dashboard** |
@@ -115,6 +164,7 @@ Each package includes a `SKILL.md` file following the [Claude Agent Skills speci
 
 | Package | Skill Name | Triggers |
 |---------|------------|----------|
+| 🕸️ CLI | `weave-cli` | set up Weave, init project, scaffold security, audit, dashboard, doctor |
 | 🛡️ Mund | `security-scanning` | scan, detect secrets, check injection, vet MCP server, threat intel |
 | 🏛️ Hord | `encrypting-data` | encrypt, decrypt, vault, Yoxallismus, protect |
 | ⚖️ Domere | `compliance-auditing` | audit, checkpoint, SOC2, HIPAA, PCI-DSS, GDPR, CCPA, blockchain |
@@ -138,10 +188,24 @@ Once installed, Claude automatically invokes the appropriate skill for each task
 
 ## 🚀 Quick Start
 
-### Install All Packages
+### Option 1: Guided setup (recommended)
 
 ```bash
-npm install @weave_protocol/mund @weave_protocol/hord @weave_protocol/domere @weave_protocol/hundredmen @weave_protocol/tollere @weave_protocol/langchain
+npx @weave_protocol/cli init
+```
+
+The CLI walks you through framework detection, package selection, and middleware scaffolding.
+
+### Option 2: Install everything
+
+```bash
+npm install @weave_protocol/full
+```
+
+### Option 3: Install individual packages
+
+```bash
+npm install @weave_protocol/mund @weave_protocol/tollere @weave_protocol/langchain
 ```
 
 ### Claude Desktop Integration
@@ -163,6 +227,30 @@ Add to `claude_desktop_config.json`:
 ---
 
 ## ✨ Package Details
+
+### 🕸️ CLI — One Command for Everything
+
+```bash
+npx @weave_protocol/cli init        # detect framework, scaffold middleware
+npx @weave_protocol/cli audit       # supply chain scan (Tollere)
+npx @weave_protocol/cli dashboard   # launch monitoring UI
+npx @weave_protocol/cli doctor      # environment health check
+npx @weave_protocol/cli version     # show installed package versions
+```
+
+The CLI inspects `package.json` and source imports to detect your framework, then generates appropriate security middleware:
+
+| Framework | Generated middleware |
+|-----------|---------------------|
+| **LangChain.js** | `WeaveSecurityCallback` ready to drop into any chain |
+| **MCP Server** | `secureToolHandler()` wrapper for input/output scanning |
+| **OpenAI / Anthropic SDK** | `secureChatCompletion()` / `secureMessages()` wrappers |
+| **Vercel AI SDK** | OpenAI-style wrapper |
+| **Generic** | Just installs packages and writes `.weaverc` |
+
+📄 **Skill:** [`weave-cli`](./cli/SKILL.md)
+
+---
 
 ### 🛡️ Mund — The Guardian
 
@@ -236,7 +324,7 @@ Real-time MCP security proxy that intercepts, scans, and gates AI agent tool cal
 | Category | Features |
 |----------|----------|
 | **Interception** | Proxy all MCP tool calls in real-time |
-| **Drift Detection** | "Said X, doing Y" - catch unauthorized actions |
+| **Drift Detection** | "Said X, doing Y" — catch unauthorized actions |
 | **Reputation** | Server trust scores, community reports |
 | **Manual Gates** | Require approval for high-risk operations |
 
@@ -282,34 +370,39 @@ Security integration for LangChain.js applications.
 ## 🏗️ Architecture
 
 ```
-┌───────────────────────────────────────────────────────────────┐
-│                       AI Agent System                         │
-├───────────────────────────────────────────────────────────────┤
-│                                                               │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐      │
-│  │  🛡️ Mund │  │ 🏛️ Hord  │  │ ⚖️ Domere│  │ 👥 Witan │      │
-│  │ Guardian │  │  Vault   │  │  Judge   │  │ Council  │      │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘      │
-│       │             │             │             │             │
-│  Security      Encryption    Compliance     Consensus        │
-│       │             │             │             │             │
-│       └─────────────┴─────────────┴─────────────┘             │
-│                           │                                   │
-│  ┌──────────────┐  ┌──────┴──────┐  ┌──────────────┐         │
-│  │🔍 Hundredmen │  │ 🛂 Tollere  │  │  🔌 API      │         │
-│  │  Watchers    │  │   Customs   │  │  REST + UI   │         │
-│  └──────────────┘  └─────────────┘  └──────────────┘         │
-│        │                  │                  │                │
-│  Runtime Calls    Supply Chain        Universal Access        │
-│        │                  │                  │                │
-│        └──────────────────┴──────────────────┘                │
-│                           │                                   │
-│                    ┌──────┴───────┐                           │
-│                    │ 🔗 Langchain │                           │
-│                    │   Bridge     │                           │
-│                    └──────────────┘                           │
-│                                                               │
-└───────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                         🕸️  weave init / audit                       │
+│                       (front door — @weave_protocol/cli)             │
+└────────────────────────────────┬─────────────────────────────────────┘
+                                 │
+┌────────────────────────────────┴─────────────────────────────────────┐
+│                          AI Agent System                             │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐             │
+│  │  🛡️ Mund │  │ 🏛️ Hord  │  │ ⚖️ Domere│  │ 👥 Witan │             │
+│  │ Guardian │  │  Vault   │  │  Judge   │  │ Council  │             │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘             │
+│       │             │             │             │                    │
+│  Security      Encryption    Compliance     Consensus               │
+│       │             │             │             │                    │
+│       └─────────────┴─────────────┴─────────────┘                    │
+│                           │                                          │
+│  ┌──────────────┐  ┌──────┴──────┐  ┌──────────────┐                │
+│  │🔍 Hundredmen │  │ 🛂 Tollere  │  │  🔌 API      │                │
+│  │  Watchers    │  │   Customs   │  │  REST + UI   │                │
+│  └──────────────┘  └─────────────┘  └──────────────┘                │
+│        │                  │                  │                       │
+│  Runtime Calls    Supply Chain        Universal Access               │
+│        │                  │                  │                       │
+│        └──────────────────┴──────────────────┘                       │
+│                           │                                          │
+│                    ┌──────┴───────┐                                  │
+│                    │ 🔗 Langchain │                                  │
+│                    │   Bridge     │                                  │
+│                    └──────────────┘                                  │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -345,7 +438,7 @@ git clone https://github.com/Tyox-all/Weave_Protocol.git
 cd Weave_Protocol
 
 # Build each package
-for pkg in mund hord domere witan hundredmen tollere langchain api; do
+for pkg in mund hord domere witan hundredmen tollere langchain api cli; do
   (cd $pkg && npm install && npm run build)
 done
 ```
@@ -364,9 +457,9 @@ done
 - [x] Web dashboard for monitoring
 - [x] Supply chain security (Tollere) — npm, PyPI, Cargo, Go, Maven
 - [x] Multi-channel supply chain — Docker images + IDE extensions + sandwich pattern detection
+- [x] **Bundle package + CLI (`weave init`)** — adoption funnel
 
 ### H2 2026 Q3 — Adoption Quarter
-- [ ] Bundle package + CLI (`weave init`)
 - [ ] Browser agent security (`@weave_protocol/browser`)
 - [ ] State of AI Agent Security: Q3 Report
 
