@@ -1,0 +1,64 @@
+{
+  "name": "@weave_protocol/ward",
+  "version": "0.1.0",
+  "description": "WARD.md — the agent security policy standard. Define what your agents can and cannot do, version-controlled alongside AGENTS.md and SKILL.md.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "weave-ward": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "node --test tests/",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "weave-protocol",
+    "ward",
+    "agent-security",
+    "ai-security",
+    "ai-agents",
+    "infrastructure-as-code",
+    "policy",
+    "guardrails",
+    "agents-md",
+    "skill-md",
+    "antigravity",
+    "claude-code",
+    "mdash",
+    "harness",
+    "mcp",
+    "model-context-protocol"
+  ],
+  "author": "Trent Yoxall",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tyox-all/Weave_Protocol.git",
+    "directory": "ward"
+  },
+  "homepage": "https://github.com/Tyox-all/Weave_Protocol/tree/main/ward#readme",
+  "bugs": {
+    "url": "https://github.com/Tyox-all/Weave_Protocol/issues"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist/",
+    "examples/",
+    "README.md",
+    "SPEC.md",
+    "SKILL.md",
+    "LICENSE"
+  ]
+}
