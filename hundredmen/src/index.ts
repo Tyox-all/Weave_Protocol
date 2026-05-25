@@ -14,6 +14,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 
 import { Interceptor } from './interceptor.js';
+import { WardPolicyManager } from './ward.js';
 import { ReputationManager } from './reputation.js';
 import { hundredmenTools, createHundredmenToolHandlers } from './tools.js';
 
@@ -23,6 +24,18 @@ import { hundredmenTools, createHundredmenToolHandlers } from './tools.js';
 
 const interceptor = new Interceptor();
 const reputationManager = new ReputationManager();
+
+// WARD policy manager — auto-loads ./WARD.md or $WEAVE_WARD_PATH
+const wardManager = new WardPolicyManager();
+try {
+  if (wardManager.autoLoad()) {
+    const status = wardManager.status();
+    console.error(`🛡️  WARD.md loaded from ${status.source}` + (status.policyName ? ` (${status.policyName})` : ''));
+  }
+} catch (err) {
+  console.error(`⚠️  WARD.md present but failed to load: ${err instanceof Error ? err.message : String(err)}`);
+}
+interceptor.setWardManager(wardManager);
 
 // Wire up reputation checker
 interceptor.setReputationChecker(async (serverId: string) => {
@@ -35,7 +48,7 @@ reputationManager.onAlert((alert) => {
 });
 
 // Create tool handlers
-const handlers = createHundredmenToolHandlers(interceptor, reputationManager);
+const handlers = createHundredmenToolHandlers(interceptor, reputationManager, wardManager);
 
 // ============================================================================
 // MCP Server

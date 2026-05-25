@@ -1,161 +1,68 @@
 ---
 name: security-inspection
-description: "Real-time MCP security proxy with drift detection and reputation scoring. Use when: inspect tool calls, detect drift, check server reputation, approve/block operations, monitor agent activity, live feed."
+description: Use this skill when the user wants to inspect, intercept, or gate AI agent tool calls in real time. Triggers include monitoring agent activity, detecting drift between declared intent and actual actions, checking MCP server reputation, manually approving or blocking suspicious calls, viewing a live feed of agent operations, or enforcing a WARD.md security policy at the MCP layer. Also triggers when the user asks "is this tool call safe?", "block this call", "show what my agent is doing", or wants to test how their WARD policy would gate a specific operation.
 ---
 
-# 🔍 Hundredmen - Real-Time Security Proxy
+# Hundredmen — Real-Time MCP Security Proxy
 
-Intercept, scan, and gate AI agent tool calls in real-time.
+`@weave_protocol/hundredmen` intercepts MCP tool calls, analyzes them, and decides whether to allow, block, or require approval. v1.1.0 adds enforcement of [WARD.md](https://www.npmjs.com/package/@weave_protocol/ward) policies at the interception layer.
 
-## Installation
+## When to use
 
-```bash
-npm install @weave_protocol/hundredmen
-```
+- User has an agent and wants visibility into what tools it's calling
+- User wants to gate sensitive operations behind manual approval
+- User has a WARD.md and wants it enforced at runtime, not just declared
+- User suspects drift: "the agent said X but is doing Y"
+- User wants reputation tracking for the MCP servers they use
 
-## MCP Tools
+## Gating order
 
-### Session Management
+When a tool call hits Hundredmen, the checks run in this order:
 
-| Tool | Purpose |
-|------|---------|
-| `hundredmen_create_session` | Start inspection session |
-| `hundredmen_declare_intent` | Declare intended actions |
-| `hundredmen_end_session` | End session with summary |
+1. **WARD policy** (if loaded) — capability/filesystem/network rules from `WARD.md`
+2. **Reputation** — server trust score
+3. **Intent / drift** — declared vs actual comparison
+4. **Manual approval** — if any earlier gate produced `require_approval`
 
-### Live Feed
+WARD is the first gate. A WARD deny short-circuits everything else.
 
-| Tool | Purpose |
-|------|---------|
-| `hundredmen_get_live_feed` | Stream of intercepted calls |
-| `hundredmen_get_call_history` | Query past calls |
-| `hundredmen_diff_intent` | "Said X, doing Y" analysis |
+## WARD-related tools
 
-### Approval Gate
+- `hundredmen_load_ward({ path? })` — load a WARD.md (auto-loads `./WARD.md` on startup)
+- `hundredmen_show_ward()` — show currently active policy
+- `hundredmen_check_ward({ tool, args })` — dry-run a tool call against the policy
+- `hundredmen_unload_ward()` — disable WARD enforcement
 
-| Tool | Purpose |
-|------|---------|
-| `hundredmen_get_pending` | List calls awaiting approval |
-| `hundredmen_approve_call` | Approve a pending call |
-| `hundredmen_block_call` | Block a pending call |
+## Other key tools
 
-### Reputation
+- `hundredmen_create_session({ agent_id? })`
+- `hundredmen_declare_intent({ session_id, intent })`
+- `hundredmen_diff_intent({ session_id })`
+- `hundredmen_get_live_feed({ since?, limit? })`
+- `hundredmen_get_pending()` / `hundredmen_approve_call` / `hundredmen_block_call`
+- `hundredmen_check_reputation({ server_id })`
+- `hundredmen_get_stats()` / `hundredmen_get_server_stats({ server_id })`
 
-| Tool | Purpose |
-|------|---------|
-| `hundredmen_check_reputation` | Get server trust score |
-| `hundredmen_report_suspicious` | Report bad behavior |
-| `hundredmen_get_server_stats` | Server analytics |
-| `hundredmen_list_servers` | List known servers |
+## Decision rules
 
-### Configuration
+| User says | Action |
+|---|---|
+| "Set up monitoring for my agent" | `hundredmen_create_session` + `hundredmen_declare_intent` |
+| "What is my agent doing right now" | `hundredmen_get_live_feed` |
+| "Why was this call blocked" | `hundredmen_show_ward` + check live feed for the blocked call |
+| "Will my WARD block X" | `hundredmen_check_ward({ tool: 'X', args: {...} })` |
+| "I want WARD enforcement on" | `hundredmen_load_ward()` (loads from CWD or env) |
+| "This server seems off" | `hundredmen_check_reputation` + `hundredmen_report_suspicious` |
 
-| Tool | Purpose |
-|------|---------|
-| `hundredmen_set_policy` | Configure rules |
-| `hundredmen_get_config` | View settings |
-| `hundredmen_get_stats` | Overall statistics |
+## Pairs with
 
-## Usage Examples
+- `@weave_protocol/ward` — the policy format Hundredmen enforces
+- `@weave_protocol/mund` — input-level threat scanning (complementary to interception)
+- `@weave_protocol/domere` — attests to the policy decisions for compliance proofs
+- `@weave_protocol/witan` — consensus on high-stakes blocks
 
-### Start Session with Intent
+## Anti-patterns
 
-```typescript
-// Create session
-const session = await hundredmen_create_session({ agent_id: 'my-agent' });
-
-// Declare what you plan to do
-await hundredmen_declare_intent({
-  session_id: session.session_id,
-  intent: 'Read and summarize the README file'
-});
-```
-
-### Monitor Live Activity
-
-```typescript
-// Get recent calls
-const feed = await hundredmen_get_live_feed({ limit: 20 });
-
-// Check for drift
-const drift = await hundredmen_diff_intent({ session_id: 'abc123' });
-if (drift.drift_detected_count > 0) {
-  console.log('⚠️ Drift detected:', drift.drift_calls);
-}
-```
-
-### Handle Pending Approvals
-
-```typescript
-// Get pending calls
-const pending = await hundredmen_get_pending();
-
-// Review and approve/block
-for (const call of pending.pending) {
-  if (call.risk_level === 'critical') {
-    await hundredmen_block_call({
-      call_id: call.id,
-      reason: 'Critical risk level'
-    });
-  } else {
-    await hundredmen_approve_call({ call_id: call.id });
-  }
-}
-```
-
-### Check Server Reputation
-
-```typescript
-// Before using a new server
-const rep = await hundredmen_check_reputation({
-  server_id: 'unknown-server'
-});
-
-if (rep.overall_score < 30) {
-  console.log('⚠️ Low reputation server');
-}
-
-if (rep.known_malicious) {
-  console.log('🚫 MALICIOUS SERVER - DO NOT USE');
-}
-```
-
-### Report Suspicious Behavior
-
-```typescript
-await hundredmen_report_suspicious({
-  server_id: 'bad-server',
-  report_type: 'unexpected_actions',
-  description: 'Server accessed files outside declared scope',
-  evidence: 'Call log showing /etc/passwd access'
-});
-```
-
-## Inspection Modes
-
-| Mode | Behavior |
-|------|----------|
-| `passive` | Log only, never block |
-| `active` | Block critical, review high-risk |
-| `strict` | Block all high-risk automatically |
-
-```typescript
-await hundredmen_set_policy({ mode: 'strict' });
-```
-
-## Drift Detection
-
-Detects when actual actions deviate from declared intent:
-
-- **Tool mismatch**: Using unexpected tools
-- **Scope expansion**: Accessing more than declared
-- **Capability escalation**: Gaining new permissions
-- **Data access**: Touching sensitive data unexpectedly
-
-## Reputation Scores
-
-- **90-100**: Verified, trusted
-- **70-89**: Generally safe
-- **50-69**: Neutral, unverified
-- **30-49**: Caution advised
-- **0-29**: High risk, likely malicious
+- **Don't manually approve every call.** That defeats the point. Set a reasonable WARD policy or reputation threshold, only escalate to manual on edge cases.
+- **Don't expect WARD to catch semantic intent drift.** WARD is policy-as-code (allow/deny). For drift detection use `hundredmen_declare_intent` + `hundredmen_diff_intent`.
+- **Don't skip session declaration.** Without `hundredmen_declare_intent`, drift detection can't work.

@@ -7,6 +7,7 @@
 
 import { Interceptor } from './interceptor.js';
 import { ReputationManager } from './reputation.js';
+import { WardPolicyManager } from './ward.js';
 import {
   CallStatus,
   RiskLevel,
@@ -367,6 +368,47 @@ Use when: monitoring system health, generating reports.`,
       required: [],
     },
   },
+  // --------------------------------------------------------------------------
+  // WARD policy enforcement (v1.1.0)
+  // --------------------------------------------------------------------------
+  {
+    name: 'hundredmen_load_ward',
+    description: `Load a WARD.md security policy. If no path is given, attempts to load from \\$WEAVE_WARD_PATH or ./WARD.md.
+Use when: starting a new task with explicit policy enforcement, or testing a new policy before deployment.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'Optional path to a WARD.md file. Defaults to env or CWD.' },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'hundredmen_show_ward',
+    description: `Show the currently loaded WARD.md policy and its source.
+Use when: confirming which policy is active, debugging unexpected blocks.`,
+    inputSchema: { type: 'object', properties: {}, required: [] },
+  },
+  {
+    name: 'hundredmen_check_ward',
+    description: `Dry-run a tool call against the loaded WARD.md policy without executing it.
+Returns the decision (allow / deny / require_approval) and the breakdown of which checks fired.
+Use when: testing a policy, debugging why a call was blocked, or pre-flighting a sensitive operation.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tool: { type: 'string', description: 'Tool name to test' },
+        args: { type: 'object', description: 'Arguments the tool would receive' },
+      },
+      required: ['tool'],
+    },
+  },
+  {
+    name: 'hundredmen_unload_ward',
+    description: `Remove the active WARD.md policy. Subsequent tool calls will not be gated by WARD.
+Use when: switching policies, or temporarily disabling enforcement.`,
+    inputSchema: { type: 'object', properties: {}, required: [] },
+  },
 ];
 
 // ============================================================================
@@ -375,7 +417,8 @@ Use when: monitoring system health, generating reports.`,
 
 export function createHundredmenToolHandlers(
   interceptor: Interceptor,
-  reputationManager: ReputationManager
+  reputationManager: ReputationManager,
+  wardManager: WardPolicyManager
 ) {
   return {
     // Session Management
@@ -734,6 +777,36 @@ export function createHundredmenToolHandlers(
           low_reputation_servers: lowRepCount,
         },
       };
+    },
+    
+    // ── WARD policy handlers (v1.1.0) ──────────────────────
+    hundredmen_load_ward: async (args: { path?: string }) => {
+      try {
+        if (args?.path) {
+          wardManager.loadFromPath(args.path);
+        } else if (!wardManager.autoLoad()) {
+          return { success: false, error: 'No WARD.md found at $WEAVE_WARD_PATH or ./WARD.md' };
+        }
+        return { success: true, status: wardManager.status() };
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : String(err) };
+      }
+    },
+    
+    hundredmen_show_ward: async () => {
+      return { status: wardManager.status(), policy: wardManager.getPolicy() };
+    },
+    
+    hundredmen_check_ward: async (args: { tool: string; args?: Record<string, unknown> }) => {
+      if (!wardManager.isLoaded()) {
+        return { decision: 'allow', reason: 'No WARD.md loaded — call would be allowed.', checks: [] };
+      }
+      return wardManager.checkCall(args.tool, args.args);
+    },
+    
+    hundredmen_unload_ward: async () => {
+      wardManager.unload();
+      return { success: true, message: 'WARD policy unloaded. Calls are no longer gated by WARD.' };
     },
   };
 }

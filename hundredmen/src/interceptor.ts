@@ -7,6 +7,7 @@
 
 import { randomUUID } from 'crypto';
 import { EventEmitter } from 'events';
+import { WardPolicyManager, type WardCheckResult } from './ward.js';
 import {
   InterceptedCall,
   CallStatus,
@@ -286,6 +287,7 @@ export class Interceptor extends EventEmitter {
   private scanner?: (content: string) => Promise<ScanResult>;
   private reputationChecker?: (serverId: string) => Promise<number>;
   private blockchainAnchor?: (data: unknown) => Promise<string>;
+  private wardManager?: WardPolicyManager;
   
   constructor(config: Partial<HundredmenConfig> = {}) {
     super();
@@ -314,6 +316,23 @@ export class Interceptor extends EventEmitter {
   
   setBlockchainAnchor(anchor: (data: unknown) => Promise<string>): void {
     this.blockchainAnchor = anchor;
+  }
+  
+  setWardManager(manager: WardPolicyManager): void {
+    this.wardManager = manager;
+  }
+  
+  getWardManager(): WardPolicyManager | null {
+    return this.wardManager ?? null;
+  }
+  
+  /**
+   * Check a proposed tool call against the loaded WARD.md policy.
+   * Returns null if no policy is loaded.
+   */
+  checkWard(tool: string, args: Record<string, unknown> | undefined): WardCheckResult | null {
+    if (!this.wardManager || !this.wardManager.isLoaded()) return null;
+    return this.wardManager.checkCall(tool, args);
   }
   
   // ==========================================================================
@@ -501,6 +520,23 @@ export class Interceptor extends EventEmitter {
   }
   
   private makeDecision(call: InterceptedCall): { decision: CallDecision; reason: string } {
+    // 0. WARD policy check (highest priority — declared policy)
+    const wardResult = this.checkWard(call.tool, call.arguments);
+    if (wardResult) {
+      if (wardResult.decision === 'deny') {
+        return {
+          decision: 'auto_blocked',
+          reason: `WARD: ${wardResult.reason}`,
+        };
+      }
+      if (wardResult.decision === 'require_approval') {
+        return {
+          decision: 'pending_review',
+          reason: `WARD requires approval: ${wardResult.reason}`,
+        };
+      }
+    }
+    
     // Check for blocking conditions
     
     // 1. Scan found critical issues
