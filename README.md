@@ -26,7 +26,7 @@
 [![npm](https://img.shields.io/npm/dm/@weave_protocol/api.svg)](https://www.npmjs.com/package/@weave_protocol/api)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-A TypeScript monorepo providing security, encryption, compliance, and governance tools for AI agent systems. Built for the Model Context Protocol (MCP) ecosystem and the new generation of agent harness platforms (Antigravity, Claude Code, MDASH).
+A TypeScript monorepo providing security, encryption, compliance, and governance tools for AI agent systems. Built for the Model Context Protocol (MCP) ecosystem and the new generation of agent harness platforms.
 
 ---
 
@@ -45,6 +45,31 @@ npm install @weave_protocol/full
 ---
 
 ## 🆕 What's New
+
+### 🔍 Hundredmen v1.1.0 — WARD.md enforcement
+
+[Hundredmen](./hundredmen) now reads `WARD.md` files and **enforces them at the MCP interception layer**. WARD just stopped being a spec and started being infrastructure.
+
+```
+🔍 Weave Hundredmen MCP Server running
+🛡️  WARD.md loaded from ./WARD.md (My Agent Security Policy)
+```
+
+```json
+// A tool call that violates the policy
+{
+  "decision": "auto_blocked",
+  "decisionReason": "WARD: Tool 'shell_exec' is in the deny list."
+}
+```
+
+WARD becomes the first gate in Hundredmen's decision flow — ahead of reputation, drift, and approval checks. Filesystem and network checks fire automatically when tool args look like paths or URLs. **Zero config required** if you have a `WARD.md` in your project root.
+
+Four new MCP tools — `hundredmen_load_ward`, `hundredmen_show_ward`, `hundredmen_check_ward` (dry-run!), `hundredmen_unload_ward`.
+
+**[See Hundredmen README →](./hundredmen)**
+
+---
 
 ### 🛡️ WARD.md v0.1.0 — Agent Security Policy Standard
 
@@ -95,68 +120,24 @@ Catches typosquats, CVEs, compromised maintainers, **Docker tag overwriting**, *
 
 ```bash
 npx @weave_protocol/tollere scan                          # scan package.json
-npx @weave_protocol/tollere docker checkmarx/kics:v2.1.20 # 🆕 Docker images
-npx @weave_protocol/tollere ext ms-python.python vscode   # 🆕 IDE extensions
-npx @weave_protocol/tollere sandwich some-package         # 🆕 sandwich pattern
+npx @weave_protocol/tollere docker checkmarx/kics:v2.1.20 # Docker images
+npx @weave_protocol/tollere ext ms-python.python vscode   # IDE extensions
+npx @weave_protocol/tollere sandwich some-package         # sandwich pattern
 ```
 
-**Coverage:** npm, PyPI, Cargo, Go, Maven, Docker Hub, VS Code Marketplace (covers Cursor + Windsurf), Open VSX (VSCodium/Gitpod), JetBrains Marketplace (IntelliJ/PyCharm/WebStorm/etc).
+**Coverage:** npm, PyPI, Cargo, Go, Maven, Docker Hub, VS Code Marketplace (covers Cursor + Windsurf), Open VSX (VSCodium/Gitpod), JetBrains Marketplace.
 
 **[See Tollere README →](./tollere)**
 
 ---
 
-### 📊 Web Dashboard for Monitoring (API v1.0.12)
+### 📊 Web Dashboard, Python/LlamaIndex, and LangChain.js integrations
 
-Real-time security monitoring UI bundled with the API package:
+Also shipped recently:
 
-```bash
-npx @weave_protocol/api
-# → Open http://localhost:3000/dashboard
-```
-
-Or via the CLI:
-
-```bash
-npx @weave_protocol/cli dashboard
-```
-
-Live activity feed, threat intel status, compliance frameworks, MCP server reputation. **[See API README →](./api)**
-
----
-
-### 🐍 Python/LlamaIndex Integration (v0.1.0)
-
-Security scanning for LlamaIndex applications:
-
-```python
-from weave_protocol_llamaindex import WeaveSecurityHandler
-from llama_index.core.callbacks import CallbackManager
-from llama_index.core import Settings
-
-Settings.callback_manager = CallbackManager([WeaveSecurityHandler()])
-# All LlamaIndex operations now scanned - threats auto-blocked
-```
-
-**[See LlamaIndex README →](./llamaindex-py)**
-
----
-
-### 🔗 LangChain.js Integration (v1.0.1)
-
-Drop-in security for LangChain.js applications:
-
-```typescript
-import { WeaveSecurityCallback } from '@weave_protocol/langchain';
-
-const chain = new LLMChain({
-  llm: new ChatOpenAI(),
-  prompt,
-  callbacks: [new WeaveSecurityCallback({ action: 'block' })],
-});
-```
-
-**[See LangChain README →](./langchain/README.md)**
+- **Web Dashboard** (API v1.0.12) — live activity feed, threat intel, compliance, MCP reputation. `npx @weave_protocol/api` → http://localhost:3000/dashboard
+- **Python/LlamaIndex** (`weave-protocol-llamaindex`) — drop-in security callbacks for LlamaIndex
+- **LangChain.js** (`@weave_protocol/langchain`) — `WeaveSecurityCallback` for any chain or agent
 
 ---
 
@@ -169,9 +150,9 @@ const chain = new LLMChain({
 | [🛡️ @weave_protocol/ward](./ward) | 0.1.0 | **WARD.md** — agent security policy standard (parser, validator, runtime checks) |
 | [🛡️ @weave_protocol/mund](./mund) | 0.2.2 | Security scanner — secrets, PII, injection, MCP vetting, threat intel |
 | [🏛️ @weave_protocol/hord](./hord) | 0.1.6 | Encrypted vault with Yoxallismus cipher |
-| [⚖️ @weave_protocol/domere](./domere) | 1.3.4 | Compliance (PCI-DSS, ISO27001, SOC2, HIPAA, **GDPR**, **CCPA**) & verification |
+| [⚖️ @weave_protocol/domere](./domere) | 1.3.4 | Compliance (PCI-DSS, ISO27001, SOC2, HIPAA, GDPR, CCPA) & verification |
 | [👥 @weave_protocol/witan](./witan) | 1.0.2 | Multi-agent consensus & governance |
-| [🔍 @weave_protocol/hundredmen](./hundredmen) | 1.0.6 | **Real-time MCP proxy** — intercept, scan, gate tool calls |
+| [🔍 @weave_protocol/hundredmen](./hundredmen) | **1.1.0** | **Real-time MCP proxy** — intercept, scan, gate tool calls, **now enforces WARD.md** |
 | [🛂 @weave_protocol/tollere](./tollere) | 0.2.2 | **Supply chain security** — npm, Docker images, IDE extensions, sandwich pattern detection |
 | [🔗 @weave_protocol/langchain](./langchain) | 1.0.1 | **LangChain.js** security callbacks & tool wrappers |
 | [🐍 weave-protocol-llamaindex](./llamaindex-py) | 0.1.0 | **Python/LlamaIndex** security callbacks & tools |
@@ -191,7 +172,7 @@ Each package includes a `SKILL.md` file following the [Claude Agent Skills speci
 | 🏛️ Hord | `encrypting-data` | encrypt, decrypt, vault, Yoxallismus, protect |
 | ⚖️ Domere | `compliance-auditing` | audit, checkpoint, SOC2, HIPAA, PCI-DSS, GDPR, CCPA, blockchain |
 | 👥 Witan | `consensus-governance` | consensus, vote, approve, policy, escalate |
-| 🔍 Hundredmen | `security-inspection` | intercept, drift, reputation, approve, block, live feed |
+| 🔍 Hundredmen | `security-inspection` | intercept, drift, reputation, approve, block, live feed, enforce WARD policy |
 | 🛂 Tollere | `supply-chain-security` | npm install, docker pull, install extension, dependency check, typosquat, CVE, sandwich pattern |
 | 🔗 Langchain | `langchain-security` | LangChain, callback, secure tool, RAG security, PII redaction |
 | 🔌 API | `weave-api-calling` | REST API, HTTP endpoint, curl, fetch |
@@ -215,8 +196,6 @@ Once installed, Claude automatically invokes the appropriate skill for each task
 ```bash
 npx @weave_protocol/cli init
 ```
-
-The CLI walks you through framework detection, package selection, and middleware scaffolding.
 
 ### Option 2: Install everything
 
@@ -246,6 +225,8 @@ Add to `claude_desktop_config.json`:
 }
 ```
 
+If you have a `WARD.md` in your home directory or set `$WEAVE_WARD_PATH`, Hundredmen will auto-enforce it.
+
 ---
 
 ## ✨ Package Details
@@ -257,10 +238,7 @@ npx @weave_protocol/cli init        # detect framework, scaffold middleware
 npx @weave_protocol/cli audit       # supply chain scan (Tollere)
 npx @weave_protocol/cli dashboard   # launch monitoring UI
 npx @weave_protocol/cli doctor      # environment health check
-npx @weave_protocol/cli version     # show installed package versions
 ```
-
-The CLI inspects `package.json` and source imports to detect your framework, then generates appropriate security middleware:
 
 | Framework | Generated middleware |
 |-----------|---------------------|
@@ -298,7 +276,9 @@ my-agent-project/
 | **Threat Model** | In-scope / out-of-scope threats |
 | **Incident Response** | Actions on violation (log / alert / terminate / attest) |
 
-The format is portable across harness platforms — write once, enforce on Antigravity, Claude Code, MDASH, or any custom runtime.
+WARD.md is portable across harness platforms — write once, enforce on Antigravity, Claude Code, MDASH, or any custom runtime.
+
+**Hundredmen v1.1.0 is the reference enforcement engine.** Drop a `WARD.md` in your project root and Hundredmen auto-loads it.
 
 📄 **Skill:** [`ward`](./ward/SKILL.md) · 📋 **Spec:** [WARD.md SPEC →](./ward/SPEC.md)
 
@@ -371,14 +351,17 @@ Multi-agent consensus and governance.
 
 ### 🔍 Hundredmen — The Watchers
 
-Real-time MCP security proxy that intercepts, scans, and gates AI agent tool calls.
+Real-time MCP security proxy that intercepts, scans, and gates AI agent tool calls. **v1.1.0 enforces WARD.md policies.**
 
 | Category | Features |
 |----------|----------|
+| **🆕 WARD enforcement** | Reads `WARD.md`, gates calls at the MCP layer |
 | **Interception** | Proxy all MCP tool calls in real-time |
 | **Drift Detection** | "Said X, doing Y" — catch unauthorized actions |
 | **Reputation** | Server trust scores, community reports |
 | **Manual Gates** | Require approval for high-risk operations |
+
+Decision flow: **WARD policy → critical scan issues → reputation → intent/drift → manual approval queue.** WARD wins.
 
 📄 **Skill:** [`security-inspection`](./hundredmen/SKILL.md)
 
@@ -393,7 +376,7 @@ Supply chain security for AI-generated code. Catches malicious packages, Docker 
 | **Packages** | npm, PyPI, Cargo, Go, Maven (typosquats, CVEs, maintainer reputation) |
 | **Sandwich Pattern** | Malicious code hidden between a clean "filling" version (Checkmarx attack pattern) |
 | **Docker Images** | Tag overwrite detection, phantom tags (Docker Hub) |
-| **IDE Extensions** | VS Code (Cursor, Windsurf), Open VSX (VSCodium, Gitpod), JetBrains (IntelliJ, PyCharm, WebStorm, etc.) |
+| **IDE Extensions** | VS Code (Cursor, Windsurf), Open VSX (VSCodium, Gitpod), JetBrains |
 
 ```bash
 npx @weave_protocol/tollere scan
@@ -431,8 +414,10 @@ Security integration for LangChain.js applications.
             │     🛡️  WARD.md  (policy standard)      │
             │     declares what the agent can't do    │
             └────────────────────┬────────────────────┘
-                                 │
-┌────────────────────────────────┴─────────────────────────────────────┐
+                                 │   enforced at runtime by
+                                 │   🔍 Hundredmen (v1.1+)
+                                 ▼
+┌──────────────────────────────────────────────────────────────────────┐
 │                          AI Agent System                             │
 ├──────────────────────────────────────────────────────────────────────┤
 │                                                                      │
@@ -474,7 +459,7 @@ Defense-in-depth across the entire AI agent lifecycle:
 4. **🏛️ Hord** encrypts sensitive data at rest and in transit
 5. **⚖️ Domere** logs all actions with tamper-evident checksums
 6. **👥 Witan** requires consensus for high-risk operations
-7. **🔍 Hundredmen** intercepts and gates tool calls in real-time
+7. **🔍 Hundredmen** intercepts and gates tool calls in real-time — **enforcing WARD policy**
 8. **🔗 Langchain** secures LangChain.js chains and agents
 
 ### CORS Model Integration
@@ -482,11 +467,11 @@ Defense-in-depth across the entire AI agent lifecycle:
 | CORS Layer | Weave Package | Function |
 |------------|---------------|----------|
 | **Policy** | 🛡️ Ward | Declares allowed/denied actions, behavioral limits, attestation requirements |
+| **Policy Enforcement** | 🔍 Hundredmen | Reads WARD, gates tool calls at the MCP layer |
 | **Supply Chain** | 🛂 Tollere | Vets dependencies, images, extensions before install |
 | **Origin Validation** | 🛡️ Mund | Validates input sources, detects injection |
 | **Context Integrity** | 🏛️ Hord | Protects data integrity through encryption |
 | **Deterministic Enforcement** | ⚖️ Domere | Ensures consistent policy application |
-| **Runtime Interception** | 🔍 Hundredmen | Gates tool calls, detects drift |
 
 ---
 
@@ -517,7 +502,8 @@ done
 - [x] Supply chain security (Tollere) — npm, PyPI, Cargo, Go, Maven
 - [x] Multi-channel supply chain — Docker images + IDE extensions + sandwich pattern detection
 - [x] Bundle package + CLI (`weave init`) — adoption funnel
-- [x] **WARD.md agent security policy standard**
+- [x] WARD.md agent security policy standard
+- [x] **Hundredmen ↔ WARD enforcement integration** (v1.1.0)
 
 ### H2 2026 Q3 — Adoption Quarter
 - [ ] Cross-platform harness adapters (Antigravity / Claude Code / MDASH)
