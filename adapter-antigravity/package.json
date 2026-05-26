@@ -1,0 +1,58 @@
+{
+  "name": "@weave_protocol/adapter-antigravity",
+  "version": "0.1.0",
+  "description": "Weave Protocol adapter for Google Antigravity - enforces WARD.md policies via Antigravity's PreToolUse hook system",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "weave-antigravity": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "node --test tests/",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "weave-protocol",
+    "ward",
+    "antigravity",
+    "google-antigravity",
+    "gemini",
+    "agent-security",
+    "ai-security",
+    "hooks",
+    "harness-adapter",
+    "policy-enforcement",
+    "managed-agents",
+    "agy"
+  ],
+  "author": "Trent Yoxall",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tyox-all/Weave_Protocol.git",
+    "directory": "adapter-antigravity"
+  },
+  "homepage": "https://github.com/Tyox-all/Weave_Protocol/tree/main/adapter-antigravity#readme",
+  "bugs": {
+    "url": "https://github.com/Tyox-all/Weave_Protocol/issues"
+  },
+  "dependencies": {
+    "@weave_protocol/ward": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "SKILL.md",
+    "LICENSE"
+  ]
+}
