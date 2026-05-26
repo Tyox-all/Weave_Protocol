@@ -8,6 +8,8 @@
 [![npm](https://img.shields.io/npm/dm/@weave_protocol/full.svg)](https://www.npmjs.com/package/@weave_protocol/full)
 [![npm](https://img.shields.io/npm/v/@weave_protocol/ward.svg?label=ward)](https://www.npmjs.com/package/@weave_protocol/ward)
 [![npm](https://img.shields.io/npm/dm/@weave_protocol/ward.svg)](https://www.npmjs.com/package/@weave_protocol/ward)
+[![npm](https://img.shields.io/npm/v/@weave_protocol/adapter-claudecode.svg?label=adapter-claudecode)](https://www.npmjs.com/package/@weave_protocol/adapter-claudecode)
+[![npm](https://img.shields.io/npm/dm/@weave_protocol/adapter-claudecode.svg)](https://www.npmjs.com/package/@weave_protocol/adapter-claudecode)
 [![npm](https://img.shields.io/npm/v/@weave_protocol/mund.svg?label=mund)](https://www.npmjs.com/package/@weave_protocol/mund)
 [![npm](https://img.shields.io/npm/dm/@weave_protocol/mund.svg)](https://www.npmjs.com/package/@weave_protocol/mund)
 [![npm](https://img.shields.io/npm/v/@weave_protocol/hord.svg?label=hord)](https://www.npmjs.com/package/@weave_protocol/hord)
@@ -46,7 +48,38 @@ npm install @weave_protocol/full
 
 ## 🆕 What's New
 
-### 🔍 Hundredmen v1.1.0 — WARD.md enforcement
+### 🛡️ Claude Code adapter v0.1.0 — first cross-platform harness adapter
+
+[`@weave_protocol/adapter-claudecode`](./adapter-claudecode) enforces WARD.md policies inside [Claude Code](https://docs.anthropic.com/en/docs/claude-code) via its native `PreToolUse` hook system. One-time install, then every Claude Code tool call is gated by your project's `WARD.md`.
+
+```bash
+# Install once
+npm install -g @weave_protocol/adapter-claudecode
+weave-claude-code init
+
+# Drop a WARD.md in your project
+npx @weave_protocol/ward init
+
+# Now Claude Code refuses anything outside the declared policy
+```
+
+```
+You: "Delete all the SSH keys"
+Claude Code: [about to run Bash with `rm -rf ~/.ssh`]
+       ↓ PreToolUse hook fires
+       ↓ weave-claude-code reads ./WARD.md
+       ↓ checkFilesystem('delete', '~/.ssh/**') → DENY
+       ↓
+Claude Code refuses: "🛡️  WARD: bash touches ~/.ssh"
+```
+
+WARD enforcement now lives in two places: **MCP servers** (via Hundredmen v1.1.0) and **Claude Code tool calls** (via this adapter). Cross-platform harness adapters for Google Antigravity and Microsoft MDASH are next on the roadmap.
+
+**[See adapter-claudecode README →](./adapter-claudecode)**
+
+---
+
+### 🔍 Hundredmen v1.1.0 — WARD.md enforcement at the MCP layer
 
 [Hundredmen](./hundredmen) now reads `WARD.md` files and **enforces them at the MCP interception layer**. WARD just stopped being a spec and started being infrastructure.
 
@@ -64,8 +97,6 @@ npm install @weave_protocol/full
 ```
 
 WARD becomes the first gate in Hundredmen's decision flow — ahead of reputation, drift, and approval checks. Filesystem and network checks fire automatically when tool args look like paths or URLs. **Zero config required** if you have a `WARD.md` in your project root.
-
-Four new MCP tools — `hundredmen_load_ward`, `hundredmen_show_ward`, `hundredmen_check_ward` (dry-run!), `hundredmen_unload_ward`.
 
 **[See Hundredmen README →](./hundredmen)**
 
@@ -100,15 +131,7 @@ weave dashboard      # launch monitoring UI
 weave doctor         # environment health check
 ```
 
-**[See CLI README →](./cli)**
-
-The `@weave_protocol/full` meta-package installs every Weave Protocol package in one shot:
-
-```typescript
-import { mund, hord, tollere, hundredmen } from '@weave_protocol/full';
-```
-
-**[See Full README →](./full)**
+**[See CLI README →](./cli)** · **[See Full README →](./full)**
 
 ---
 
@@ -133,7 +156,7 @@ npx @weave_protocol/tollere sandwich some-package         # sandwich pattern
 
 ### 📊 Web Dashboard, Python/LlamaIndex, and LangChain.js integrations
 
-Also shipped recently:
+Also shipped:
 
 - **Web Dashboard** (API v1.0.12) — live activity feed, threat intel, compliance, MCP reputation. `npx @weave_protocol/api` → http://localhost:3000/dashboard
 - **Python/LlamaIndex** (`weave-protocol-llamaindex`) — drop-in security callbacks for LlamaIndex
@@ -148,11 +171,12 @@ Also shipped recently:
 | [🕸️ @weave_protocol/cli](./cli) | 0.1.0 | **The `weave` CLI** — `init`, `audit`, `dashboard`, `doctor` |
 | [📦 @weave_protocol/full](./full) | 0.1.0 | **Bundle** — installs all packages in one command |
 | [🛡️ @weave_protocol/ward](./ward) | 0.1.0 | **WARD.md** — agent security policy standard (parser, validator, runtime checks) |
+| [🛡️ @weave_protocol/adapter-claudecode](./adapter-claudecode) | **0.1.0** | **🆕 Claude Code adapter** — enforces WARD.md via PreToolUse hooks |
 | [🛡️ @weave_protocol/mund](./mund) | 0.2.2 | Security scanner — secrets, PII, injection, MCP vetting, threat intel |
 | [🏛️ @weave_protocol/hord](./hord) | 0.1.6 | Encrypted vault with Yoxallismus cipher |
 | [⚖️ @weave_protocol/domere](./domere) | 1.3.4 | Compliance (PCI-DSS, ISO27001, SOC2, HIPAA, GDPR, CCPA) & verification |
 | [👥 @weave_protocol/witan](./witan) | 1.0.2 | Multi-agent consensus & governance |
-| [🔍 @weave_protocol/hundredmen](./hundredmen) | **1.1.0** | **Real-time MCP proxy** — intercept, scan, gate tool calls, **now enforces WARD.md** |
+| [🔍 @weave_protocol/hundredmen](./hundredmen) | 1.1.0 | **Real-time MCP proxy** — intercept, scan, gate tool calls, **enforces WARD.md** |
 | [🛂 @weave_protocol/tollere](./tollere) | 0.2.2 | **Supply chain security** — npm, Docker images, IDE extensions, sandwich pattern detection |
 | [🔗 @weave_protocol/langchain](./langchain) | 1.0.1 | **LangChain.js** security callbacks & tool wrappers |
 | [🐍 weave-protocol-llamaindex](./llamaindex-py) | 0.1.0 | **Python/LlamaIndex** security callbacks & tools |
@@ -168,6 +192,7 @@ Each package includes a `SKILL.md` file following the [Claude Agent Skills speci
 |---------|------------|----------|
 | 🕸️ CLI | `weave-cli` | set up Weave, init project, scaffold security, audit, dashboard, doctor |
 | 🛡️ Ward | `ward` | WARD.md, agent security policy, guardrails, lock down agent, define boundaries |
+| 🛡️ adapter-claudecode | `adapter-claudecode` | secure Claude Code, install WARD hooks, block Claude Code actions, dogfood policy |
 | 🛡️ Mund | `security-scanning` | scan, detect secrets, check injection, vet MCP server, threat intel |
 | 🏛️ Hord | `encrypting-data` | encrypt, decrypt, vault, Yoxallismus, protect |
 | ⚖️ Domere | `compliance-auditing` | audit, checkpoint, SOC2, HIPAA, PCI-DSS, GDPR, CCPA, blockchain |
@@ -227,6 +252,15 @@ Add to `claude_desktop_config.json`:
 
 If you have a `WARD.md` in your home directory or set `$WEAVE_WARD_PATH`, Hundredmen will auto-enforce it.
 
+### Claude Code Integration
+
+```bash
+npm install -g @weave_protocol/adapter-claudecode
+weave-claude-code init
+```
+
+Drop a `WARD.md` in your project root (or `~/.claude/WARD.md` for user-global). Every Claude Code tool call is now gated.
+
 ---
 
 ## ✨ Package Details
@@ -276,11 +310,30 @@ my-agent-project/
 | **Threat Model** | In-scope / out-of-scope threats |
 | **Incident Response** | Actions on violation (log / alert / terminate / attest) |
 
-WARD.md is portable across harness platforms — write once, enforce on Antigravity, Claude Code, MDASH, or any custom runtime.
-
-**Hundredmen v1.1.0 is the reference enforcement engine.** Drop a `WARD.md` in your project root and Hundredmen auto-loads it.
+Enforced at runtime by:
+- **Hundredmen** (MCP layer) — gates tool calls routed through MCP servers
+- **adapter-claudecode** (Claude Code) — gates Claude Code's PreToolUse hooks
 
 📄 **Skill:** [`ward`](./ward/SKILL.md) · 📋 **Spec:** [WARD.md SPEC →](./ward/SPEC.md)
+
+---
+
+### 🛡️ adapter-claudecode — Claude Code enforcement
+
+First cross-platform harness adapter. Installs into Claude Code's hook system and enforces your WARD.md on every tool call.
+
+```bash
+weave-claude-code init               # install the hook
+weave-claude-code status             # show config + active policy
+weave-claude-code test Bash --input='{"command":"rm -rf ~/.ssh"}'
+weave-claude-code disable            # remove
+```
+
+WARD resolution order: `$WEAVE_WARD_PATH` → `<cwd>/WARD.md` → `<cwd>/.weave/WARD.md` → `~/.claude/WARD.md` (user-global).
+
+Tool mapping covers Bash, Edit/MultiEdit/Write, Read, Grep, LS, Glob, WebFetch, WebSearch, Task, NotebookEdit. Use either Claude tool names (`Bash`, `Read`) or generic capabilities (`shell_exec`, `file_read`) in WARD.md — explicit rules beat default decisions.
+
+📄 **Skill:** [`adapter-claudecode`](./adapter-claudecode/SKILL.md)
 
 ---
 
@@ -355,7 +408,7 @@ Real-time MCP security proxy that intercepts, scans, and gates AI agent tool cal
 
 | Category | Features |
 |----------|----------|
-| **🆕 WARD enforcement** | Reads `WARD.md`, gates calls at the MCP layer |
+| **WARD enforcement** | Reads `WARD.md`, gates calls at the MCP layer |
 | **Interception** | Proxy all MCP tool calls in real-time |
 | **Drift Detection** | "Said X, doing Y" — catch unauthorized actions |
 | **Reputation** | Server trust scores, community reports |
@@ -414,10 +467,18 @@ Security integration for LangChain.js applications.
             │     🛡️  WARD.md  (policy standard)      │
             │     declares what the agent can't do    │
             └────────────────────┬────────────────────┘
-                                 │   enforced at runtime by
-                                 │   🔍 Hundredmen (v1.1+)
-                                 ▼
-┌──────────────────────────────────────────────────────────────────────┐
+                                 │
+                  enforced at runtime by:
+                                 │
+       ┌─────────────────────────┼─────────────────────────┐
+       ▼                         ▼                         ▼
+┌──────────────┐         ┌──────────────┐          ┌──────────────────┐
+│🔍 Hundredmen │         │ adapter-     │          │ adapter-         │
+│   (MCP)      │         │ claudecode   │          │ antigravity/...  │
+│              │         │ (Claude Code)│          │ (coming Q3)      │
+└──────────────┘         └──────────────┘          └──────────────────┘
+                                 │
+┌────────────────────────────────┴─────────────────────────────────────┐
 │                          AI Agent System                             │
 ├──────────────────────────────────────────────────────────────────────┤
 │                                                                      │
@@ -454,20 +515,22 @@ Security integration for LangChain.js applications.
 Defense-in-depth across the entire AI agent lifecycle:
 
 1. **🛡️ Ward** declares what the agent can and can't do (policy-as-code)
-2. **🛂 Tollere** inspects every dependency, image, and extension before it enters your project
-3. **🛡️ Mund** scans all inputs for threats before processing
-4. **🏛️ Hord** encrypts sensitive data at rest and in transit
-5. **⚖️ Domere** logs all actions with tamper-evident checksums
-6. **👥 Witan** requires consensus for high-risk operations
-7. **🔍 Hundredmen** intercepts and gates tool calls in real-time — **enforcing WARD policy**
-8. **🔗 Langchain** secures LangChain.js chains and agents
+2. **🛡️ adapter-claudecode** enforces WARD inside Claude Code (PreToolUse hook)
+3. **🛂 Tollere** inspects every dependency, image, and extension before it enters your project
+4. **🛡️ Mund** scans all inputs for threats before processing
+5. **🏛️ Hord** encrypts sensitive data at rest and in transit
+6. **⚖️ Domere** logs all actions with tamper-evident checksums
+7. **👥 Witan** requires consensus for high-risk operations
+8. **🔍 Hundredmen** intercepts and gates tool calls in real-time — enforcing WARD policy at the MCP layer
+9. **🔗 Langchain** secures LangChain.js chains and agents
 
 ### CORS Model Integration
 
 | CORS Layer | Weave Package | Function |
 |------------|---------------|----------|
 | **Policy** | 🛡️ Ward | Declares allowed/denied actions, behavioral limits, attestation requirements |
-| **Policy Enforcement** | 🔍 Hundredmen | Reads WARD, gates tool calls at the MCP layer |
+| **Policy Enforcement (harness)** | 🛡️ adapter-claudecode | Reads WARD, gates Claude Code tool calls via hooks |
+| **Policy Enforcement (MCP)** | 🔍 Hundredmen | Reads WARD, gates tool calls at the MCP layer |
 | **Supply Chain** | 🛂 Tollere | Vets dependencies, images, extensions before install |
 | **Origin Validation** | 🛡️ Mund | Validates input sources, detects injection |
 | **Context Integrity** | 🏛️ Hord | Protects data integrity through encryption |
@@ -482,7 +545,7 @@ git clone https://github.com/Tyox-all/Weave_Protocol.git
 cd Weave_Protocol
 
 # Build each package
-for pkg in mund hord domere witan hundredmen tollere langchain api cli ward; do
+for pkg in mund hord domere witan hundredmen tollere langchain api cli ward adapter-claudecode; do
   (cd $pkg && npm install && npm run build)
 done
 ```
@@ -503,10 +566,12 @@ done
 - [x] Multi-channel supply chain — Docker images + IDE extensions + sandwich pattern detection
 - [x] Bundle package + CLI (`weave init`) — adoption funnel
 - [x] WARD.md agent security policy standard
-- [x] **Hundredmen ↔ WARD enforcement integration** (v1.1.0)
+- [x] Hundredmen ↔ WARD enforcement integration (v1.1.0)
+- [x] **Claude Code harness adapter** (first cross-platform adapter)
 
 ### H2 2026 Q3 — Adoption Quarter
-- [ ] Cross-platform harness adapters (Antigravity / Claude Code / MDASH)
+- [ ] Google Antigravity adapter (`@weave_protocol/adapter-antigravity`)
+- [ ] Microsoft MDASH adapter (`@weave_protocol/adapter-mdash`)
 - [ ] Browser agent security (`@weave_protocol/browser`)
 - [ ] Dashboard v2 with orchestration visualization
 - [ ] State of AI Agent Security: Q3 Report
