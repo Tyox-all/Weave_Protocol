@@ -470,60 +470,58 @@ Security integration for LangChain.js applications. Drop-in callbacks, secured t
 
 ## 🏗️ Architecture
 
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│                         🕸️  weave init / audit                       │
-│                       (front door — @weave_protocol/cli)             │
-└────────────────────────────────┬─────────────────────────────────────┘
-                                 │
-            ┌────────────────────┴────────────────────┐
-            │     🛡️  WARD.md  (policy standard)      │
-            │     declares what the agent can't do    │
-            └────────────────────┬────────────────────┘
-                                 │
-                  enforced at runtime by:
-                                 │
-       ┌──────────────┬──────────┴──────────┬────────────────────┐
-       ▼              ▼                     ▼                    ▼
-┌──────────────┐ ┌──────────────┐ ┌──────────────────┐ ┌──────────────────┐
-│🔍 Hundredmen │ │ adapter-     │ │ adapter-         │ │ adapter-         │
-│   (MCP)      │ │ claudecode   │ │ antigravity      │ │ msaf             │
-│              │ │ (Anthropic)  │ │ (Google)         │ │ (Microsoft)      │
-│              │ │              │ │ desktop+CLI+SDK  │ │ middleware lib   │
-│ Open standard│ │ ✅ Live      │ │ ✅ Live          │ │ ✅ Live          │
-└──────────────┘ └──────────────┘ └──────────────────┘ └──────────────────┘
-                                 │
-┌────────────────────────────────┴─────────────────────────────────────┐
-│                          AI Agent System                             │
-├──────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐             │
-│  │  🛡️ Mund │  │ 🏛️ Hord  │  │ ⚖️ Domere│  │ 👥 Witan │             │
-│  │ Guardian │  │  Vault   │  │  Judge   │  │ Council  │             │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘             │
-│       │             │             │             │                    │
-│  Security      Encryption    Compliance     Consensus               │
-│       │             │             │             │                    │
-│       └─────────────┴─────────────┴─────────────┘                    │
-│                           │                                          │
-│  ┌──────────────┐  ┌──────┴──────┐  ┌──────────────┐                │
-│  │🔍 Hundredmen │  │ 🛂 Tollere  │  │  🔌 API      │                │
-│  │  Watchers    │  │   Customs   │  │  REST + UI   │                │
-│  └──────────────┘  └─────────────┘  └──────────────┘                │
-│        │                  │                  │                       │
-│  Runtime Calls    Supply Chain        Universal Access               │
-│        │                  │                  │                       │
-│        └──────────────────┴──────────────────┘                       │
-│                           │                                          │
-│                    ┌──────┴───────┐                                  │
-│                    │ 🔗 Langchain │                                  │
-│                    │   Bridge     │                                  │
-│                    └──────────────┘                                  │
-│                                                                      │
-└──────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    CLI["🕸️ <b>weave init / audit</b><br/><i>front door — @weave_protocol/cli</i>"]
+    WARD["🛡️ <b>WARD.md</b><br/><i>policy standard — declares what the agent can't do</i>"]
+    CLI --> WARD
+
+    WARD -.->|enforced at runtime by| HM
+    WARD -.->|enforced at runtime by| CC
+    WARD -.->|enforced at runtime by| AG
+    WARD -.->|enforced at runtime by| MSAF
+
+    HM["🔍 <b>Hundredmen</b><br/>MCP layer<br/><i>open standard</i>"]
+    CC["🛡️ <b>adapter-claudecode</b><br/>Anthropic<br/>✅ Live"]
+    AG["🛡️ <b>adapter-antigravity</b><br/>Google · desktop + agy + SDK<br/>✅ Live"]
+    MSAF["🛡️ <b>adapter-msaf</b><br/>Microsoft · middleware library<br/>✅ Live"]
+
+    HM --> AGENT
+    CC --> AGENT
+    AG --> AGENT
+    MSAF --> AGENT
+
+    subgraph AGENT["AI Agent System"]
+        direction TB
+        subgraph CORE["Core security layer"]
+            direction LR
+            MUND["🛡️ Mund<br/>Guardian<br/><i>scanning</i>"]
+            HORD["🏛️ Hord<br/>Vault<br/><i>encryption</i>"]
+            DOMERE["⚖️ Domere<br/>Judge<br/><i>compliance</i>"]
+            WITAN["👥 Witan<br/>Council<br/><i>consensus</i>"]
+        end
+        subgraph OPS["Supply chain & ops layer"]
+            direction LR
+            TOLLERE["🛂 Tollere<br/>Customs<br/><i>deps + images + extensions</i>"]
+            API["🔌 API + Dashboard<br/><i>REST + UI</i>"]
+            LC["🔗 LangChain bridge<br/><i>chains + agents</i>"]
+        end
+        CORE --> OPS
+    end
+
+    classDef policy fill:#1f2937,stroke:#60a5fa,stroke-width:2px,color:#fff
+    classDef enforcer fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff
+    classDef core fill:#312e81,stroke:#818cf8,stroke-width:1px,color:#fff
+    classDef ops fill:#1e3a8a,stroke:#60a5fa,stroke-width:1px,color:#fff
+
+    class CLI,WARD policy
+    class HM,CC,AG,MSAF enforcer
+    class MUND,HORD,DOMERE,WITAN core
+    class TOLLERE,API,LC ops
 ```
 
 ---
+
 
 ## 🔐 Security Model
 
