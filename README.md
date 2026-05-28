@@ -237,13 +237,28 @@ Each package includes a `SKILL.md` file following the [Claude Agent Skills speci
 
 **Installation:**
 
+The SKILL.md format is shared across Claude Code and Antigravity (both inherited from the original Anthropic spec), so the same files work for both platforms — only the install path differs.
+
 ```bash
 git clone https://github.com/Tyox-all/Weave_Protocol.git
+cd Weave_Protocol
+
+# For Claude Code:
 mkdir -p ~/.claude/skills/weave-protocol
-cp Weave_Protocol/*/SKILL.md ~/.claude/skills/weave-protocol/
+cp */SKILL.md ~/.claude/skills/weave-protocol/
+
+# For Google Antigravity (global, all sessions):
+mkdir -p ~/.gemini/antigravity-cli/skills/weave-protocol
+cp */SKILL.md ~/.gemini/antigravity-cli/skills/weave-protocol/
+
+# Or per-project under .agents/:
+mkdir -p .agents/skills/weave-protocol
+cp /path/to/Weave_Protocol/*/SKILL.md .agents/skills/weave-protocol/
 ```
 
-Once installed, Claude automatically invokes the appropriate skill for each task.
+For **Microsoft Agent Framework**, skills aren't used — MSAF is code-level. Use the `WardMiddleware` class from `@weave_protocol/adapter-msaf` instead (see [adapter-msaf README](./adapter-msaf)).
+
+Once installed, the agent automatically invokes the appropriate skill for each task.
 
 ---
 
