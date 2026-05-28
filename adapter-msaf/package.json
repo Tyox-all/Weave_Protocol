@@ -1,0 +1,56 @@
+{
+  "name": "@weave_protocol/adapter-msaf",
+  "version": "0.1.0",
+  "description": "Weave Protocol adapter for Microsoft Agent Framework - enforces WARD.md policies via the MSAF middleware pipeline",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "weave-msaf": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "node --test tests/",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "weave-protocol",
+    "ward",
+    "microsoft-agent-framework",
+    "msaf",
+    "agent-framework",
+    "middleware",
+    "agent-security",
+    "ai-security",
+    "policy-enforcement",
+    "harness-adapter"
+  ],
+  "author": "Trent Yoxall",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tyox-all/Weave_Protocol.git",
+    "directory": "adapter-msaf"
+  },
+  "homepage": "https://github.com/Tyox-all/Weave_Protocol/tree/main/adapter-msaf#readme",
+  "bugs": {
+    "url": "https://github.com/Tyox-all/Weave_Protocol/issues"
+  },
+  "dependencies": {
+    "@weave_protocol/ward": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "SKILL.md",
+    "LICENSE"
+  ]
+}
