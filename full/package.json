@@ -1,7 +1,7 @@
 {
   "name": "@weave_protocol/full",
-  "version": "0.1.0",
-  "description": "The complete Weave Protocol security suite for AI agents - installs all packages in one command",
+  "version": "0.2.0",
+  "description": "The complete Weave Protocol security suite for AI agents - 13 packages covering policy (WARD.md), enforcement (4 harness adapters), scanning, encryption, compliance, consensus, supply chain, and observability",
   "type": "module",
   "main": "index.js",
   "types": "index.d.ts",
@@ -9,15 +9,23 @@
     "build": "echo 'No build needed - meta-package'"
   },
   "keywords": [
-    "weave-protocol",
-    "ai-security",
+    "agent-security",
     "ai-agents",
-    "security",
-    "mcp",
-    "model-context-protocol",
-    "claude",
+    "ai-security",
+    "antigravity",
     "bundle",
-    "meta-package"
+    "claude",
+    "claude-code",
+    "cross-platform",
+    "harness-adapter",
+    "mcp",
+    "meta-package",
+    "microsoft-agent-framework",
+    "model-context-protocol",
+    "msaf",
+    "security",
+    "ward",
+    "weave-protocol"
   ],
   "author": "Trent Yoxall",
   "license": "Apache-2.0",
@@ -31,13 +39,18 @@
     "url": "https://github.com/Tyox-all/Weave_Protocol/issues"
   },
   "dependencies": {
+    "@weave_protocol/adapter-antigravity": "^0.1.0",
+    "@weave_protocol/adapter-claudecode": "^0.1.0",
+    "@weave_protocol/adapter-msaf": "^0.1.0",
     "@weave_protocol/api": "^1.0.12",
+    "@weave_protocol/cli": "^0.1.0",
     "@weave_protocol/domere": "^1.3.4",
     "@weave_protocol/hord": "^0.1.6",
-    "@weave_protocol/hundredmen": "^1.0.6",
+    "@weave_protocol/hundredmen": "^1.1.0",
     "@weave_protocol/langchain": "^1.0.1",
     "@weave_protocol/mund": "^0.2.2",
     "@weave_protocol/tollere": "^0.2.2",
+    "@weave_protocol/ward": "^0.1.0",
     "@weave_protocol/witan": "^1.0.2"
   },
   "files": [
