@@ -28,9 +28,9 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@weave_protocol/domere": "^1.2.11",
-    "@weave_protocol/hord": "^0.1.4",
-    "@weave_protocol/hundredmen": "^1.0.1",
-    "cors": "^2.8.5",
+    "@weave_protocol/hord": "^0.1.6",
+    "@weave_protocol/hundredmen": "^1.1.0",
+    "cors": "^2.8.6",
     "express": "^4.21.0",
     "express-rate-limit": "^7.1.0",
     "helmet": "^7.1.0"
