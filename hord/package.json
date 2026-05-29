@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/hord",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "The Vault Protocol - Cryptographic containment and capability management for AI agents",
   "main": "dist/index.js",
   "bin": {
@@ -38,18 +38,18 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "express": "^4.21.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
     "@types/node": "^22.5.5",
-    "tsx": "^4.19.1",
-    "typescript": "^5.6.2",
-    "vitest": "^2.1.1",
     "@typescript-eslint/eslint-plugin": "^8.6.0",
     "@typescript-eslint/parser": "^8.6.0",
-    "eslint": "^9.10.0"
+    "eslint": "^9.10.0",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2",
+    "vitest": "^4.1.7"
   }
 }

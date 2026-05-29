@@ -1,7 +1,7 @@
 {
   "name": "@weave_protocol/ward",
-  "version": "0.1.0",
-  "description": "WARD.md — the agent security policy standard. Define what your agents can and cannot do, version-controlled alongside AGENTS.md and SKILL.md.",
+  "version": "0.1.1",
+  "description": "WARD.md \u2014 the agent security policy standard. Define what your agents can and cannot do, version-controlled alongside AGENTS.md and SKILL.md.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -44,7 +44,7 @@
     "url": "https://github.com/Tyox-all/Weave_Protocol/issues"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0"
+    "@modelcontextprotocol/sdk": "^1.29.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

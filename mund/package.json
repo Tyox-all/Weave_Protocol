@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/mund",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "The Guardian Protocol - MCP-based security monitoring for agentic AI systems",
   "main": "dist/index.js",
   "bin": {
@@ -26,7 +26,7 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "better-sqlite3": "^11.3.0",
     "express": "^4.21.0",
     "nodemailer": "^8.0.9",
