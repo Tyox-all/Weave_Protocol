@@ -32,7 +32,7 @@
 [![npm](https://img.shields.io/npm/dm/@weave_protocol/api.svg)](https://www.npmjs.com/package/@weave_protocol/api)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-A TypeScript monorepo providing security, encryption, compliance, and governance tools for AI agent systems. Built for the Model Context Protocol (MCP) ecosystem and every major agent harness platform.
+Make agent orchestration verifiable and auditable. Cryptographically verify multi-agent behavior, detect threats in real-time, and maintain compliance across any platform. Built as a TypeScript monorepo with MCP integration and blockchain anchoring.
 
 ---
 
