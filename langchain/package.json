@@ -40,7 +40,7 @@
   },
   "devDependencies": {
     "@langchain/core": "^0.3.0",
-    "@types/node": "^20.11.0",
+    "@types/node": "^25.9.1",
     "typescript": "^5.3.3",
     "zod": "^3.22.4"
   },
