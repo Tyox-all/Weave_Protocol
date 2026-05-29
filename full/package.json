@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/full",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "The complete Weave Protocol security suite for AI agents - 13 packages covering policy (WARD.md), enforcement (4 harness adapters), scanning, encryption, compliance, consensus, supply chain, and observability",
   "type": "module",
   "main": "index.js",
