@@ -1,0 +1,610 @@
+# Dependabot config for Weave Protocol monorepo
+#
+# Strategy:
+#   - Weekly updates (Mondays) — frequent enough to catch CVEs fast,
+#     infrequent enough to avoid PR storms
+#   - Grouped: TypeScript+@types, ESLint family, AWS SDK, build tools
+#   - Security updates: daily, ungrouped (escalate fast)
+#   - GitHub Actions also monitored
+
+version: 2
+
+updates:
+  # ─── GitHub Actions ──────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "America/Chicago"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci(deps)"
+    open-pull-requests-limit: 3
+
+  # ─── Python package: weave-protocol-llamaindex ───────────
+  - package-ecosystem: "pip"
+    directory: "/llamaindex-py"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "America/Chicago"
+    labels:
+      - "dependencies"
+      - "python"
+      - "llamaindex-py"
+    commit-message:
+      prefix: "deps(llamaindex-py)"
+    open-pull-requests-limit: 3
+    groups:
+      python-dev-deps:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+
+  # ─── npm packages (14 of them) ───────────────────────────
+  # Each gets its own entry. Shared structure via YAML anchors isn't
+  # supported in Dependabot, so we repeat — but with consistent groups.
+
+  - package-ecosystem: "npm"
+    directory: "/mund"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "America/Chicago"
+    labels:
+      - "dependencies"
+      - "npm"
+      - "mund"
+    commit-message:
+      prefix: "deps(mund)"
+      include: "scope"
+    open-pull-requests-limit: 3
+    versioning-strategy: "increase"
+    groups:
+      typescript-and-types:
+        patterns:
+          - "typescript"
+          - "@types/*"
+      eslint:
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+      modelcontextprotocol:
+        patterns:
+          - "@modelcontextprotocol/*"
+      dev-deps-minor-patch:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+      prod-deps-minor-patch:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/hord"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "America/Chicago"
+    labels:
+      - "dependencies"
+      - "npm"
+      - "hord"
+    commit-message:
+      prefix: "deps(hord)"
+      include: "scope"
+    open-pull-requests-limit: 3
+    versioning-strategy: "increase"
+    groups:
+      typescript-and-types:
+        patterns:
+          - "typescript"
+          - "@types/*"
+      eslint:
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+      modelcontextprotocol:
+        patterns:
+          - "@modelcontextprotocol/*"
+      dev-deps-minor-patch:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+      prod-deps-minor-patch:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/domere"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "America/Chicago"
+    labels:
+      - "dependencies"
+      - "npm"
+      - "domere"
+    commit-message:
+      prefix: "deps(domere)"
+      include: "scope"
+    open-pull-requests-limit: 3
+    versioning-strategy: "increase"
+    groups:
+      typescript-and-types:
+        patterns:
+          - "typescript"
+          - "@types/*"
+      eslint:
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+      modelcontextprotocol:
+        patterns:
+          - "@modelcontextprotocol/*"
+      dev-deps-minor-patch:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+      prod-deps-minor-patch:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/witan"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "America/Chicago"
+    labels:
+      - "dependencies"
+      - "npm"
+      - "witan"
+    commit-message:
+      prefix: "deps(witan)"
+      include: "scope"
+    open-pull-requests-limit: 3
+    versioning-strategy: "increase"
+    groups:
+      typescript-and-types:
+        patterns:
+          - "typescript"
+          - "@types/*"
+      eslint:
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+      modelcontextprotocol:
+        patterns:
+          - "@modelcontextprotocol/*"
+      dev-deps-minor-patch:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+      prod-deps-minor-patch:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/hundredmen"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "America/Chicago"
+    labels:
+      - "dependencies"
+      - "npm"
+      - "hundredmen"
+    commit-message:
+      prefix: "deps(hundredmen)"
+      include: "scope"
+    open-pull-requests-limit: 3
+    versioning-strategy: "increase"
+    groups:
+      typescript-and-types:
+        patterns:
+          - "typescript"
+          - "@types/*"
+      eslint:
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+      modelcontextprotocol:
+        patterns:
+          - "@modelcontextprotocol/*"
+      dev-deps-minor-patch:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+      prod-deps-minor-patch:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/tollere"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "America/Chicago"
+    labels:
+      - "dependencies"
+      - "npm"
+      - "tollere"
+    commit-message:
+      prefix: "deps(tollere)"
+      include: "scope"
+    open-pull-requests-limit: 3
+    versioning-strategy: "increase"
+    groups:
+      typescript-and-types:
+        patterns:
+          - "typescript"
+          - "@types/*"
+      eslint:
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+      modelcontextprotocol:
+        patterns:
+          - "@modelcontextprotocol/*"
+      dev-deps-minor-patch:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+      prod-deps-minor-patch:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/langchain"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "America/Chicago"
+    labels:
+      - "dependencies"
+      - "npm"
+      - "langchain"
+    commit-message:
+      prefix: "deps(langchain)"
+      include: "scope"
+    open-pull-requests-limit: 3
+    versioning-strategy: "increase"
+    groups:
+      typescript-and-types:
+        patterns:
+          - "typescript"
+          - "@types/*"
+      eslint:
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+      modelcontextprotocol:
+        patterns:
+          - "@modelcontextprotocol/*"
+      dev-deps-minor-patch:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+      prod-deps-minor-patch:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/api"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "America/Chicago"
+    labels:
+      - "dependencies"
+      - "npm"
+      - "api"
+    commit-message:
+      prefix: "deps(api)"
+      include: "scope"
+    open-pull-requests-limit: 3
+    versioning-strategy: "increase"
+    groups:
+      typescript-and-types:
+        patterns:
+          - "typescript"
+          - "@types/*"
+      eslint:
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+      modelcontextprotocol:
+        patterns:
+          - "@modelcontextprotocol/*"
+      dev-deps-minor-patch:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+      prod-deps-minor-patch:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/full"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "America/Chicago"
+    labels:
+      - "dependencies"
+      - "npm"
+      - "full"
+    commit-message:
+      prefix: "deps(full)"
+      include: "scope"
+    open-pull-requests-limit: 3
+    versioning-strategy: "increase"
+    groups:
+      typescript-and-types:
+        patterns:
+          - "typescript"
+          - "@types/*"
+      eslint:
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+      modelcontextprotocol:
+        patterns:
+          - "@modelcontextprotocol/*"
+      dev-deps-minor-patch:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+      prod-deps-minor-patch:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/cli"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "America/Chicago"
+    labels:
+      - "dependencies"
+      - "npm"
+      - "cli"
+    commit-message:
+      prefix: "deps(cli)"
+      include: "scope"
+    open-pull-requests-limit: 3
+    versioning-strategy: "increase"
+    groups:
+      typescript-and-types:
+        patterns:
+          - "typescript"
+          - "@types/*"
+      eslint:
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+      modelcontextprotocol:
+        patterns:
+          - "@modelcontextprotocol/*"
+      dev-deps-minor-patch:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+      prod-deps-minor-patch:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/ward"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "America/Chicago"
+    labels:
+      - "dependencies"
+      - "npm"
+      - "ward"
+    commit-message:
+      prefix: "deps(ward)"
+      include: "scope"
+    open-pull-requests-limit: 3
+    versioning-strategy: "increase"
+    groups:
+      typescript-and-types:
+        patterns:
+          - "typescript"
+          - "@types/*"
+      eslint:
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+      modelcontextprotocol:
+        patterns:
+          - "@modelcontextprotocol/*"
+      dev-deps-minor-patch:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+      prod-deps-minor-patch:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/adapter-claudecode"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "America/Chicago"
+    labels:
+      - "dependencies"
+      - "npm"
+      - "adapter-claudecode"
+    commit-message:
+      prefix: "deps(adapter-claudecode)"
+      include: "scope"
+    open-pull-requests-limit: 3
+    versioning-strategy: "increase"
+    groups:
+      typescript-and-types:
+        patterns:
+          - "typescript"
+          - "@types/*"
+      eslint:
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+      modelcontextprotocol:
+        patterns:
+          - "@modelcontextprotocol/*"
+      dev-deps-minor-patch:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+      prod-deps-minor-patch:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/adapter-antigravity"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "America/Chicago"
+    labels:
+      - "dependencies"
+      - "npm"
+      - "adapter-antigravity"
+    commit-message:
+      prefix: "deps(adapter-antigravity)"
+      include: "scope"
+    open-pull-requests-limit: 3
+    versioning-strategy: "increase"
+    groups:
+      typescript-and-types:
+        patterns:
+          - "typescript"
+          - "@types/*"
+      eslint:
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+      modelcontextprotocol:
+        patterns:
+          - "@modelcontextprotocol/*"
+      dev-deps-minor-patch:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+      prod-deps-minor-patch:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/adapter-msaf"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "America/Chicago"
+    labels:
+      - "dependencies"
+      - "npm"
+      - "adapter-msaf"
+    commit-message:
+      prefix: "deps(adapter-msaf)"
+      include: "scope"
+    open-pull-requests-limit: 3
+    versioning-strategy: "increase"
+    groups:
+      typescript-and-types:
+        patterns:
+          - "typescript"
+          - "@types/*"
+      eslint:
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+      modelcontextprotocol:
+        patterns:
+          - "@modelcontextprotocol/*"
+      dev-deps-minor-patch:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+      prod-deps-minor-patch:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
