@@ -1,4 +1,4 @@
-# 🕸️ Weave Protocol
+# 🕸️ Weave_Protocol
 
 **Enterprise Security Suite for AI Agents**
 
