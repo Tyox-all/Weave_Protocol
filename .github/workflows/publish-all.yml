@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        package: [mund, hord, domere, witan, hundredmen, tollere, langchain, api, full, cli, ward, adapter-claudecode, adapter-antigravity, adapter-msaf]
+        package: [mund, hord, domere, witan, hundredmen, tollere, langchain, api, full, cli, ward, adapter-claudecode, adapter-antigravity, adapter-msaf, browser]
       fail-fast: false  # Continue publishing other packages if one fails
     
     steps:

@@ -1,0 +1,58 @@
+{
+  "name": "@weave_protocol/browser",
+  "version": "0.1.0",
+  "description": "Weave Protocol browser-agent security — enforces WARD.md policies and detects indirect prompt injection (IPI) for Playwright, Puppeteer, and Stagehand-based AI agents",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "weave-browser": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "node --test tests/",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "weave-protocol",
+    "ward",
+    "browser-agent",
+    "ai-security",
+    "indirect-prompt-injection",
+    "ipi",
+    "prompt-injection",
+    "playwright",
+    "puppeteer",
+    "stagehand",
+    "agent-security",
+    "policy-enforcement"
+  ],
+  "author": "Trent Yoxall",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tyox-all/Weave_Protocol.git",
+    "directory": "browser"
+  },
+  "homepage": "https://github.com/Tyox-all/Weave_Protocol/tree/main/browser#readme",
+  "bugs": {
+    "url": "https://github.com/Tyox-all/Weave_Protocol/issues"
+  },
+  "dependencies": {
+    "@weave_protocol/ward": "^0.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "SKILL.md",
+    "LICENSE"
+  ]
+}
