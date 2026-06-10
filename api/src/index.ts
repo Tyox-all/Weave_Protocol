@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * Weave API - Universal REST Interface
  * @weave_protocol/api v1.0.11
