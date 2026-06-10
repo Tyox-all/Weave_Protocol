@@ -618,8 +618,8 @@ done
 - [x] **Cross-platform thesis complete — same WARD.md works across all three major vendor harnesses + MCP**
 
 ### H2 2026 Q3 — Adoption Quarter
-- [ ] Browser agent security (`@weave_protocol/browser`)
-- [ ] Dashboard v2 with orchestration visualization
+- [x] Browser agent security (`@weave_protocol/browser`)
+- [x] Dashboard v2 with orchestration visualization
 - [ ] State of AI Agent Security: Q3 Report
 
 ### H2 2026 Q4 — Moat Quarter
