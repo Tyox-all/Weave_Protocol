@@ -21,6 +21,7 @@ import { domereRoutes } from './routes/domere.js';
 import { healthRoutes } from './routes/health.js';
 import hundredmenRoutes, { initHundredmen } from './routes/hundredmen.js';
 
+import dashboardSnapshotRouter from './routes/dashboard-snapshot.js';
 // Import middleware
 import { errorHandler } from './middleware/error.js';
 import { requestLogger } from './middleware/logger.js';
@@ -256,6 +257,7 @@ if (process.env.WEAVE_API_KEY) {
 app.use('/api', apiLimiter);
 
 app.use('/api/v1/mund', mundRoutes);
+app.use('/api/dashboard', dashboardSnapshotRouter);
 app.use('/api/v1/hord', hordRoutes);
 app.use('/api/v1/domere', domereRoutes);
 app.use('/api/v1/hundredmen', hundredmenRoutes);
@@ -304,7 +306,7 @@ app.use(errorHandler);
 app.listen(PORT, () => {
   console.log(`
 ╔═══════════════════════════════════════════════════════════════════╗
-║   🕸️  Weave Protocol API v1.0.11                                  ║
+║   🕸️  Weave Protocol API v1.1.0                                  ║
 ║   Dashboard:  http://localhost:${PORT}/dashboard                    ║
 ║                                                                   ║
 ║   Test:  curl -X POST http://localhost:${PORT}/test/threat          ║

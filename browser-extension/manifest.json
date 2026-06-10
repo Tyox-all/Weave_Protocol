@@ -1,0 +1,73 @@
+{
+  "manifest_version": 3,
+  "name": "Weave Browser Guard",
+  "version": "0.1.0",
+  "description": "Detects indirect prompt injection (IPI) in web pages. Read-only inspection — see what AI agents would ingest.",
+  "default_locale": "en",
+  "author": "Trent Yoxall",
+  "homepage_url": "https://github.com/Tyox-all/Weave_Protocol/tree/main/browser-extension",
+
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+
+  "action": {
+    "default_title": "Weave Browser Guard",
+    "default_popup": "src/popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+
+  "options_ui": {
+    "page": "src/options.html",
+    "open_in_tab": false
+  },
+
+  "background": {
+    "service_worker": "src/background.js",
+    "type": "module"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "exclude_matches": [
+        "*://accounts.google.com/*",
+        "*://login.microsoftonline.com/*",
+        "*://*.bank-of-america.com/*",
+        "*://*.chase.com/*"
+      ],
+      "js": ["src/content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+
+  "host_permissions": [],
+
+  "web_accessible_resources": [
+    {
+      "resources": ["src/scanner.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "weave-browser-guard@weave-protocol",
+      "strict_min_version": "115.0"
+    }
+  }
+}

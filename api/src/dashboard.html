@@ -1,424 +1,603 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Weave Protocol Dashboard</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            weave: {
-              dark: '#0f172a',
-              darker: '#020617',
-              accent: '#3b82f6',
-              green: '#22c55e',
-              yellow: '#eab308',
-              red: '#ef4444',
-              purple: '#a855f7',
-            }
-          }
-        }
-      }
-    }
-  </script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weave Protocol — Dashboard</title>
   <style>
-    @keyframes pulse-border {
-      0%, 100% { border-color: rgba(59, 130, 246, 0.5); }
-      50% { border-color: rgba(59, 130, 246, 1); }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
+      background: #050505;
+      color: #fafafa;
+      min-height: 100vh;
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
     }
-    .live-border { animation: pulse-border 2s infinite; }
-    .scrollbar-thin::-webkit-scrollbar { width: 6px; }
-    .scrollbar-thin::-webkit-scrollbar-track { background: #1e293b; }
-    .scrollbar-thin::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+    :root {
+      --bg-page: #050505;
+      --bg-card: #0e0e0e;
+      --bg-card-hover: #161616;
+      --bg-elevated: #1a1a1a;
+      --border: #1f1f1f;
+      --border-strong: #2e2e2e;
+      --text-primary: #fafafa;
+      --text-secondary: #a3a3a3;
+      --text-muted: #525252;
+      --accent-red: #dc2626;
+      --accent-red-bg: rgba(220, 38, 38, 0.08);
+    }
+    header {
+      border-bottom: 1px solid var(--border);
+      background: #080808;
+      position: sticky; top: 0; z-index: 10;
+      backdrop-filter: blur(8px);
+    }
+    .header-inner {
+      max-width: 1280px; margin: 0 auto;
+      padding: 14px 28px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
+    .brand h1 { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+    .brand-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .header-meta { display: flex; align-items: center; gap: 16px; font-size: 11px; }
+    .live-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: var(--text-primary); font-weight: 500;
+      font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .live-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--text-primary);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+    .header-meta a { color: var(--text-secondary); text-decoration: none; }
+    .header-meta a:hover { color: var(--text-primary); }
+
+    main { max-width: 1280px; margin: 0 auto; padding: 28px; }
+    section { margin-bottom: 28px; }
+    .section-label {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px;
+    }
+
+    .hierarchy {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px;
+      overflow: hidden;
+    }
+    .hierarchy-svg { width: 100%; height: auto; display: block; }
+    .surface-card-active rect.card-bg { fill: #0e0e0e; stroke: #2e2e2e; }
+    .surface-card-inactive { opacity: 0.32; }
+    .surface-card-inactive rect.card-bg { fill: #0a0a0a; stroke: #1f1f1f; }
+
+    .two-col { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+    .card-panel {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; overflow: hidden;
+    }
+    .panel-header {
+      padding: 14px 18px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .panel-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .panel-meta { font-size: 10px; color: var(--text-muted); }
+
+    .activity-feed { max-height: 420px; overflow-y: auto; }
+    .activity-feed::-webkit-scrollbar { width: 6px; }
+    .activity-feed::-webkit-scrollbar-track { background: transparent; }
+    .activity-feed::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+    .activity-empty { padding: 32px 18px; text-align: center; color: var(--text-muted); font-size: 12px; }
+
+    .event-row {
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      border-left: 2px solid transparent;
+      transition: background 0.15s;
+      animation: slide-in 0.3s ease-out;
+      display: flex; align-items: flex-start; gap: 12px;
+    }
+    .event-row:hover { background: var(--bg-card-hover); }
+    .event-row:last-child { border-bottom: 0; }
+    .event-row.k-allow { border-left-color: var(--border-strong); }
+    .event-row.k-deny, .event-row.k-ipi_detected {
+      border-left-color: var(--accent-red);
+      background: var(--accent-red-bg);
+    }
+    .event-row.k-require_approval { border-left-color: #525252; }
+    .event-row.k-scan { border-left-color: var(--border); }
+    @keyframes slide-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+    .event-icon {
+      width: 16px; text-align: center; font-size: 13px;
+      color: var(--text-secondary); line-height: 1.4; flex-shrink: 0;
+    }
+    .event-row.k-deny .event-icon, .event-row.k-ipi_detected .event-icon { color: var(--accent-red); }
+    .event-row.k-allow .event-icon { color: var(--text-primary); }
+    .event-body { flex: 1; min-width: 0; }
+    .event-line1 {
+      display: flex; align-items: baseline; justify-content: space-between;
+      gap: 12px; margin-bottom: 2px;
+    }
+    .event-kind {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--text-secondary);
+    }
+    .event-row.k-deny .event-kind, .event-row.k-ipi_detected .event-kind { color: var(--accent-red); }
+    .event-row.k-allow .event-kind { color: var(--text-primary); }
+    .event-time { font-size: 10px; color: var(--text-muted); white-space: nowrap; }
+    .event-subject {
+      font-size: 13px; color: var(--text-primary);
+      margin-bottom: 4px; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+    .event-meta { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+    .surface-tag {
+      padding: 2px 6px; background: var(--bg-elevated); border-radius: 3px;
+      color: var(--text-secondary); font-size: 10px;
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+    }
+
+    .ward-body { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+    .ward-field { display: flex; flex-direction: column; gap: 2px; }
+    .ward-key {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--text-muted);
+    }
+    .ward-val { font-size: 12px; color: var(--text-primary); }
+    .ward-source {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 11px; color: var(--text-secondary); word-break: break-all;
+    }
+    .ward-divider { height: 1px; background: var(--border); }
+    .ward-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .ward-stat { text-align: center; }
+    .ward-stat-num {
+      font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums;
+      color: var(--text-primary);
+    }
+    .ward-stat-num.deny { color: var(--accent-red); }
+    .ward-stat-label {
+      font-size: 9px; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--text-muted); margin-top: 2px;
+    }
+    .behavioral-list { display: flex; flex-direction: column; gap: 6px; }
+    .behavioral-item {
+      font-size: 11px; color: var(--text-secondary);
+      display: flex; justify-content: space-between;
+    }
+    .behavioral-item span { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .ward-empty { padding: 24px 0; text-align: center; }
+    .ward-empty .icon { font-size: 24px; margin-bottom: 8px; opacity: 0.5; }
+    .ward-empty .msg { font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
+    .ward-empty .hint { font-size: 11px; color: var(--text-muted); }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+    .stat-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px 16px;
+    }
+    .stat-num {
+      font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums;
+      color: var(--text-primary); letter-spacing: -0.02em;
+    }
+    .stat-num.deny { color: var(--accent-red); }
+    .stat-label {
+      font-size: 9px; font-weight: 600; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--text-muted); margin-top: 4px;
+    }
+
+    footer {
+      max-width: 1280px; margin: 32px auto 0;
+      padding: 20px 28px; border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between;
+      font-size: 10px; color: var(--text-muted);
+    }
+
+    @media (max-width: 900px) {
+      .two-col { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
   </style>
 </head>
-<body class="bg-weave-darker text-gray-100">
-  <div id="root"></div>
-  
-  <script type="text/babel">
-    const { useState, useEffect, useCallback } = React;
+<body>
 
-    // API base URL
-    const API_URL = window.location.origin;
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 28 28" width="28" height="28" fill="none" stroke="#fafafa" stroke-width="1" stroke-linecap="round">
+          <circle cx="14" cy="14" r="2" fill="#fafafa" stroke="none"/>
+          <line x1="14" y1="14" x2="14" y2="2"/>
+          <line x1="14" y1="14" x2="24.4" y2="8"/>
+          <line x1="14" y1="14" x2="24.4" y2="20"/>
+          <line x1="14" y1="14" x2="14" y2="26"/>
+          <line x1="14" y1="14" x2="3.6" y2="20"/>
+          <line x1="14" y1="14" x2="3.6" y2="8"/>
+          <path d="M14 6 L20 9.5 L20 18.5 L14 22 L8 18.5 L8 9.5 Z" stroke-opacity="0.5"/>
+          <path d="M14 10 L17 11.7 L17 16.3 L14 18 L11 16.3 L11 11.7 Z" stroke-opacity="0.3"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Weave Protocol</h1>
+        <div class="brand-sub">Operator Dashboard · v2.0</div>
+      </div>
+    </div>
+    <div class="header-meta">
+      <span class="live-pill"><span class="live-dot"></span>LIVE</span>
+      <span style="color: var(--text-muted)" id="last-updated">—</span>
+      <a href="https://github.com/Tyox-all/Weave_Protocol">github ↗</a>
+    </div>
+  </div>
+</header>
 
-    // Severity badge component
-    const SeverityBadge = ({ severity }) => {
-      const colors = {
-        critical: 'bg-red-500/20 text-red-400 border-red-500/50',
-        high: 'bg-orange-500/20 text-orange-400 border-orange-500/50',
-        medium: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50',
-        low: 'bg-blue-500/20 text-blue-400 border-blue-500/50',
-        info: 'bg-gray-500/20 text-gray-400 border-gray-500/50',
-      };
-      return (
-        <span className={`px-2 py-0.5 text-xs font-medium rounded border ${colors[severity] || colors.info}`}>
-          {severity?.toUpperCase()}
-        </span>
-      );
-    };
+<main>
 
-    // Status badge component
-    const StatusBadge = ({ status }) => {
-      const colors = {
-        approved: 'bg-green-500/20 text-green-400',
-        blocked: 'bg-red-500/20 text-red-400',
-        pending: 'bg-yellow-500/20 text-yellow-400',
-        safe: 'bg-green-500/20 text-green-400',
-        unsafe: 'bg-red-500/20 text-red-400',
-      };
-      return (
-        <span className={`px-2 py-0.5 text-xs font-medium rounded ${colors[status] || 'bg-gray-500/20 text-gray-400'}`}>
-          {status?.toUpperCase()}
-        </span>
-      );
-    };
+  <section>
+    <div class="section-label">Architecture &middot; live state</div>
+    <div class="hierarchy">
+      <svg class="hierarchy-svg" viewBox="0 0 1180 360" xmlns="http://www.w3.org/2000/svg">
 
-    // Stat card component
-    const StatCard = ({ icon, label, value, subvalue, color = 'blue' }) => {
-      const colorClasses = {
-        blue: 'from-blue-500/20 to-blue-600/10 border-blue-500/30',
-        green: 'from-green-500/20 to-green-600/10 border-green-500/30',
-        yellow: 'from-yellow-500/20 to-yellow-600/10 border-yellow-500/30',
-        red: 'from-red-500/20 to-red-600/10 border-red-500/30',
-        purple: 'from-purple-500/20 to-purple-600/10 border-purple-500/30',
-      };
-      return (
-        <div className={`bg-gradient-to-br ${colorClasses[color]} border rounded-lg p-4`}>
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">{icon}</span>
-            <div>
-              <div className="text-2xl font-bold">{value}</div>
-              <div className="text-sm text-gray-400">{label}</div>
-              {subvalue && <div className="text-xs text-gray-500">{subvalue}</div>}
-            </div>
-          </div>
+        <!-- WARD policy node -->
+        <g transform="translate(450, 16)" id="ward-node">
+          <rect width="280" height="80" rx="8" fill="#161616" stroke="#2e2e2e" stroke-width="1"/>
+          <g transform="translate(20, 22)">
+            <path d="M18 0 L36 8 L36 24 C36 32 28 38 18 40 C8 38 0 32 0 24 L0 8 Z"
+                  fill="none" stroke="#fafafa" stroke-width="1.5" stroke-linejoin="round"/>
+          </g>
+          <text x="68" y="36" font-family="-apple-system, system-ui, sans-serif" font-size="14" font-weight="600" fill="#fafafa">WARD.md</text>
+          <text x="68" y="54" id="ward-name" font-family="-apple-system, system-ui, sans-serif" font-size="11" fill="#a3a3a3">—</text>
+          <text x="68" y="68" id="ward-meta" font-family="ui-monospace, Menlo, monospace" font-size="10" fill="#525252">—</text>
+        </g>
+
+        <!-- Connectors -->
+        <g fill="none" stroke-linecap="round">
+          <path id="conn-mcp" d="M 590 96 C 590 130, 130 130, 130 160" stroke="#404040" stroke-width="1"/>
+          <path id="conn-claude-code" d="M 590 96 C 590 130, 350 130, 350 160" stroke="#404040" stroke-width="1"/>
+          <path id="conn-antigravity" d="M 590 96 C 590 130, 570 130, 570 160" stroke="#404040" stroke-width="1"/>
+          <path id="conn-msaf" d="M 590 96 C 590 130, 790 130, 790 160" stroke="#404040" stroke-width="1"/>
+          <path id="conn-browser" d="M 590 96 C 590 130, 1010 130, 1010 160" stroke="#404040" stroke-width="1"/>
+        </g>
+
+        <!-- 5 surface cards (positions hardcoded; values updated by JS) -->
+        <g id="card-mcp" transform="translate(30, 160)">
+          <rect class="card-bg" width="200" height="160" rx="8" fill="#0e0e0e" stroke="#2e2e2e" stroke-width="1"/>
+          <g transform="translate(16, 16)">
+            <circle cx="9" cy="9" r="6" fill="none" stroke="currentColor" stroke-width="1.5" color="#fafafa"/>
+            <line x1="13.5" y1="13.5" x2="18" y2="18" stroke="currentColor" stroke-width="1.5" color="#fafafa" stroke-linecap="round"/>
+          </g>
+          <g class="status-badge"></g>
+          <text x="16" y="68" class="card-name" font-family="-apple-system, system-ui, sans-serif" font-size="14" font-weight="600" fill="#fafafa">Hundredmen</text>
+          <text x="16" y="84" class="card-vendor" font-family="-apple-system, system-ui, sans-serif" font-size="11" fill="#a3a3a3">MCP layer</text>
+          <text x="16" y="124" class="card-count" font-family="-apple-system, system-ui, sans-serif" font-size="28" font-weight="700" fill="#fafafa" style="font-variant-numeric: tabular-nums; letter-spacing: -0.02em;">—</text>
+          <text x="16" y="140" class="card-count-label" font-family="-apple-system, system-ui, sans-serif" font-size="9" font-weight="600" letter-spacing="0.08em" fill="#525252">EVENTS TODAY</text>
+          <text x="184" y="124" class="card-delta" text-anchor="end" font-family="-apple-system, system-ui, sans-serif" font-size="11" fill="#fafafa" style="font-variant-numeric: tabular-nums;"></text>
+          <text x="184" y="140" class="card-delta-label" text-anchor="end" font-family="-apple-system, system-ui, sans-serif" font-size="9" fill="#525252"></text>
+        </g>
+
+        <g id="card-claude-code" transform="translate(250, 160)">
+          <rect class="card-bg" width="200" height="160" rx="8" fill="#0e0e0e" stroke="#2e2e2e" stroke-width="1"/>
+          <g transform="translate(16, 16)">
+            <path d="M9 0 L18 4 L18 12 C18 16 14 19 9 20 C4 19 0 16 0 12 L0 4 Z" fill="none" stroke="#fafafa" stroke-width="1.5"/>
+          </g>
+          <g class="status-badge"></g>
+          <text x="16" y="68" class="card-name" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#fafafa">adapter-claudecode</text>
+          <text x="16" y="84" class="card-vendor" font-family="-apple-system, system-ui, sans-serif" font-size="11" fill="#a3a3a3">Anthropic</text>
+          <text x="16" y="124" class="card-count" font-family="-apple-system, system-ui, sans-serif" font-size="28" font-weight="700" fill="#fafafa" style="font-variant-numeric: tabular-nums; letter-spacing: -0.02em;">—</text>
+          <text x="16" y="140" class="card-count-label" font-family="-apple-system, system-ui, sans-serif" font-size="9" font-weight="600" letter-spacing="0.08em" fill="#525252">EVENTS TODAY</text>
+          <text x="184" y="124" class="card-delta" text-anchor="end" font-family="-apple-system, system-ui, sans-serif" font-size="11" fill="#fafafa" style="font-variant-numeric: tabular-nums;"></text>
+          <text x="184" y="140" class="card-delta-label" text-anchor="end" font-family="-apple-system, system-ui, sans-serif" font-size="9" fill="#525252"></text>
+        </g>
+
+        <g id="card-antigravity" transform="translate(470, 160)">
+          <rect class="card-bg" width="200" height="160" rx="8" fill="#0e0e0e" stroke="#2e2e2e" stroke-width="1"/>
+          <g transform="translate(16, 16)">
+            <path d="M9 0 L18 4 L18 12 C18 16 14 19 9 20 C4 19 0 16 0 12 L0 4 Z" fill="none" stroke="#fafafa" stroke-width="1.5"/>
+          </g>
+          <g class="status-badge"></g>
+          <text x="16" y="68" class="card-name" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#fafafa">adapter-antigravity</text>
+          <text x="16" y="84" class="card-vendor" font-family="-apple-system, system-ui, sans-serif" font-size="11" fill="#a3a3a3">Google</text>
+          <text x="16" y="124" class="card-count" font-family="-apple-system, system-ui, sans-serif" font-size="28" font-weight="700" fill="#fafafa" style="font-variant-numeric: tabular-nums; letter-spacing: -0.02em;">—</text>
+          <text x="16" y="140" class="card-count-label" font-family="-apple-system, system-ui, sans-serif" font-size="9" font-weight="600" letter-spacing="0.08em" fill="#525252">EVENTS TODAY</text>
+          <text x="184" y="124" class="card-delta" text-anchor="end" font-family="-apple-system, system-ui, sans-serif" font-size="11" fill="#fafafa" style="font-variant-numeric: tabular-nums;"></text>
+          <text x="184" y="140" class="card-delta-label" text-anchor="end" font-family="-apple-system, system-ui, sans-serif" font-size="9" fill="#525252"></text>
+        </g>
+
+        <g id="card-msaf" transform="translate(690, 160)">
+          <rect class="card-bg" width="200" height="160" rx="8" fill="#0e0e0e" stroke="#2e2e2e" stroke-width="1"/>
+          <g transform="translate(16, 16)">
+            <path d="M9 0 L18 4 L18 12 C18 16 14 19 9 20 C4 19 0 16 0 12 L0 4 Z" fill="none" stroke="#fafafa" stroke-width="1.5"/>
+          </g>
+          <g class="status-badge"></g>
+          <text x="16" y="68" class="card-name" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#fafafa">adapter-msaf</text>
+          <text x="16" y="84" class="card-vendor" font-family="-apple-system, system-ui, sans-serif" font-size="11" fill="#a3a3a3">Microsoft</text>
+          <text x="16" y="124" class="card-count" font-family="-apple-system, system-ui, sans-serif" font-size="28" font-weight="700" fill="#fafafa" style="font-variant-numeric: tabular-nums; letter-spacing: -0.02em;">—</text>
+          <text x="16" y="140" class="card-count-label" font-family="-apple-system, system-ui, sans-serif" font-size="9" font-weight="600" letter-spacing="0.08em" fill="#525252">EVENTS TODAY</text>
+          <text x="184" y="124" class="card-delta" text-anchor="end" font-family="-apple-system, system-ui, sans-serif" font-size="11" fill="#fafafa" style="font-variant-numeric: tabular-nums;"></text>
+          <text x="184" y="140" class="card-delta-label" text-anchor="end" font-family="-apple-system, system-ui, sans-serif" font-size="9" fill="#525252"></text>
+        </g>
+
+        <g id="card-browser" transform="translate(910, 160)">
+          <rect class="card-bg" width="200" height="160" rx="8" fill="#0e0e0e" stroke="#2e2e2e" stroke-width="1"/>
+          <g transform="translate(16, 16)">
+            <circle cx="9" cy="10" r="9" fill="none" stroke="#fafafa" stroke-width="1.5"/>
+            <ellipse cx="9" cy="10" rx="9" ry="4" fill="none" stroke="#fafafa" stroke-width="1"/>
+            <line x1="0" y1="10" x2="18" y2="10" stroke="#fafafa" stroke-width="1"/>
+          </g>
+          <g class="status-badge"></g>
+          <text x="16" y="68" class="card-name" font-family="-apple-system, system-ui, sans-serif" font-size="14" font-weight="600" fill="#fafafa">browser</text>
+          <text x="16" y="84" class="card-vendor" font-family="-apple-system, system-ui, sans-serif" font-size="11" fill="#a3a3a3">Playwright + IPI</text>
+          <text x="16" y="124" class="card-count" font-family="-apple-system, system-ui, sans-serif" font-size="28" font-weight="700" fill="#fafafa" style="font-variant-numeric: tabular-nums; letter-spacing: -0.02em;">—</text>
+          <text x="16" y="140" class="card-count-label" font-family="-apple-system, system-ui, sans-serif" font-size="9" font-weight="600" letter-spacing="0.08em" fill="#525252">EVENTS TODAY</text>
+          <text x="184" y="124" class="card-delta" text-anchor="end" font-family="-apple-system, system-ui, sans-serif" font-size="11" fill="#fafafa" style="font-variant-numeric: tabular-nums;"></text>
+          <text x="184" y="140" class="card-delta-label" text-anchor="end" font-family="-apple-system, system-ui, sans-serif" font-size="9" fill="#525252"></text>
+        </g>
+      </svg>
+    </div>
+  </section>
+
+  <section>
+    <div class="two-col">
+      <div class="card-panel">
+        <div class="panel-header">
+          <div class="panel-title">Live activity</div>
+          <div class="panel-meta">last 24 hours</div>
         </div>
-      );
-    };
-
-    // Live feed item component
-    const FeedItem = ({ item, type }) => {
-      const icons = {
-        intercept: '🔍',
-        scan: '🛡️',
-        checkpoint: '⚖️',
-        vault: '🏛️',
-      };
-      
-      const getBorderColor = () => {
-        if (item.status === 'blocked' || item.safe === false) return 'border-l-red-500';
-        if (item.status === 'pending') return 'border-l-yellow-500';
-        return 'border-l-green-500';
-      };
-
-      return (
-        <div className={`bg-slate-800/50 border-l-4 ${getBorderColor()} rounded-r-lg p-3 mb-2`}>
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2">
-              <span>{icons[type]}</span>
-              <span className="font-medium text-sm">{item.tool || item.action || item.type}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              {item.severity && <SeverityBadge severity={item.severity} />}
-              {item.status && <StatusBadge status={item.status} />}
-              {item.safe !== undefined && <StatusBadge status={item.safe ? 'safe' : 'unsafe'} />}
-            </div>
-          </div>
-          {item.server && <div className="text-xs text-gray-500 mt-1">Server: {item.server}</div>}
-          {item.description && <div className="text-xs text-gray-400 mt-1">{item.description}</div>}
-          {item.findings && item.findings.length > 0 && (
-            <div className="text-xs text-red-400 mt-1">
-              {item.findings.length} threat(s) detected
-            </div>
-          )}
-          <div className="text-xs text-gray-600 mt-1">
-            {new Date(item.timestamp || Date.now()).toLocaleTimeString()}
-          </div>
-        </div>
-      );
-    };
-
-    // Panel component
-    const Panel = ({ title, icon, children, live = false }) => (
-      <div className={`bg-slate-900/50 rounded-xl border ${live ? 'border-blue-500/50 live-border' : 'border-slate-700/50'} overflow-hidden`}>
-        <div className="px-4 py-3 border-b border-slate-700/50 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span>{icon}</span>
-            <h2 className="font-semibold">{title}</h2>
-          </div>
-          {live && (
-            <span className="flex items-center gap-1 text-xs text-blue-400">
-              <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
-              LIVE
-            </span>
-          )}
-        </div>
-        <div className="p-4 max-h-80 overflow-y-auto scrollbar-thin">
-          {children}
+        <div class="activity-feed" id="activity-feed">
+          <div class="activity-empty">Loading…</div>
         </div>
       </div>
-    );
-
-    // Threat intel panel
-    const ThreatIntelPanel = ({ data }) => (
-      <Panel title="Threat Intelligence" icon="📡">
-        {data ? (
-          <div className="space-y-3">
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="bg-slate-800 rounded p-2">
-                <div className="text-xl font-bold text-blue-400">{data.patterns || 0}</div>
-                <div className="text-xs text-gray-500">Patterns</div>
-              </div>
-              <div className="bg-slate-800 rounded p-2">
-                <div className="text-xl font-bold text-purple-400">{data.sources || 0}</div>
-                <div className="text-xs text-gray-500">Sources</div>
-              </div>
-              <div className="bg-slate-800 rounded p-2">
-                <div className="text-xl font-bold text-green-400">{data.mitre_techniques || 0}</div>
-                <div className="text-xs text-gray-500">MITRE</div>
-              </div>
-            </div>
-            {data.sourceDetails && data.sourceDetails.map((src, i) => (
-              <div key={i} className="flex items-center justify-between text-sm bg-slate-800/50 rounded p-2">
-                <span className={src.enabled ? 'text-green-400' : 'text-gray-500'}>
-                  {src.enabled ? '✅' : '⬜'} {src.name}
-                </span>
-                <span className="text-gray-500">{src.patterns} patterns</span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-gray-500 text-center py-4">Loading...</div>
-        )}
-      </Panel>
-    );
-
-    // Compliance panel
-    const CompliancePanel = ({ data }) => {
-      const frameworks = ['soc2', 'hipaa', 'pci-dss', 'iso27001', 'gdpr', 'ccpa'];
-      return (
-        <Panel title="Compliance Status" icon="⚖️">
-          <div className="space-y-2">
-            {frameworks.map(fw => {
-              const status = data?.frameworks?.[fw];
-              return (
-                <div key={fw} className="flex items-center justify-between bg-slate-800/50 rounded p-2">
-                  <span className="text-sm font-medium uppercase">{fw}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">
-                      {status?.checkpoints || 0} checkpoints
-                    </span>
-                    <span className={`w-2 h-2 rounded-full ${status?.active ? 'bg-green-400' : 'bg-gray-600'}`}></span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </Panel>
-      );
-    };
-
-    // Server reputation panel
-    const ReputationPanel = ({ data }) => (
-      <Panel title="MCP Server Reputation" icon="🏆">
-        {data && data.length > 0 ? (
-          <div className="space-y-2">
-            {data.map((server, i) => (
-              <div key={i} className="flex items-center justify-between bg-slate-800/50 rounded p-2">
-                <span className="text-sm truncate max-w-[150px]">{server.name}</span>
-                <div className="flex items-center gap-2">
-                  <div className="w-20 h-2 bg-slate-700 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full ${
-                        server.score >= 70 ? 'bg-green-500' : 
-                        server.score >= 40 ? 'bg-yellow-500' : 'bg-red-500'
-                      }`}
-                      style={{ width: `${server.score}%` }}
-                    ></div>
-                  </div>
-                  <span className="text-xs font-mono w-8">{server.score}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-gray-500 text-center py-4">No servers tracked</div>
-        )}
-      </Panel>
-    );
-
-    // Main Dashboard component
-    const Dashboard = () => {
-      const [stats, setStats] = useState({
-        scans: 0,
-        threats: 0,
-        intercepts: 0,
-        blocked: 0,
-        checkpoints: 0,
-        vaultOps: 0,
-      });
-      const [liveFeed, setLiveFeed] = useState([]);
-      const [threatIntel, setThreatIntel] = useState(null);
-      const [compliance, setCompliance] = useState(null);
-      const [reputation, setReputation] = useState([]);
-      const [connected, setConnected] = useState(false);
-      const [lastUpdate, setLastUpdate] = useState(null);
-
-      // Fetch data from API
-      const fetchData = useCallback(async () => {
-        try {
-          // Try to fetch stats
-          const responses = await Promise.allSettled([
-            fetch(`${API_URL}/stats`).then(r => r.json()),
-            fetch(`${API_URL}/feed`).then(r => r.json()),
-            fetch(`${API_URL}/mund/intel-status`).then(r => r.json()),
-            fetch(`${API_URL}/domere/compliance/status`).then(r => r.json()),
-            fetch(`${API_URL}/hundredmen/servers`).then(r => r.json()),
-          ]);
-
-          if (responses[0].status === 'fulfilled') setStats(responses[0].value);
-          if (responses[1].status === 'fulfilled') setLiveFeed(responses[1].value);
-          if (responses[2].status === 'fulfilled') setThreatIntel(responses[2].value);
-          if (responses[3].status === 'fulfilled') setCompliance(responses[3].value);
-          if (responses[4].status === 'fulfilled') setReputation(responses[4].value);
-          
-          setConnected(true);
-          setLastUpdate(new Date());
-        } catch (err) {
-          console.error('Failed to fetch data:', err);
-          setConnected(false);
-        }
-      }, []);
-
-      // Poll for updates
-      useEffect(() => {
-        fetchData();
-        const interval = setInterval(fetchData, 3000);
-        return () => clearInterval(interval);
-      }, [fetchData]);
-
-      // Demo data for when API isn't available
-      useEffect(() => {
-        if (!connected && liveFeed.length === 0) {
-          setLiveFeed([
-            { type: 'intercept', tool: 'file_read', server: 'filesystem', status: 'approved', timestamp: Date.now() },
-            { type: 'scan', action: 'Content scan', safe: true, timestamp: Date.now() - 5000 },
-            { type: 'intercept', tool: 'web_fetch', server: 'browser', status: 'blocked', severity: 'high', timestamp: Date.now() - 10000 },
-          ]);
-          setStats({ scans: 142, threats: 7, intercepts: 89, blocked: 3, checkpoints: 24, vaultOps: 18 });
-          setThreatIntel({ patterns: 47, sources: 3, mitre_techniques: 10 });
-        }
-      }, [connected, liveFeed.length]);
-
-      return (
-        <div className="min-h-screen">
-          {/* Header */}
-          <header className="bg-slate-900/80 border-b border-slate-700/50 px-6 py-4 sticky top-0 z-10 backdrop-blur">
-            <div className="flex items-center justify-between max-w-7xl mx-auto">
-              <div className="flex items-center gap-3">
-                <span className="text-3xl">🕸️</span>
-                <div>
-                  <h1 className="text-xl font-bold">Weave Protocol</h1>
-                  <p className="text-xs text-gray-500">Security Dashboard</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className={`flex items-center gap-2 text-sm ${connected ? 'text-green-400' : 'text-red-400'}`}>
-                  <span className={`w-2 h-2 rounded-full ${connected ? 'bg-green-400' : 'bg-red-400'}`}></span>
-                  {connected ? 'Connected' : 'Demo Mode'}
-                </div>
-                {lastUpdate && (
-                  <span className="text-xs text-gray-500">
-                    Updated: {lastUpdate.toLocaleTimeString()}
-                  </span>
-                )}
-              </div>
-            </div>
-          </header>
-
-          {/* Main content */}
-          <main className="max-w-7xl mx-auto p-6">
-            {/* Stats row */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-              <StatCard icon="🛡️" label="Total Scans" value={stats.scans} color="blue" />
-              <StatCard icon="⚠️" label="Threats Found" value={stats.threats} color="red" />
-              <StatCard icon="🔍" label="Intercepts" value={stats.intercepts} color="purple" />
-              <StatCard icon="🚫" label="Blocked" value={stats.blocked} color="yellow" />
-              <StatCard icon="⚖️" label="Checkpoints" value={stats.checkpoints} color="green" />
-              <StatCard icon="🏛️" label="Vault Ops" value={stats.vaultOps} color="blue" />
-            </div>
-
-            {/* Main grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Live feed - takes 2 columns */}
-              <div className="lg:col-span-2">
-                <Panel title="Live Activity Feed" icon="📡" live>
-                  {liveFeed.length > 0 ? (
-                    liveFeed.map((item, i) => (
-                      <FeedItem key={i} item={item} type={item.type || 'intercept'} />
-                    ))
-                  ) : (
-                    <div className="text-gray-500 text-center py-8">
-                      No activity yet. Waiting for events...
-                    </div>
-                  )}
-                </Panel>
-              </div>
-
-              {/* Side panels */}
-              <div className="space-y-6">
-                <ThreatIntelPanel data={threatIntel} />
-                <CompliancePanel data={compliance} />
-                <ReputationPanel data={reputation} />
-              </div>
-            </div>
-
-            {/* Package status */}
-            <div className="mt-6 bg-slate-900/50 rounded-xl border border-slate-700/50 p-4">
-              <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <span>📦</span> Package Status
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-                {[
-                  { name: 'Mund', icon: '🛡️', status: 'active' },
-                  { name: 'Hord', icon: '🏛️', status: 'active' },
-                  { name: 'Domere', icon: '⚖️', status: 'active' },
-                  { name: 'Witan', icon: '👥', status: 'idle' },
-                  { name: 'Hundredmen', icon: '🔍', status: 'active' },
-                  { name: 'LangChain', icon: '🔗', status: 'idle' },
-                  { name: 'LlamaIndex', icon: '🐍', status: 'idle' },
-                ].map(pkg => (
-                  <div key={pkg.name} className="bg-slate-800/50 rounded-lg p-3 text-center">
-                    <div className="text-2xl mb-1">{pkg.icon}</div>
-                    <div className="text-sm font-medium">{pkg.name}</div>
-                    <div className={`text-xs ${pkg.status === 'active' ? 'text-green-400' : 'text-gray-500'}`}>
-                      {pkg.status}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </main>
-
-          {/* Footer */}
-          <footer className="border-t border-slate-700/50 px-6 py-4 mt-8">
-            <div className="max-w-7xl mx-auto flex items-center justify-between text-sm text-gray-500">
-              <span>Weave Protocol Dashboard v1.0.0</span>
-              <span>localhost only • no data leaves your machine</span>
-            </div>
-          </footer>
+      <div class="card-panel">
+        <div class="panel-header">
+          <div class="panel-title">Active WARD policy</div>
         </div>
-      );
-    };
+        <div class="ward-body" id="ward-panel">
+          <div class="ward-empty"><div class="icon">·</div><div class="msg">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-    // Render
-    ReactDOM.createRoot(document.getElementById('root')).render(<Dashboard />);
-  </script>
+  <section>
+    <div class="section-label">24-hour statistics</div>
+    <div class="stats-grid" id="stats-grid"></div>
+  </section>
+
+</main>
+
+<footer>
+  <span>Weave Protocol · 15 packages · 5 enforcement surfaces</span>
+  <span>polling every <span id="poll-secs">5</span>s</span>
+</footer>
+
+<script type="module">
+  const POLL_INTERVAL_MS = 5000;
+  const SURFACE_ORDER = ['mcp', 'claude-code', 'antigravity', 'msaf', 'browser'];
+
+  const escapeHtml = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  const rel = ts => {
+    const d = Math.floor((Date.now() - ts) / 1000);
+    if (d < 10) return 'just now';
+    if (d < 60) return `${d}s ago`;
+    if (d < 3600) return `${Math.floor(d/60)}m ago`;
+    if (d < 86400) return `${Math.floor(d/3600)}h ago`;
+    return `${Math.floor(d/86400)}d ago`;
+  };
+  const ICONS = { allow: '✓', deny: '✗', ipi_detected: '☠', require_approval: '⚠', scan: '○' };
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+
+  // ─── Hierarchy: update SVG cards from snapshot ─────────
+  function updateHierarchy(surfaces, ward) {
+    // Update WARD policy node
+    document.getElementById('ward-name').textContent =
+      ward.loaded ? (ward.name || '(unnamed)') : 'no WARD.md loaded';
+    document.getElementById('ward-meta').textContent =
+      ward.loaded ? `v${ward.version || '1.0'} · agent: ${ward.agent || '(none)'}` : '';
+
+    // Map surface ID to card element
+    const byId = {};
+    for (const s of surfaces) byId[s.id] = s;
+
+    for (const id of SURFACE_ORDER) {
+      const surface = byId[id];
+      const card = document.getElementById(`card-${id}`);
+      const connector = document.getElementById(`conn-${id}`);
+      if (!card) continue;
+
+      const active = surface && surface.status === 'live';
+
+      // Card opacity + bg
+      if (active) {
+        card.classList.remove('surface-card-inactive');
+        card.classList.add('surface-card-active');
+        if (connector) {
+          connector.setAttribute('stroke', '#404040');
+          connector.removeAttribute('stroke-dasharray');
+        }
+      } else {
+        card.classList.add('surface-card-inactive');
+        card.classList.remove('surface-card-active');
+        if (connector) {
+          connector.setAttribute('stroke', '#262626');
+          connector.setAttribute('stroke-dasharray', '3 3');
+        }
+      }
+
+      // Status badge
+      const badgeGroup = card.querySelector('.status-badge');
+      badgeGroup.innerHTML = '';
+      if (active) {
+        const bg = document.createElementNS(SVG_NS, 'rect');
+        bg.setAttribute('x', '138'); bg.setAttribute('y', '16');
+        bg.setAttribute('width', '46'); bg.setAttribute('height', '20');
+        bg.setAttribute('rx', '3'); bg.setAttribute('fill', '#1a1a1a');
+        bg.setAttribute('stroke', '#404040');
+        badgeGroup.appendChild(bg);
+
+        const dot = document.createElementNS(SVG_NS, 'circle');
+        dot.setAttribute('cx', '146'); dot.setAttribute('cy', '26'); dot.setAttribute('r', '2.5');
+        dot.setAttribute('fill', '#fafafa');
+        const anim = document.createElementNS(SVG_NS, 'animate');
+        anim.setAttribute('attributeName', 'opacity');
+        anim.setAttribute('values', '1;0.3;1');
+        anim.setAttribute('dur', '2s');
+        anim.setAttribute('begin', `${(SURFACE_ORDER.indexOf(id) * 0.4)}s`);
+        anim.setAttribute('repeatCount', 'indefinite');
+        dot.appendChild(anim);
+        badgeGroup.appendChild(dot);
+
+        const txt = document.createElementNS(SVG_NS, 'text');
+        txt.setAttribute('x', '154'); txt.setAttribute('y', '29');
+        txt.setAttribute('font-family', '-apple-system, system-ui, sans-serif');
+        txt.setAttribute('font-size', '9'); txt.setAttribute('font-weight', '600');
+        txt.setAttribute('letter-spacing', '0.08em'); txt.setAttribute('fill', '#fafafa');
+        txt.textContent = 'LIVE';
+        badgeGroup.appendChild(txt);
+      } else {
+        const bg = document.createElementNS(SVG_NS, 'rect');
+        bg.setAttribute('x', '138'); bg.setAttribute('y', '16');
+        bg.setAttribute('width', '46'); bg.setAttribute('height', '20');
+        bg.setAttribute('rx', '3'); bg.setAttribute('fill', '#0e0e0e');
+        bg.setAttribute('stroke', '#1f1f1f');
+        badgeGroup.appendChild(bg);
+
+        const txt = document.createElementNS(SVG_NS, 'text');
+        txt.setAttribute('x', '161'); txt.setAttribute('y', '29');
+        txt.setAttribute('text-anchor', 'middle');
+        txt.setAttribute('font-family', '-apple-system, system-ui, sans-serif');
+        txt.setAttribute('font-size', '9'); txt.setAttribute('font-weight', '600');
+        txt.setAttribute('letter-spacing', '0.08em'); txt.setAttribute('fill', '#a3a3a3');
+        txt.textContent = surface && surface.status === 'idle' ? 'IDLE' : 'OFF';
+        badgeGroup.appendChild(txt);
+      }
+
+      // Count + delta + labels
+      const countEl = card.querySelector('.card-count');
+      const countLabelEl = card.querySelector('.card-count-label');
+      const deltaEl = card.querySelector('.card-delta');
+      const deltaLabelEl = card.querySelector('.card-delta-label');
+
+      if (active && surface) {
+        countEl.textContent = surface.eventsToday.toLocaleString();
+        countLabelEl.textContent = 'EVENTS TODAY';
+        deltaEl.textContent = `${surface.delta >= 0 ? '+' : ''}${surface.delta}%`;
+        deltaLabelEl.textContent = 'vs yesterday';
+      } else if (surface) {
+        countEl.textContent = '—';
+        countLabelEl.textContent = 'NOT CONFIGURED';
+        deltaEl.textContent = '';
+        deltaLabelEl.textContent = '';
+      }
+    }
+  }
+
+  // ─── Activity feed ─────────────────────────────────────
+  function renderActivity(events) {
+    const root = document.getElementById('activity-feed');
+    if (!events || events.length === 0) {
+      root.innerHTML = '<div class="activity-empty">No activity recorded yet. Run an agent to populate the feed.</div>';
+      return;
+    }
+    root.innerHTML = events.map(e => `
+      <div class="event-row k-${e.kind}">
+        <span class="event-icon">${ICONS[e.kind] || '·'}</span>
+        <div class="event-body">
+          <div class="event-line1">
+            <span class="event-kind">${e.kind.replace('_', ' ')}</span>
+            <span class="event-time">${rel(e.timestamp)}</span>
+          </div>
+          <div class="event-subject">${escapeHtml(e.subject)}</div>
+          <div class="event-meta">
+            <span class="surface-tag">${escapeHtml(e.surface)}</span>
+            <span>${escapeHtml(e.reason || '')}</span>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ─── WARD panel ────────────────────────────────────────
+  function renderWardPanel(w) {
+    const root = document.getElementById('ward-panel');
+    if (!w.loaded) {
+      root.innerHTML = `
+        <div class="ward-empty">
+          <div class="icon">·</div>
+          <div class="msg">No WARD.md loaded</div>
+          <div class="hint">Drop a WARD.md in your project root or set $WEAVE_WARD_PATH</div>
+        </div>`;
+      return;
+    }
+    root.innerHTML = `
+      <div class="ward-field"><div class="ward-key">Source</div><div class="ward-source">${escapeHtml(w.source)}</div></div>
+      ${w.name ? `<div class="ward-field"><div class="ward-key">Name</div><div class="ward-val">${escapeHtml(w.name)}</div></div>` : ''}
+      ${w.agent ? `<div class="ward-field"><div class="ward-key">Agent</div><div class="ward-val">${escapeHtml(w.agent)}</div></div>` : ''}
+      <div class="ward-divider"></div>
+      <div class="ward-grid">
+        <div class="ward-stat"><div class="ward-stat-num">${w.network.allow}</div><div class="ward-stat-label">net allow</div></div>
+        <div class="ward-stat"><div class="ward-stat-num deny">${w.network.deny}</div><div class="ward-stat-label">net deny</div></div>
+        <div class="ward-stat"><div class="ward-stat-num">${w.capabilities.allow}</div><div class="ward-stat-label">cap allow</div></div>
+        <div class="ward-stat"><div class="ward-stat-num deny">${w.capabilities.deny}</div><div class="ward-stat-label">cap deny</div></div>
+      </div>
+      ${w.behavioralLimits ? `
+      <div class="ward-divider"></div>
+      <div class="ward-field">
+        <div class="ward-key">Behavioral limits</div>
+        <div class="behavioral-list" style="margin-top: 6px;">
+          ${w.behavioralLimits.maxIterations ? `<div class="behavioral-item">Max iterations <span>${w.behavioralLimits.maxIterations}</span></div>` : ''}
+          ${w.behavioralLimits.maxRuntimeSeconds ? `<div class="behavioral-item">Max runtime <span>${w.behavioralLimits.maxRuntimeSeconds}s</span></div>` : ''}
+          ${w.behavioralLimits.maxCostUSD ? `<div class="behavioral-item">Max cost <span>$${Number(w.behavioralLimits.maxCostUSD).toFixed(2)}</span></div>` : ''}
+        </div>
+      </div>` : ''}
+    `;
+  }
+
+  // ─── Stats grid ────────────────────────────────────────
+  function renderStats(s) {
+    document.getElementById('stats-grid').innerHTML = [
+      { label: 'Decisions', value: s.decisions, deny: false },
+      { label: 'Allows', value: s.allows, deny: false },
+      { label: 'Denies', value: s.denies, deny: true },
+      { label: 'Approvals', value: s.approvalsRequested, deny: false },
+      { label: 'IPI detected', value: s.ipiDetected, deny: true },
+      { label: 'URLs scanned', value: s.urlsScanned, deny: false },
+    ].map(it => `
+      <div class="stat-card">
+        <div class="stat-num${it.deny ? ' deny' : ''}">${it.value.toLocaleString()}</div>
+        <div class="stat-label">${it.label}</div>
+      </div>
+    `).join('');
+  }
+
+  // ─── Polling ───────────────────────────────────────────
+  document.getElementById('poll-secs').textContent = String(POLL_INTERVAL_MS / 1000);
+
+  async function tick() {
+    try {
+      const res = await fetch('/api/dashboard/snapshot');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const snap = await res.json();
+      updateHierarchy(snap.surfaces, snap.ward);
+      renderActivity(snap.events);
+      renderWardPanel(snap.ward);
+      renderStats(snap.stats);
+      document.getElementById('last-updated').textContent =
+        `updated ${new Date().toLocaleTimeString()}`;
+    } catch (err) {
+      console.error('snapshot fetch failed:', err);
+      document.getElementById('last-updated').textContent = '⚠ snapshot fetch failed';
+    }
+  }
+
+  tick();
+  setInterval(tick, POLL_INTERVAL_MS);
+</script>
+
 </body>
 </html>

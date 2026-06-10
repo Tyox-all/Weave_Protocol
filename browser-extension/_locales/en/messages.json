@@ -1,0 +1,8 @@
+{
+  "extName": {
+    "message": "Weave Browser Guard"
+  },
+  "extDescription": {
+    "message": "Detects indirect prompt injection (IPI) in web pages. Read-only inspection — see what AI agents would ingest."
+  }
+}

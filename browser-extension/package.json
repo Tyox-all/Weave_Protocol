@@ -1,0 +1,15 @@
+{
+  "name": "weave-browser-guard-extension",
+  "version": "0.1.0",
+  "description": "Build tooling for Weave Browser Guard browser extension (not published to npm)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:icons": "node scripts/build-icons.js",
+    "pack:chrome": "zip -r ../weave-browser-guard-chrome.zip . -x '*.DS_Store' 'node_modules/*' '*.tar.gz' 'package-lock.json'",
+    "pack:firefox": "zip -r ../weave-browser-guard-firefox.zip . -x '*.DS_Store' 'node_modules/*' '*.tar.gz' 'package-lock.json'"
+  },
+  "devDependencies": {
+    "sharp": "^0.33.0"
+  }
+}

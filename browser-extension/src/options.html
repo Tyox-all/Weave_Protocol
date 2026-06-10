@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Weave Browser Guard — Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div class="brand">
+          <span class="logo">🌐</span>
+          <h1>Weave Browser Guard</h1>
+        </div>
+        <p class="subtitle">Indirect prompt injection (IPI) detection for the agent web.</p>
+      </header>
+
+      <section>
+        <h2>Detection sensitivity</h2>
+        <p class="muted">
+          Controls when the badge appears on the toolbar icon. Findings are
+          always shown in the popup; this only affects the alert badge.
+        </p>
+
+        <div class="options">
+          <label class="option">
+            <input type="radio" name="sensitivity" value="strict" />
+            <div class="option-body">
+              <div class="option-label">Strict</div>
+              <div class="option-detail">
+                Badge shows on <strong>any</strong> threat (low/medium/high/critical).
+                Best if you're a security researcher or red-teamer who wants to see
+                every pattern detected.
+              </div>
+            </div>
+          </label>
+
+          <label class="option">
+            <input type="radio" name="sensitivity" value="standard" />
+            <div class="option-body">
+              <div class="option-label">Standard <span class="default-tag">default</span></div>
+              <div class="option-detail">
+                Badge shows on <strong>high or critical</strong> threats only.
+                Best if you want notification when an AI agent could be tricked
+                by content on the page.
+              </div>
+            </div>
+          </label>
+
+          <label class="option">
+            <input type="radio" name="sensitivity" value="lenient" />
+            <div class="option-body">
+              <div class="option-label">Lenient</div>
+              <div class="option-detail">
+                Badge shows only on <strong>critical</strong> threats (autonomous-fraud
+                payment specs, action directives). Best if you want very low false-positive
+                noise.
+              </div>
+            </div>
+          </label>
+        </div>
+      </section>
+
+      <section>
+        <h2>How it works</h2>
+        <p>
+          Weave Browser Guard runs entirely in your browser. On every page you visit,
+          it scans the rendered HTML against 33 IPI detection patterns drawn from
+          documented real-world attacks (Brave/Comet OTP exfiltration, EchoLeak
+          CVE-2025-32711, Forcepoint X-Labs telemetry, Lakera red-team data).
+        </p>
+        <ul>
+          <li><strong>Read-only.</strong> The extension never modifies pages, intercepts requests, or blocks content. It just inspects and reports.</li>
+          <li><strong>Local.</strong> Nothing is sent off your device. No telemetry. No analytics. No phone home.</li>
+          <li><strong>Deterministic.</strong> Detection uses regex and HTML structure inspection — no LLM in the loop, so the scanner itself can't be prompt-injected by the content it inspects.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Sensitive sites excluded</h2>
+        <p>
+          To avoid touching pages where any inspection feels intrusive, the extension
+          deliberately does <strong>not</strong> run on:
+        </p>
+        <ul class="exclusion-list">
+          <li>Google account sign-in</li>
+          <li>Microsoft account sign-in</li>
+          <li>Major banks (Bank of America, Chase)</li>
+        </ul>
+        <p class="muted">
+          Want to suggest an exclusion? Open an issue on
+          <a href="https://github.com/Tyox-all/Weave_Protocol/issues" target="_blank" rel="noreferrer">GitHub</a>.
+        </p>
+      </section>
+
+      <section>
+        <h2>Pattern catalog</h2>
+        <p>
+          33 patterns across 20 categories. Updated as new IPI patterns are documented
+          in the wild.
+        </p>
+        <ul class="pattern-list">
+          <li><strong>Trigger phrases</strong> (9) — "ignore previous instructions", role hijack, chat-template tokens</li>
+          <li><strong>Action directives</strong> (4, critical) — explicit "send email to X", "transfer $Y", "execute command:"</li>
+          <li><strong>Payment specifications</strong> (1, critical) — recipient + amount in proximity (Atlan autonomous-fraud pattern)</li>
+          <li><strong>Hidden CSS</strong> (6) — display:none, visibility:hidden, white-on-white (Brave/Comet pattern)</li>
+          <li><strong>HTML structural</strong> (5) — comments, noscript, aria-hidden, meta tags, alt text</li>
+          <li><strong>Encoding obfuscation</strong> (3) — base64 near decode/execute, Unicode zero-width, data:text/html</li>
+          <li><strong>Tool-call mimicry</strong> (2) — JSON/XML resembling LLM tool calls</li>
+          <li><strong>DoS / suppression</strong> (2) — false copyright, "do not summarize"</li>
+          <li><strong>SVG + script</strong> (1) — XSS+IPI combo</li>
+        </ul>
+      </section>
+
+      <footer>
+        <p>
+          Part of <a href="https://github.com/Tyox-all/Weave_Protocol" target="_blank" rel="noreferrer">Weave Protocol</a> —
+          enterprise security suite for AI agents.
+        </p>
+        <p class="muted">v0.1.0</p>
+      </footer>
+    </div>
+
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

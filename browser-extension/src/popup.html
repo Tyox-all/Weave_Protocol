@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Weave Browser Guard</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <div class="logo">🌐</div>
+        <div>
+          <h1>Weave Guard</h1>
+          <div class="tagline">IPI detection for the agent web</div>
+        </div>
+      </div>
+    </header>
+
+    <main id="content">
+      <!-- States rendered by popup.js -->
+      <div id="state-loading" class="state">
+        <div class="spinner"></div>
+        <p>Scanning page…</p>
+      </div>
+
+      <div id="state-no-data" class="state hidden">
+        <div class="empty-icon">🤷</div>
+        <p>No scan data for this tab yet.</p>
+        <p class="muted">Reload the page to trigger a scan.</p>
+      </div>
+
+      <div id="state-clean" class="state hidden">
+        <div class="risk-card risk-none">
+          <div class="risk-icon">✓</div>
+          <div class="risk-text">
+            <div class="risk-label">No IPI detected</div>
+            <div class="risk-detail">This page appears safe for AI agents to ingest.</div>
+          </div>
+        </div>
+        <div class="meta">
+          <div class="meta-row"><span class="meta-key">Page</span><span class="meta-val" id="clean-url"></span></div>
+          <div class="meta-row"><span class="meta-key">Scanned</span><span class="meta-val">just now</span></div>
+        </div>
+      </div>
+
+      <div id="state-threats" class="state hidden">
+        <div class="risk-card" id="risk-card">
+          <div class="risk-icon" id="risk-icon"></div>
+          <div class="risk-text">
+            <div class="risk-label" id="risk-label"></div>
+            <div class="risk-detail" id="risk-detail"></div>
+          </div>
+        </div>
+
+        <h2 class="section-title">Findings</h2>
+        <div id="threats-list"></div>
+
+        <details class="page-info">
+          <summary>Page details</summary>
+          <div class="meta">
+            <div class="meta-row"><span class="meta-key">URL</span><span class="meta-val" id="threat-url"></span></div>
+            <div class="meta-row"><span class="meta-key">Title</span><span class="meta-val" id="threat-title"></span></div>
+          </div>
+        </details>
+      </div>
+    </main>
+
+    <footer>
+      <div class="actions">
+        <button id="btn-rescan" class="btn btn-secondary">Rescan</button>
+        <button id="btn-options" class="btn btn-secondary">Settings</button>
+      </div>
+      <div class="footer-meta">
+        <span id="sensitivity-display"></span>
+        <a href="https://github.com/Tyox-all/Weave_Protocol" target="_blank" rel="noreferrer">github</a>
+      </div>
+    </footer>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
