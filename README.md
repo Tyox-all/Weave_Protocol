@@ -595,7 +595,7 @@ done
 
 - [x] Browser agent security (`@weave_protocol/browser`)
 - [x] Dashboard v2 with orchestration visualization
-- [x] **[State of AI Agent Security: Q3 Report](https://github.com/Tyox-all/Weave_Protocol/releases/download/v1.0.0/State_of_AI_Agent_Security_Q3_2026_Industry.html)** — Industry analysis of agent security trends, platform maturity, supply chain risks, and market gaps
+- [x] **[State of AI Agent Security: Q3 Report](https://tyox-all.github.io/Weave_Protocol/q3-2026.html)** — Industry analysis of agent security trends, platform maturity, supply chain risks, and market gaps
 
 ### H2 2026 Q4 — Moat Quarter
 
