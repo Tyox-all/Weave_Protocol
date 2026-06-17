@@ -470,7 +470,7 @@ Security integration for LangChain.js applications. Drop-in callbacks, secured t
 
 ## 🏗️ Architecture
 
-```
+```mermaid
 flowchart TD
     CLI["🕸️ <b>weave init / audit</b><br/><i>front door — @weave_protocol/cli</i>"]
     WARD["🛡️ <b>WARD.md</b><br/><i>policy standard — declares what the agent can't do</i>"]
