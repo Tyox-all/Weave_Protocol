@@ -1,0 +1,68 @@
+{
+  "name": "@weave_protocol/adversary",
+  "version": "0.1.0",
+  "description": "Offensive engine for AI agent security testing. Generates documented and novel attacks against agents and produces standardized scorecards. Test engine for AgentSecBench.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "weave-adversary": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "SKILL.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./attacks": {
+      "types": "./dist/attacks/index.d.ts",
+      "import": "./dist/attacks/index.js"
+    },
+    "./targets": {
+      "types": "./dist/targets/index.d.ts",
+      "import": "./dist/targets/index.js"
+    },
+    "./scorecard": {
+      "types": "./dist/scorecard/index.d.ts",
+      "import": "./dist/scorecard/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "node --test test/*.test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tyox-all/Weave_Protocol.git",
+    "directory": "adversary"
+  },
+  "keywords": [
+    "ai",
+    "security",
+    "agent",
+    "red-team",
+    "adversarial",
+    "prompt-injection",
+    "ipi",
+    "weave-protocol",
+    "ward",
+    "agentsecbench"
+  ],
+  "author": "Trent Yoxall",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "playwright": "^1.50.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  }
+}
