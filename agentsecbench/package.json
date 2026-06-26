@@ -1,0 +1,60 @@
+{
+  "name": "@weave_protocol/agentsecbench",
+  "version": "0.1.0",
+  "description": "Standardized, versioned, citable AI agent security benchmark. Curated attack suites built on @weave_protocol/adversary. Produces paste-ready reports and side-by-side comparisons.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "agentsecbench": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "SKILL.md",
+    "METHODOLOGY.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./suites": {
+      "types": "./dist/suites/index.d.ts",
+      "import": "./dist/suites/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tyox-all/Weave_Protocol.git",
+    "directory": "agentsecbench"
+  },
+  "keywords": [
+    "ai",
+    "security",
+    "agent",
+    "benchmark",
+    "evaluation",
+    "red-team",
+    "asb",
+    "weave-protocol",
+    "ward",
+    "adversary"
+  ],
+  "author": "Trent Yoxall",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@weave_protocol/adversary": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  }
+}
