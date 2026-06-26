@@ -1,12 +1,12 @@
 {
   "name": "@weave_protocol/adversary",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Offensive engine for AI agent security testing. Generates documented and novel attacks against agents and produces standardized scorecards. Test engine for AgentSecBench.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "weave-adversary": "./dist/cli.js"
+    "weave-adversary": "dist/cli.js"
   },
   "files": [
     "dist",
