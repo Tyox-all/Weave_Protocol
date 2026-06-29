@@ -1,6 +1,6 @@
 # ⚔️ @weave_protocol/adversary
 
-> **Offensive engine for AI agent security testing.** 68 documented + novel attacks. Real-browser target via Playwright. The test engine for AgentSecBench.
+> **Offensive engine for AI agent security testing.** 68 documented + novel attacks. Real-browser target via Playwright. Real-LLM demo mode via Anthropic API. The test engine for AgentSecBench.
 
 [![npm](https://img.shields.io/npm/v/@weave_protocol/adversary?color=000&style=flat-square)](https://www.npmjs.com/package/@weave_protocol/adversary)
 [![License](https://img.shields.io/badge/license-Apache--2.0-000?style=flat-square)](../LICENSE)
@@ -12,36 +12,73 @@ The fifth Q4 enforcement layer of [Weave Protocol](https://github.com/Tyox-all/W
 ## Quick start
 
 ```bash
-# Run the full 68-attack corpus against the built-in vulnerable demo target
+# Run the corpus against the built-in mock target (fast, no API key)
 npx @weave_protocol/adversary demo
 
-# Attack a real agent (NEW v0.2 — requires Playwright)
+# Run the corpus against a REAL LLM (Anthropic API, ~$0.02 per full run)
+export ANTHROPIC_API_KEY=sk-ant-...
+npx @weave_protocol/adversary demo --real
+
+# Attack a real browser-driving agent
 npx @weave_protocol/adversary attack --url=https://my-agent.example.com/run
 
 # List the attack corpus
 npx @weave_protocol/adversary list --severity=critical
 ```
 
-The `demo` command runs in ~50ms with no API key, no setup, no internet. Use it to confirm the corpus lands. Use `attack` to run against your real agent.
+Three target modes covering the full demo spectrum: pattern-mock for CI smoke tests, real-LLM for live attack demos, real-browser for production agents.
 
 ---
 
-## What's new in v0.2
+## What's new in v0.2.1
+
+- **Real-LLM demo mode** — `demo --real` makes live Anthropic API calls per attack, using a deliberately naive system prompt to show what a real LLM does under attack with no defenses
+- **`--model=<id>`** flag — defaults to `claude-3-5-haiku-20241022` (~$0.02 per full 68-attack run), override to any Claude model
+- **`--redact-evidence`** flag — masks breach evidence in saved scorecards so you can share them without leaking the attack output verbatim
+- **Yellow warning header** before any real-LLM run — cost estimate + content warning + redaction hint
+- **Red callout** if `--real` is set without `ANTHROPIC_API_KEY` — exact command to set it
+- **API usage report** after every real run — input/output tokens, estimated cost, error count
+
+```bash
+# Real LLM run with a 5-attack sample and redacted output
+npx @weave_protocol/adversary demo --real --per-category=1 --redact-evidence --json=./run.json
+```
+
+### Sensitive output and how to redact
+
+Real-LLM runs hit jailbreak prompts among others. Successful jailbreaks produce content like drug synthesis steps, weapon manufacturing instructions, or extracted system prompts. Some of this is mildly NSFW. **Default behavior is to show this verbatim in the scorecard.** That's the point — Adversary tells you exactly what your agent's LLM did wrong.
+
+If you're going to share the scorecard (blog post, GitHub issue, vendor RFP response), use `--redact-evidence`:
+
+```bash
+# Sharable scorecard — breach evidence replaced with [redacted]
+npx @weave_protocol/adversary demo --real --redact-evidence --md=./shareable.md
+
+# Internal scorecard — full evidence preserved
+npx @weave_protocol/adversary demo --real --md=./internal.md
+```
+
+The redaction is structural — the scorecard still shows which attacks breached, what category, what severity, and what the WARD rule violated was. Only the verbatim LLM response strings are masked.
+
+---
+
+## What's in v0.2 (Playwright browser target)
 
 - **`PlaywrightTarget`** — real Chromium/Firefox/WebKit browser observer with four breach signal channels: network requests, form submissions, DOM mutations, console output
 - **`weave-adversary attack`** CLI command — drive your real agent against the full corpus
 - Three driver modes — HTTP endpoint, executable, or programmatic callback
 - Comprehensive observation: every off-origin request, form post, DOM mutation, and console message counts toward breach classification
-- **Clear red callouts** when setup is incomplete (missing Playwright, missing target URL, etc.) — never silent failures
 
 ```bash
-# Install Playwright once (peer dependency, ~400MB after browser install)
+# Install Playwright once (peer dependency)
 npm install playwright
 npx playwright install chromium
 
 # Then attack your agent
 npx @weave_protocol/adversary attack --url=https://my-agent.example.com/run --json=./scorecard.json
 ```
+
+
 
 ---
 
@@ -173,12 +210,13 @@ This schema is consumed unchanged by AgentSecBench.
 
 ## Roadmap
 
-- **v0.1** — Browser target adapter + demo target + 68-attack corpus + WARD-aware selection + JSON/Markdown scorecards
-- **v0.2** *(this release)* — Real Playwright browser target + `attack` CLI command + four breach signal channels (network/form/DOM/console) + red callouts for missing setup
-- **v0.3** — LLM-driven dynamic attack mode (`--mode=dynamic`)
+- **v0.1** — Demo target + 68-attack corpus + WARD-aware selection + JSON/Markdown scorecards
+- **v0.2** — Real Playwright browser target + `attack` CLI command + four breach signal channels (network/form/DOM/console) + red callouts
+- **v0.2.1** *(this release)* — Real-LLM demo mode via Anthropic API + cost reporting + sensitive-output redaction flag + warning callouts
+- **v0.3** — LLM-driven dynamic attack mode (`--mode=dynamic`) — adversary improvises against target responses
 - **v0.4** — Multi-turn / stateful attacks
 - **v0.5** — User-defined custom attack packs
-- **AgentSecBench (separate package)** — public leaderboard built on Adversary's scorecard schema
+- **AgentSecBench** (separate package) — interpretation layer + tier grading built on Adversary's scorecard schema
 
 ---
 

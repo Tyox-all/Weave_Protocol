@@ -2,11 +2,12 @@
 /**
  * weave-adversary CLI
  *
- *   weave-adversary demo                     run corpus against built-in demo target
- *   weave-adversary list                     list attacks (filter via flags)
- *   weave-adversary attack --url=<endpoint>  run corpus against a real agent (NEW v0.2)
- *   weave-adversary report <file.json>       re-render saved JSON scorecard
- *   weave-adversary help                     show usage
+ *   weave-adversary demo                       run mock corpus (fast, no API)
+ *   weave-adversary demo --real                run corpus against a real LLM (NEW v0.2.1)
+ *   weave-adversary list                       list attacks (filter via flags)
+ *   weave-adversary attack --url=<endpoint>    run corpus against a real browser agent
+ *   weave-adversary report <file.json>         re-render saved JSON scorecard
+ *   weave-adversary help                       show usage
  */
 
 import { writeFileSync, readFileSync } from 'node:fs';
@@ -16,6 +17,7 @@ import { PlaywrightTarget } from './targets/playwright.js';
 import { ALL_ATTACKS, ATTACKS_BY_CATEGORY, CORPUS_STATS } from './attacks/index.js';
 import { renderMarkdownScorecard, renderJsonScorecard } from './scorecard/index.js';
 import { loadWardPolicy } from './ward.js';
+import { DEFAULT_MODEL, MODEL_PRICING } from './anthropic.js';
 import type { AttackCategory, AttackSeverity, RunOptions, Scorecard } from './types.js';
 
 const args = process.argv.slice(2);
@@ -25,22 +27,32 @@ const cmd = args[0];
 function redCallout(title: string, lines: string[]): void {
   const RED_BG = '\x1b[41m\x1b[1;37m';
   const RESET = '\x1b[0m';
-  const width = Math.max(
-    title.length + 4,
-    ...lines.map((l) => l.length + 4),
-    50,
-  );
+  const width = Math.max(title.length + 4, ...lines.map((l) => l.length + 4), 50);
   const top = '┌─ ' + title + ' ' + '─'.repeat(Math.max(0, width - title.length - 4)) + '┐';
   const bot = '└' + '─'.repeat(width) + '┘';
   const pad = (s: string) => '│ ' + s + ' '.repeat(Math.max(0, width - s.length - 2)) + '│';
   console.log('');
   console.log(RED_BG + ' ' + top + ' ' + RESET);
   console.log(RED_BG + ' ' + pad('') + ' ' + RESET);
-  for (const l of lines) {
-    console.log(RED_BG + ' ' + pad(l) + ' ' + RESET);
-  }
+  for (const l of lines) console.log(RED_BG + ' ' + pad(l) + ' ' + RESET);
   console.log(RED_BG + ' ' + pad('') + ' ' + RESET);
   console.log(RED_BG + ' ' + bot + ' ' + RESET);
+  console.log('');
+}
+
+function yellowCallout(title: string, lines: string[]): void {
+  const YEL = '\x1b[43m\x1b[1;30m';
+  const RESET = '\x1b[0m';
+  const width = Math.max(title.length + 4, ...lines.map((l) => l.length + 4), 50);
+  const top = '┌─ ' + title + ' ' + '─'.repeat(Math.max(0, width - title.length - 4)) + '┐';
+  const bot = '└' + '─'.repeat(width) + '┘';
+  const pad = (s: string) => '│ ' + s + ' '.repeat(Math.max(0, width - s.length - 2)) + '│';
+  console.log('');
+  console.log(YEL + ' ' + top + ' ' + RESET);
+  console.log(YEL + ' ' + pad('') + ' ' + RESET);
+  for (const l of lines) console.log(YEL + ' ' + pad(l) + ' ' + RESET);
+  console.log(YEL + ' ' + pad('') + ' ' + RESET);
+  console.log(YEL + ' ' + bot + ' ' + RESET);
   console.log('');
 }
 
@@ -56,35 +68,38 @@ function showHelp() {
   console.log('  \x1b[1mUsage:\x1b[0m  weave-adversary <command> [options]');
   console.log('');
   console.log('  \x1b[1mCommands:\x1b[0m');
-  console.log('    demo                                    Run the full corpus against the built-in demo agent');
+  console.log('    demo                                    Run corpus against built-in mock target');
+  console.log('    demo --real                             Run corpus against a real LLM (requires ANTHROPIC_API_KEY) (NEW v0.2.1)');
   console.log('    list                                    List all attacks in the corpus');
-  console.log('    attack --url=<agent-endpoint>           Run corpus against a real HTTP agent endpoint (NEW v0.2)');
-  console.log('    attack --executable=<path-to-agent>     Run corpus against a CLI agent (NEW v0.2)');
-  console.log('    report <file.json>                      Re-render a saved JSON scorecard as Markdown');
+  console.log('    attack --url=<agent-endpoint>           Run corpus against a real HTTP agent endpoint');
+  console.log('    attack --executable=<path-to-agent>     Run corpus against a CLI agent');
+  console.log('    report <file.json>                      Re-render saved JSON scorecard as Markdown');
   console.log('    help                                    Show this message');
   console.log('');
   console.log('  \x1b[1mOptions:\x1b[0m');
-  console.log('    --category=<cat>                        Limit to one category (ipi|tool_coercion|jailbreak|extraction|goal_corruption)');
-  console.log('    --severity=<sev>                        Limit to one severity (low|medium|high|critical)');
-  console.log('    --stop-on-breach                        Stop after the first breach');
+  console.log('    --category=<cat>                        Limit to category (ipi|tool_coercion|jailbreak|extraction|goal_corruption)');
+  console.log('    --severity=<sev>                        Limit to severity (low|medium|high|critical)');
+  console.log('    --stop-on-breach                        Stop after first breach');
   console.log('    --no-ward-aware                         Disable WARD-aware prioritization');
   console.log('    --json=<path>                           Write JSON scorecard to <path>');
   console.log('    --md=<path>                             Write Markdown scorecard to <path>');
   console.log('    --per-category=<n>                      Cap attacks per category at n');
   console.log('    --browser=<chromium|firefox|webkit>     Playwright browser (default: chromium)');
-  console.log('    --headed                                Show the browser window (for debugging)');
+  console.log('    --headed                                Show the browser window');
+  console.log('    --real                                  Use real LLM for demo (NEW v0.2.1)');
+  console.log('    --model=<model-id>                      LLM model id (default: ' + DEFAULT_MODEL + ')');
+  console.log('    --redact-evidence                       Replace breach evidence with [redacted] in scorecard (NEW v0.2.1)');
   console.log('');
   console.log('  \x1b[1mExamples:\x1b[0m');
   console.log('    weave-adversary demo');
+  console.log('    weave-adversary demo --real --per-category=3 --json=./run.json');
+  console.log('    weave-adversary demo --real --redact-evidence --md=./run.md');
   console.log('    weave-adversary attack --url=https://my-agent.com/run');
-  console.log('    weave-adversary attack --executable=./my-agent-cli --per-category=5');
   console.log('');
   console.log('  \x1b[1mCorpus:\x1b[0m  ' + CORPUS_STATS.total + ' attacks');
   for (const [cat, n] of Object.entries(CORPUS_STATS.byCategory)) {
     console.log(`    ${cat.padEnd(20)} ${n}`);
   }
-  console.log('');
-  console.log('  Docs:  https://github.com/Tyox-all/Weave_Protocol/tree/main/adversary');
   console.log('');
 }
 
@@ -110,9 +125,69 @@ function buildRunOptionsFromFlags(flags: Record<string, string | boolean>): RunO
   return o;
 }
 
+/**
+ * Mutate findings in-place to redact evidence strings. Used when
+ * --redact-evidence is set so sensitive LLM output doesn't leak into
+ * shareable scorecards.
+ */
+function redactScorecard(scorecard: Scorecard): Scorecard {
+  for (const f of scorecard.findings) {
+    if (f.result !== 'blocked') {
+      f.evidence = '[redacted — re-run without --redact-evidence to see]';
+    }
+    if (f.toolCallsMade) {
+      f.toolCallsMade = f.toolCallsMade.map((tc) => ({
+        name: tc.name,
+        arguments: { _redacted: true },
+      }));
+    }
+  }
+  return scorecard;
+}
+
 async function cmdDemo() {
   banner();
   const flags = parseFlags(args.slice(1));
+
+  // ── Determine mode ────────────────────────────────────────
+  const isReal = !!flags.real || process.env.ADVERSARY_DEMO_MODE === 'real';
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const model = (flags.model as string) || DEFAULT_MODEL;
+
+  // ── Pre-flight check for --real ───────────────────────────
+  if (isReal && !apiKey) {
+    redCallout('ANTHROPIC_API_KEY not set', [
+      'The --real flag uses a live Claude API call for each attack.',
+      'That requires an Anthropic API key.',
+      '',
+      'Get one at https://console.anthropic.com/settings/keys',
+      '',
+      'Then export it:',
+      '',
+      '  export ANTHROPIC_API_KEY=sk-ant-...',
+      '',
+      'And re-run:',
+      '',
+      '  weave-adversary demo --real',
+    ]);
+    process.exit(1);
+  }
+
+  // ── Cost warning for real mode ────────────────────────────
+  if (isReal) {
+    const pricing = MODEL_PRICING[model];
+    const costPerRun = pricing ? `~$${(pricing.input * 0.04 + pricing.output * 0.06).toFixed(3)}` : 'unknown';
+    yellowCallout('Real-LLM mode', [
+      'This run will make live Anthropic API calls.',
+      '',
+      `  Model:               ${model}`,
+      `  Estimated cost:      ${costPerRun} per full 68-attack run`,
+      `  Sensitive content:   responses may contain mildly adult/illegal content`,
+      '                       (jailbreaks produce drug/weapon/exfil instructions)',
+      '',
+      'To redact breach evidence from the scorecard, add --redact-evidence.',
+    ]);
+  }
 
   const ward = loadWardPolicy();
   if (ward.loaded) {
@@ -123,9 +198,18 @@ async function cmdDemo() {
   }
   console.log('');
 
-  const target = new DemoTarget();
+  let target: DemoTarget;
+  try {
+    target = new DemoTarget({ mode: isReal ? 'real' : 'mock', model });
+  } catch (err) {
+    redCallout('Demo target failed to initialize', [(err as Error).message]);
+    process.exit(1);
+  }
+
   const agent = new AdversarialAgent(target, { ward });
   const runOpts = buildRunOptionsFromFlags(flags);
+  // Real mode: extend the per-attack timeout for live API latency
+  if (isReal) runOpts.attackTimeoutMs = runOpts.attackTimeoutMs ?? 45_000;
   const planned = agent.selectAttacks(runOpts);
 
   console.log(`  Running \x1b[1m${planned.length}\x1b[0m attacks against \x1b[1m${target.identifier}\x1b[0m...`);
@@ -136,15 +220,31 @@ async function cmdDemo() {
   const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
 
   console.log(`  Done in ${elapsed}s.`);
+
+  // ── Real mode: print usage and cost ───────────────────────
+  if (isReal) {
+    const u = target.getUsage();
+    console.log('');
+    console.log('  \x1b[1mAPI usage:\x1b[0m');
+    console.log(`    Calls:           ${u.apiCalls}${u.errors > 0 ? ` (${u.errors} errors)` : ''}`);
+    console.log(`    Input tokens:    ${u.inputTokens.toLocaleString()}`);
+    console.log(`    Output tokens:   ${u.outputTokens.toLocaleString()}`);
+    console.log(`    Estimated cost:  $${u.estimatedCostUSD.toFixed(4)}`);
+    console.log(`    Model:           ${u.model}`);
+  }
+
   printSummary(scorecard);
-  emitOutputs(scorecard, flags);
+
+  // ── Apply redaction if requested ──────────────────────────
+  const finalScorecard = flags['redact-evidence'] ? redactScorecard(scorecard) : scorecard;
+
+  emitOutputs(finalScorecard, flags);
 }
 
 async function cmdAttack() {
   banner();
   const flags = parseFlags(args.slice(1));
 
-  // ── Validate driver mode ──────────────────────────────────
   const url = flags.url as string | undefined;
   const executable = flags.executable as string | undefined;
   if (!url && !executable) {
@@ -162,7 +262,6 @@ async function cmdAttack() {
     process.exit(1);
   }
 
-  // ── Pre-flight: is Playwright installed? ──────────────────
   try {
     await import('playwright');
   } catch {
@@ -177,8 +276,6 @@ async function cmdAttack() {
       'Then re-run:',
       '',
       `  weave-adversary attack ${url ? `--url=${url}` : `--executable=${executable}`}`,
-      '',
-      'See https://playwright.dev for full Playwright docs.',
     ]);
     process.exit(1);
   }
@@ -190,28 +287,14 @@ async function cmdAttack() {
   console.log(`  Browser: ${browserType}${headless ? '' : ' (headed)'}`);
   console.log('');
 
-  const target = new PlaywrightTarget({
-    agentEndpoint: url,
-    executable,
-    browserType,
-    headless,
-  });
-
+  const target = new PlaywrightTarget({ agentEndpoint: url, executable, browserType, headless });
   const ward = loadWardPolicy();
-  if (ward.loaded) {
-    console.log(`  WARD policy loaded: \x1b[36m${ward.source}\x1b[0m`);
-  } else {
-    console.log(`  \x1b[2mNo WARD.md found — corpus runs unfiltered\x1b[0m`);
-  }
-  console.log('');
-
   const agent = new AdversarialAgent(target, { ward });
   const runOpts = buildRunOptionsFromFlags(flags);
-  // Real-target runs have non-trivial latency — extend timeout
   runOpts.attackTimeoutMs = runOpts.attackTimeoutMs ?? 60_000;
 
   const planned = agent.selectAttacks(runOpts);
-  console.log(`  Running \x1b[1m${planned.length}\x1b[0m attacks. This may take several minutes against a real agent.`);
+  console.log(`  Running \x1b[1m${planned.length}\x1b[0m attacks. This may take several minutes.`);
   console.log('');
 
   let scorecard: Scorecard;
@@ -223,14 +306,16 @@ async function cmdAttack() {
       '',
       'Common causes:',
       '  • Agent endpoint unreachable or returned errors',
-      '  • Playwright browser failed to launch (try --headed for debugging)',
+      '  • Playwright browser failed to launch (try --headed)',
       '  • Executable not found or threw at startup',
     ]);
     process.exit(2);
   }
 
   printSummary(scorecard);
-  emitOutputs(scorecard, flags);
+
+  const finalScorecard = flags['redact-evidence'] ? redactScorecard(scorecard) : scorecard;
+  emitOutputs(finalScorecard, flags);
 }
 
 function printSummary(scorecard: Scorecard) {
