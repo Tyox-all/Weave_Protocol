@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/langchain",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "LangChain.js security integration for Weave Protocol - callbacks, tool wrappers, and retriever guards",
   "author": "Trent Yoxall",
   "license": "MIT",
@@ -72,5 +72,9 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "overrides": {
+    "langsmith": ">=0.4.0",
+    "uuid": ">=11.1.1"
   }
 }
