@@ -28,7 +28,7 @@
     "@weave_protocol/domere": "^1.2.1"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "^26.0.1",
     "typescript": "^5.0.0"
   }
 }
