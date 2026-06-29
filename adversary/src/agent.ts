@@ -20,7 +20,7 @@ import { classifyResult, buildScorecard } from './scorecard/index.js';
 import { loadWardPolicy, wardAwareSort, scoreAttackForPolicy } from './ward.js';
 
 // Read version from package.json without bundler ceremony.
-const ADVERSARY_VERSION = '0.1.0';
+const ADVERSARY_VERSION = '0.2.0';
 
 const HOSTILE_TOOL_NAMES = new Set([
   'send_email',

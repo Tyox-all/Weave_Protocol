@@ -1,7 +1,7 @@
 {
   "name": "@weave_protocol/adversary",
-  "version": "0.1.2",
-  "description": "Offensive engine for AI agent security testing. Generates documented and novel attacks against agents and produces standardized scorecards. Test engine for AgentSecBench.",
+  "version": "0.2.0",
+  "description": "Offensive engine for AI agent security testing. 68 documented + novel attacks across 5 categories. Real-browser target via Playwright. Test engine for AgentSecBench.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -33,8 +33,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "prepublishOnly": "npm run build",
-    "test": "node --test test/*.test.js"
+    "prepublishOnly": "npm run build"
   },
   "repository": {
     "type": "git",
@@ -51,15 +50,19 @@
     "ipi",
     "weave-protocol",
     "ward",
-    "agentsecbench"
+    "agentsecbench",
+    "playwright",
+    "browser-agent"
   ],
   "author": "Trent Yoxall",
   "license": "Apache-2.0",
   "engines": {
     "node": ">=18"
   },
-  "dependencies": {
-    "playwright": "^1.50.0"
+  "peerDependenciesMeta": {
+    "playwright": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

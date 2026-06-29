@@ -60,7 +60,7 @@ export interface Attack {
 
 // ─── Targets ────────────────────────────────────────────────────
 
-export type TargetKind = 'browser' | 'demo' | 'http';
+export type TargetKind = 'browser' | 'demo' | 'http' | 'playwright';
 
 export interface Target {
   kind: TargetKind;

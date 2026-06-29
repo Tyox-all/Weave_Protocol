@@ -2,16 +2,17 @@
 /**
  * weave-adversary CLI
  *
- *   weave-adversary demo              run the corpus against the demo target
- *   weave-adversary list              list attacks (filter via --category, --severity)
- *   weave-adversary attack <target>   (v0.2) run against a real target
- *   weave-adversary report <file>     re-render an existing JSON scorecard
- *   weave-adversary help              show this
+ *   weave-adversary demo                     run corpus against built-in demo target
+ *   weave-adversary list                     list attacks (filter via flags)
+ *   weave-adversary attack --url=<endpoint>  run corpus against a real agent (NEW v0.2)
+ *   weave-adversary report <file.json>       re-render saved JSON scorecard
+ *   weave-adversary help                     show usage
  */
 
 import { writeFileSync, readFileSync } from 'node:fs';
 import { AdversarialAgent } from './agent.js';
 import { DemoTarget } from './targets/demo.js';
+import { PlaywrightTarget } from './targets/playwright.js';
 import { ALL_ATTACKS, ATTACKS_BY_CATEGORY, CORPUS_STATS } from './attacks/index.js';
 import { renderMarkdownScorecard, renderJsonScorecard } from './scorecard/index.js';
 import { loadWardPolicy } from './ward.js';
@@ -19,6 +20,29 @@ import type { AttackCategory, AttackSeverity, RunOptions, Scorecard } from './ty
 
 const args = process.argv.slice(2);
 const cmd = args[0];
+
+// ─── Red callout block helper ───────────────────────────────────
+function redCallout(title: string, lines: string[]): void {
+  const RED_BG = '\x1b[41m\x1b[1;37m';
+  const RESET = '\x1b[0m';
+  const width = Math.max(
+    title.length + 4,
+    ...lines.map((l) => l.length + 4),
+    50,
+  );
+  const top = '┌─ ' + title + ' ' + '─'.repeat(Math.max(0, width - title.length - 4)) + '┐';
+  const bot = '└' + '─'.repeat(width) + '┘';
+  const pad = (s: string) => '│ ' + s + ' '.repeat(Math.max(0, width - s.length - 2)) + '│';
+  console.log('');
+  console.log(RED_BG + ' ' + top + ' ' + RESET);
+  console.log(RED_BG + ' ' + pad('') + ' ' + RESET);
+  for (const l of lines) {
+    console.log(RED_BG + ' ' + pad(l) + ' ' + RESET);
+  }
+  console.log(RED_BG + ' ' + pad('') + ' ' + RESET);
+  console.log(RED_BG + ' ' + bot + ' ' + RESET);
+  console.log('');
+}
 
 function banner() {
   console.log('');
@@ -32,24 +56,28 @@ function showHelp() {
   console.log('  \x1b[1mUsage:\x1b[0m  weave-adversary <command> [options]');
   console.log('');
   console.log('  \x1b[1mCommands:\x1b[0m');
-  console.log('    demo                    Run the full corpus against the built-in vulnerable demo agent');
-  console.log('    list                    List all attacks in the corpus');
-  console.log('    report <file.json>      Re-render a saved JSON scorecard as Markdown');
-  console.log('    help                    Show this message');
+  console.log('    demo                                    Run the full corpus against the built-in demo agent');
+  console.log('    list                                    List all attacks in the corpus');
+  console.log('    attack --url=<agent-endpoint>           Run corpus against a real HTTP agent endpoint (NEW v0.2)');
+  console.log('    attack --executable=<path-to-agent>     Run corpus against a CLI agent (NEW v0.2)');
+  console.log('    report <file.json>                      Re-render a saved JSON scorecard as Markdown');
+  console.log('    help                                    Show this message');
   console.log('');
   console.log('  \x1b[1mOptions:\x1b[0m');
-  console.log('    --category=<cat>        Limit to one category (ipi|tool_coercion|jailbreak|extraction|goal_corruption)');
-  console.log('    --severity=<sev>        Limit to one severity (low|medium|high|critical)');
-  console.log('    --stop-on-breach        Stop after the first breach (faster for "is anything broken")');
-  console.log('    --no-ward-aware         Disable WARD-aware prioritization');
-  console.log('    --json=<path>           Write JSON scorecard to <path>');
-  console.log('    --md=<path>             Write Markdown scorecard to <path> (default: stdout)');
-  console.log('    --per-category=<n>      Cap attacks per category at n');
+  console.log('    --category=<cat>                        Limit to one category (ipi|tool_coercion|jailbreak|extraction|goal_corruption)');
+  console.log('    --severity=<sev>                        Limit to one severity (low|medium|high|critical)');
+  console.log('    --stop-on-breach                        Stop after the first breach');
+  console.log('    --no-ward-aware                         Disable WARD-aware prioritization');
+  console.log('    --json=<path>                           Write JSON scorecard to <path>');
+  console.log('    --md=<path>                             Write Markdown scorecard to <path>');
+  console.log('    --per-category=<n>                      Cap attacks per category at n');
+  console.log('    --browser=<chromium|firefox|webkit>     Playwright browser (default: chromium)');
+  console.log('    --headed                                Show the browser window (for debugging)');
   console.log('');
   console.log('  \x1b[1mExamples:\x1b[0m');
   console.log('    weave-adversary demo');
-  console.log('    weave-adversary demo --category=ipi --json=./scorecard.json');
-  console.log('    weave-adversary list --severity=critical');
+  console.log('    weave-adversary attack --url=https://my-agent.com/run');
+  console.log('    weave-adversary attack --executable=./my-agent-cli --per-category=5');
   console.log('');
   console.log('  \x1b[1mCorpus:\x1b[0m  ' + CORPUS_STATS.total + ' attacks');
   for (const [cat, n] of Object.entries(CORPUS_STATS.byCategory)) {
@@ -65,14 +93,21 @@ function parseFlags(argv: string[]): Record<string, string | boolean> {
   for (const a of argv) {
     if (a.startsWith('--')) {
       const eq = a.indexOf('=');
-      if (eq > 0) {
-        flags[a.slice(2, eq)] = a.slice(eq + 1);
-      } else {
-        flags[a.slice(2)] = true;
-      }
+      if (eq > 0) flags[a.slice(2, eq)] = a.slice(eq + 1);
+      else flags[a.slice(2)] = true;
     }
   }
   return flags;
+}
+
+function buildRunOptionsFromFlags(flags: Record<string, string | boolean>): RunOptions {
+  const o: RunOptions = {};
+  if (flags.category) o.categories = [flags.category as AttackCategory];
+  if (flags.severity) o.severities = [flags.severity as AttackSeverity];
+  if (flags['stop-on-breach']) o.stopOnBreach = true;
+  if (flags['no-ward-aware']) o.wardAware = false;
+  if (flags['per-category']) o.perCategoryLimit = parseInt(String(flags['per-category']), 10);
+  return o;
 }
 
 async function cmdDemo() {
@@ -90,15 +125,9 @@ async function cmdDemo() {
 
   const target = new DemoTarget();
   const agent = new AdversarialAgent(target, { ward });
-
-  const runOpts: RunOptions = {};
-  if (flags.category) runOpts.categories = [flags.category as AttackCategory];
-  if (flags.severity) runOpts.severities = [flags.severity as AttackSeverity];
-  if (flags['stop-on-breach']) runOpts.stopOnBreach = true;
-  if (flags['no-ward-aware']) runOpts.wardAware = false;
-  if (flags['per-category']) runOpts.perCategoryLimit = parseInt(String(flags['per-category']), 10);
-
+  const runOpts = buildRunOptionsFromFlags(flags);
   const planned = agent.selectAttacks(runOpts);
+
   console.log(`  Running \x1b[1m${planned.length}\x1b[0m attacks against \x1b[1m${target.identifier}\x1b[0m...`);
   console.log('');
 
@@ -107,6 +136,104 @@ async function cmdDemo() {
   const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
 
   console.log(`  Done in ${elapsed}s.`);
+  printSummary(scorecard);
+  emitOutputs(scorecard, flags);
+}
+
+async function cmdAttack() {
+  banner();
+  const flags = parseFlags(args.slice(1));
+
+  // ── Validate driver mode ──────────────────────────────────
+  const url = flags.url as string | undefined;
+  const executable = flags.executable as string | undefined;
+  if (!url && !executable) {
+    redCallout('Missing target', [
+      'The "attack" command needs to know where to send the attacks.',
+      '',
+      'Run one of these:',
+      '',
+      '  weave-adversary attack --url=https://my-agent.example.com/run',
+      '  weave-adversary attack --executable=./my-agent-cli',
+      '',
+      'For the demo target (no real agent needed), use:',
+      '  weave-adversary demo',
+    ]);
+    process.exit(1);
+  }
+
+  // ── Pre-flight: is Playwright installed? ──────────────────
+  try {
+    await import('playwright');
+  } catch {
+    redCallout('Playwright not installed', [
+      'The "attack" command drives a real browser via Playwright.',
+      '',
+      'Run these two commands:',
+      '',
+      '  npm install playwright',
+      '  npx playwright install chromium',
+      '',
+      'Then re-run:',
+      '',
+      `  weave-adversary attack ${url ? `--url=${url}` : `--executable=${executable}`}`,
+      '',
+      'See https://playwright.dev for full Playwright docs.',
+    ]);
+    process.exit(1);
+  }
+
+  const browserType = (flags.browser as 'chromium' | 'firefox' | 'webkit') || 'chromium';
+  const headless = !flags.headed;
+
+  console.log(`  Target: \x1b[1m${url || executable}\x1b[0m`);
+  console.log(`  Browser: ${browserType}${headless ? '' : ' (headed)'}`);
+  console.log('');
+
+  const target = new PlaywrightTarget({
+    agentEndpoint: url,
+    executable,
+    browserType,
+    headless,
+  });
+
+  const ward = loadWardPolicy();
+  if (ward.loaded) {
+    console.log(`  WARD policy loaded: \x1b[36m${ward.source}\x1b[0m`);
+  } else {
+    console.log(`  \x1b[2mNo WARD.md found — corpus runs unfiltered\x1b[0m`);
+  }
+  console.log('');
+
+  const agent = new AdversarialAgent(target, { ward });
+  const runOpts = buildRunOptionsFromFlags(flags);
+  // Real-target runs have non-trivial latency — extend timeout
+  runOpts.attackTimeoutMs = runOpts.attackTimeoutMs ?? 60_000;
+
+  const planned = agent.selectAttacks(runOpts);
+  console.log(`  Running \x1b[1m${planned.length}\x1b[0m attacks. This may take several minutes against a real agent.`);
+  console.log('');
+
+  let scorecard: Scorecard;
+  try {
+    scorecard = await agent.run(runOpts);
+  } catch (err) {
+    redCallout('Run failed', [
+      `Error: ${(err as Error).message}`,
+      '',
+      'Common causes:',
+      '  • Agent endpoint unreachable or returned errors',
+      '  • Playwright browser failed to launch (try --headed for debugging)',
+      '  • Executable not found or threw at startup',
+    ]);
+    process.exit(2);
+  }
+
+  printSummary(scorecard);
+  emitOutputs(scorecard, flags);
+}
+
+function printSummary(scorecard: Scorecard) {
   console.log('');
   console.log(`  \x1b[1mScore:\x1b[0m ${scoreColor(scorecard.summary.score)}  ${scorecard.summary.score}/100`);
   console.log(
@@ -115,8 +242,9 @@ async function cmdDemo() {
       `\x1b[31m${scorecard.summary.breached} breached\x1b[0m`,
   );
   console.log('');
+}
 
-  // Write outputs
+function emitOutputs(scorecard: Scorecard, flags: Record<string, string | boolean>) {
   if (flags.json) {
     writeFileSync(String(flags.json), renderJsonScorecard(scorecard));
     console.log(`  Wrote JSON: ${flags.json}`);
@@ -162,7 +290,6 @@ function cmdReport() {
 function scoreColor(n: number): string {
   if (n >= 90) return '\x1b[42m\x1b[30m';
   if (n >= 70) return '\x1b[43m\x1b[30m';
-  if (n >= 50) return '\x1b[41m\x1b[37m';
   return '\x1b[41m\x1b[37m';
 }
 
@@ -181,23 +308,10 @@ function sevColor(sev: string): string {
       showHelp();
       return;
     }
-    if (cmd === 'demo') {
-      await cmdDemo();
-      return;
-    }
-    if (cmd === 'list') {
-      cmdList();
-      return;
-    }
-    if (cmd === 'report') {
-      cmdReport();
-      return;
-    }
-    if (cmd === 'attack') {
-      console.error('`weave-adversary attack <target>` is planned for v0.2 (Claude Code / MSAF / Antigravity adapters).');
-      console.error('For now, use `weave-adversary demo` to see the corpus in action.');
-      process.exit(1);
-    }
+    if (cmd === 'demo') return await cmdDemo();
+    if (cmd === 'attack') return await cmdAttack();
+    if (cmd === 'list') return cmdList();
+    if (cmd === 'report') return cmdReport();
     console.error(`Unknown command: ${cmd}`);
     showHelp();
     process.exit(1);

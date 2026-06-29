@@ -22,7 +22,7 @@ export {
   EXTRACTION_ATTACKS,
   GOAL_CORRUPTION_ATTACKS,
 } from './attacks/index.js';
-export { DemoTarget, BrowserTarget, type BrowserTargetOptions } from './targets/index.js';
+export { DemoTarget, BrowserTarget, type BrowserTargetOptions, PlaywrightTarget, type PlaywrightTargetOptions } from './targets/index.js';
 export {
   buildScorecard,
   computeSummary,
