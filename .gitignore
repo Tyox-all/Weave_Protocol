@@ -42,3 +42,4 @@ config.local.yaml
 rules/local/
 solana/
 .mcpregistry*
+.internal/

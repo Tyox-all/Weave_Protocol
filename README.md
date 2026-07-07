@@ -66,7 +66,7 @@ The first agent security platform to publish its own offensive engine. Two new p
 
 | Package | Role | Version |
 |---|---|---|
-| [`@weave_protocol/adversary`](https://github.com/Tyox-all/Weave_Protocol/blob/main/adversary) | Offensive engine — 68 documented + novel attacks across 5 categories (IPI, tool-coercion, jailbreak, extraction, goal-corruption) | ✅ v0.1.2 |
+| [`@weave_protocol/adversary`](https://github.com/Tyox-all/Weave_Protocol/blob/main/adversary) | Offensive engine — 68 documented + novel attacks across 5 categories (IPI, tool-coercion, jailbreak, extraction, goal-corruption). Real Playwright browser target with 4 breach signal channels. Real-LLM demo mode via Anthropic API. | ✅ **v0.2.1** |
 | [`@weave_protocol/agentsecbench`](https://github.com/Tyox-all/Weave_Protocol/blob/main/agentsecbench) | Standardized benchmark — locked attack suites, tier grades A–F, paste-ready reports, side-by-side comparison | ✅ v0.1.0 |
 
 **Trophy attacks** — documented in-the-wild incidents reproduced in the corpus:
@@ -84,9 +84,42 @@ npx @weave_protocol/agentsecbench run
 npx @weave_protocol/adversary demo
 ```
 
-**Why this matters:** every model release, every WARD policy change, every adapter update can be re-benchmarked against the same locked suite. Did your score regress? `agentsecbench compare` will show you. Does your WARD policy actually defend anything? `--measure-ward-delta` will tell you.
+**Why this matters:** every model release, every WARD policy change, every adapter update can be re-benchmarked against the same locked suite. Did your score regress? `agentsecbench compare` will show you. Does your WARD policy actually defend anything? `--measure-ward-delta` will tell you. This is how a category gets defined.
 
 **[See Adversary README →](https://github.com/Tyox-all/Weave_Protocol/blob/main/adversary)** · **[See AgentSecBench README →](https://github.com/Tyox-all/Weave_Protocol/blob/main/agentsecbench)** · **[See METHODOLOGY.md →](https://github.com/Tyox-all/Weave_Protocol/blob/main/agentsecbench/METHODOLOGY.md)**
+
+---
+
+### 💰 Q4 Governance — autonomous spending caps
+
+Every enterprise agent question today is *"what's my ceiling on this thing?"* — measured in dollars, not just tool calls. [`@weave_protocol/witan@1.1.0`](https://github.com/Tyox-all/Weave_Protocol/blob/main/witan) answers it. Per-window budgets (run / hour / day / week / month) that gate LLM calls and tool calls, with three actions: **block**, **require approval/consensus**, or **notify**.
+
+Multi-provider LLM pricing built in — Anthropic, OpenAI, Google, and local (free). Per-tool amount caps (`send_payment` max $500/day). Interactive TTY approval prompt for human-in-loop terminals. Async callback for Slack/PagerDuty/custom UIs. Safe defaults — never silent approval in non-interactive contexts.
+
+```bash
+npx @weave_protocol/witan@1.1.0 spending caps         # inspect WARD.md caps
+npx @weave_protocol/witan@1.1.0 spending simulate     # dry-run scenarios
+```
+
+```yaml
+# Extend your WARD.md:
+spending_limits:
+  - window: day
+    budget: { usd: 5.00 }
+    on_exceeded: require_approval
+  - window: run
+    budget: { tool_calls: 100 }
+    on_exceeded: block
+  - window: day
+    budget:
+      tools:
+        send_payment: { max_amount_usd: 500 }
+    on_exceeded: require_approval
+```
+
+Backward compatible with the existing `behavioral_limits.maxCostUSD`. In-memory storage in v1.1 with a pluggable interface for the v1.2 Redis/SQLite backends. Programmatic API via `import { SpendingTracker } from '@weave_protocol/witan/spending'`.
+
+**[See Witan spending caps README →](https://github.com/Tyox-all/Weave_Protocol/blob/main/witan#-autonomous-spending-caps-v110)**
 
 ---
 
@@ -160,7 +193,7 @@ The packages that keep your agent within policy: declare it, enforce it across e
 | [🛡️ @weave_protocol/mund](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund) | 0.2.2 | **Scanner** — secrets, PII, injection, MCP vetting, threat intel |
 | [🏛️ @weave_protocol/hord](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord) | 0.1.6 | **Vault** — encrypted storage with Yoxallismus dual-tumbler cipher |
 | [⚖️ @weave_protocol/domere](https://github.com/Tyox-all/Weave_Protocol/blob/main/domere) | 1.3.4 | **Judge** — compliance (PCI-DSS, ISO27001, SOC2, HIPAA, GDPR, CCPA), blockchain anchoring |
-| [👥 @weave_protocol/witan](https://github.com/Tyox-all/Weave_Protocol/blob/main/witan) | 1.0.2 | **Council** — multi-agent consensus & governance |
+| [👥 @weave_protocol/witan](https://github.com/Tyox-all/Weave_Protocol/blob/main/witan) | **1.1.0** | **Council** — multi-agent consensus & governance, autonomous spending caps (Q4 v1.1) |
 | [🛂 @weave_protocol/tollere](https://github.com/Tyox-all/Weave_Protocol/blob/main/tollere) | 0.2.2 | **Customs** — supply chain security (npm, PyPI, Docker, IDE extensions, sandwich detection) |
 
 ### ⚔️ Offensive Layer (2 packages) — **NEW Q4**
@@ -169,7 +202,7 @@ The red team. We attack what we defend.
 
 | Package | Version | Description |
 |---|---|---|
-| [⚔️ @weave_protocol/adversary](https://github.com/Tyox-all/Weave_Protocol/blob/main/adversary) | **0.1.2** | **Offensive engine** — 68 documented + novel attacks across 5 categories. WARD-aware attack selection. Locked v1.0 scorecard schema |
+| [⚔️ @weave_protocol/adversary](https://github.com/Tyox-all/Weave_Protocol/blob/main/adversary) | **0.2.1** | **Offensive engine** — 68 attacks · real Playwright browser target · real-LLM demo mode · WARD-aware attack selection |
 | [🎯 @weave_protocol/agentsecbench](https://github.com/Tyox-all/Weave_Protocol/blob/main/agentsecbench) | **0.1.0** | **Standardized benchmark** — locked suites (ASB-Browser-v1), tier grading A–F, trophy attacks, WARD delta, paste-ready reports |
 
 ### 🔧 Operations & Integrations (5 packages, plus 1 PyPI)
@@ -181,7 +214,7 @@ The front door, the dashboard, the bridges to other frameworks.
 | [🕸️ @weave_protocol/cli](https://github.com/Tyox-all/Weave_Protocol/blob/main/cli) | 0.1.0 | **The `weave` CLI** — `init`, `audit`, `dashboard`, `doctor` |
 | [📦 @weave_protocol/full](https://github.com/Tyox-all/Weave_Protocol/blob/main/full) | 0.1.0 | **Bundle** — installs all packages in one command |
 | [🔌 @weave_protocol/api](https://github.com/Tyox-all/Weave_Protocol/blob/main/api) | 1.1.1 | **REST API + Operator Dashboard** — `npx @weave_protocol/api` → http://localhost:3000/dashboard |
-| [🔗 @weave_protocol/langchain](https://github.com/Tyox-all/Weave_Protocol/blob/main/langchain) | 1.0.1 | **LangChain.js** security callbacks & tool wrappers |
+| [🔗 @weave_protocol/langchain](https://github.com/Tyox-all/Weave_Protocol/blob/main/langchain) | **1.0.2** | **LangChain.js** security callbacks & tool wrappers (0 audit vulnerabilities via npm overrides) |
 | [🐍 weave-protocol-llamaindex](https://github.com/Tyox-all/Weave_Protocol/blob/main/llamaindex-py) | 0.1.0 | **Python/LlamaIndex** security callbacks & tools (on PyPI) |
 
 ---
@@ -385,6 +418,24 @@ Enterprise-grade verification, orchestration, compliance, and audit infrastructu
 
 Multi-agent consensus and governance. Unanimous, majority, weighted, and quorum protocols. Rule enforcement, escalation, agent bus.
 
+**New in v1.1.0** — autonomous spending caps. Per-window budgets on LLM cost, tokens, tool calls, and per-tool spend limits. Gated by three actions: `block`, `require_approval`, `notify`. Multi-provider LLM pricing built in (Anthropic, OpenAI, Google, local). Interactive TTY prompt or async callback for approval workflows. Safe defaults for non-interactive contexts.
+
+```bash
+npx @weave_protocol/witan spending caps        # inspect WARD.md spending caps
+npx @weave_protocol/witan spending simulate    # dry-run scenarios
+```
+
+```typescript
+import { SpendingTracker } from '@weave_protocol/witan/spending';
+
+const tracker = new SpendingTracker({
+  caps: [{ window: 'day', budget: { usd: 5.00 }, onExceeded: 'require_approval' }],
+});
+const check = await tracker.checkAction({ kind: 'tool', tool: 'send_payment', amountUSD: 1000 });
+if (check.blocked) throw new Error(check.reason);
+if (check.requiresApproval && !(await check.approve!())) throw new Error('denied');
+```
+
 📄 **Skill:** [`consensus-governance`](https://github.com/Tyox-all/Weave_Protocol/blob/main/witan/SKILL.md)
 
 ---
@@ -407,12 +458,13 @@ Supply chain security for AI-generated code. Catches malicious packages, Docker 
 
 ### ⚔️ Adversary — The Red Team
 
-Where the other packages defend, Adversary attacks. 68 documented and novel attacks across 5 categories: IPI (33), tool-use coercion (15), jailbreak (10), extraction (5), goal corruption (5). Built-in demo target for instant smoke tests. WARD-aware attack selection prioritizes probes against capabilities your policy claims to enforce.
+Where the other packages defend, Adversary attacks. 68 documented and novel attacks across 5 categories: IPI (33), tool-use coercion (15), jailbreak (10), extraction (5), goal corruption (5). Three targets: pattern-mock (CI smoke tests, no API), real-LLM (`--real` via Anthropic API, ~$0.02/full run), and real-browser (Playwright with four breach signal channels: network, form, DOM, console). WARD-aware attack selection prioritizes probes against capabilities your policy claims to enforce.
 
 ```bash
-npx @weave_protocol/adversary demo               # full corpus, ~50ms
-npx @weave_protocol/adversary list               # browse attacks
-npx @weave_protocol/adversary demo --category=ipi --json=./scorecard.json
+npx @weave_protocol/adversary demo               # mock, ~50ms
+npx @weave_protocol/adversary demo --real        # real LLM, ~$0.02
+npx @weave_protocol/adversary attack --url=...   # real browser agent
+npx @weave_protocol/adversary demo --real --redact-evidence   # shareable scorecard
 ```
 
 Locked scorecard schema v1.0 — consumed unchanged by AgentSecBench.
@@ -612,10 +664,10 @@ done
 
 ### H2 2026 Q4 — Moat Quarter
 
-- [x] **Adversarial agents** (`@weave_protocol/adversary` v0.1.2) — 68 documented + novel attacks
+- [x] **Adversarial agents** (`@weave_protocol/adversary` v0.2.1) — 68 documented + novel attacks, real Playwright browser target, real-LLM demo mode
 - [x] **AgentSecBench** (`@weave_protocol/agentsecbench` v0.1.0) — standardized benchmark, tier grades A–F
-- [ ] Witan killer use case: autonomous spending caps
-- [ ] Yoxallismus v2 (multi-agent, memory-aware cipher) — deferred to Q1 2027
+- [x] **Witan autonomous spending caps** (`@weave_protocol/witan` v1.1.0) — per-window budgets on LLM cost + tokens + tool calls, gated by block / approval / notify
+- [ ] **Yoxallismus v2** (multi-agent, memory-aware, post-quantum cipher) — **under-development / research**, targeted for Q3 2027 release after external cryptographic review
 
 ---
 
