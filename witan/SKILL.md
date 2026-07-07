@@ -81,3 +81,48 @@ witan_escalate({
 ## Links
 
 - npm: https://www.npmjs.com/package/@weave_protocol/witan
+
+## 💰 Skill: `spending-caps`
+
+You have access to `@weave_protocol/witan/spending` — autonomous spending caps for AI agents. Per-window budgets on LLM cost, token count, tool calls, and per-tool spend limits.
+
+### When to invoke
+
+Use spending caps when the user:
+- Wants to prevent runaway agent costs (LLM tokens or tool spend)
+- Asks about budget limits, rate limits, or cost caps for an agent
+- Is deploying an autonomous agent that will run without supervision
+- Needs approval workflows for expensive actions (payments, high-cost LLM calls)
+- Asks "how do I stop my agent from spending too much?"
+
+### Key exports
+
+```typescript
+import {
+  SpendingTracker,             // the core enforcement class
+  loadSpendingCapsFromWardFile, // load from WARD.md
+  registerPricing,              // add custom model pricing
+} from '@weave_protocol/witan/spending';
+```
+
+### Programmatic pattern
+
+```typescript
+const tracker = new SpendingTracker({
+  caps: loadSpendingCapsFromWardFile('./WARD.md'),
+  approvalHandler: async (event) => { /* Slack, UI, etc. */ return true; },
+});
+
+// Before action:
+const check = await tracker.checkAction({ kind: 'tool', tool: 'send_payment', args: { amount: 500 }, amountUSD: 500 });
+if (check.blocked) throw new Error(check.reason);
+if (check.requiresApproval && !(await check.approve!())) throw new Error('denied');
+
+// After action:
+await tracker.recordTool({ tool: 'send_payment', amountUSD: 500 });
+```
+
+### CLI commands
+
+- `weave-witan-spending caps` — inspect WARD.md caps
+- `weave-witan-spending simulate --scenario=llm-run` — dry-run scenarios

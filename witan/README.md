@@ -479,3 +479,121 @@ Apache 2.0
 ---
 
 **Made with ❤️ for AI Safety**
+
+## 💰 Autonomous Spending Caps *(v1.1.0)*
+
+Every enterprise agent question today is "what's my ceiling on this thing?" — measured in dollars, not just tool calls. Witan's spending caps are the answer.
+
+Per-window budgets (run / hour / day / week / month) that gate LLM calls and tool calls. Caps can **block**, **require consensus/approval**, or **notify**. Multi-provider LLM pricing built in — Anthropic, OpenAI, Google, and local (free). Backed by an in-memory store in v1.1 with a pluggable interface for the v1.2 Redis/SQLite backends.
+
+### Quick start (programmatic)
+
+```typescript
+import { SpendingTracker } from '@weave_protocol/witan/spending';
+
+const tracker = new SpendingTracker({
+  caps: [
+    { window: 'day', budget: { usd: 5.00 }, onExceeded: 'require_approval' },
+    { window: 'run', budget: { tool_calls: 100 }, onExceeded: 'block' },
+    {
+      window: 'day',
+      budget: { tools: { send_payment: { max_amount_usd: 500 } } },
+      onExceeded: 'require_approval',
+    },
+  ],
+});
+
+// Before every action
+const check = await tracker.checkAction({
+  kind: 'tool',
+  tool: 'send_payment',
+  args: { amount: 1000 },
+  amountUSD: 1000,
+});
+
+if (check.blocked) throw new Error(check.reason);
+if (check.requiresApproval) {
+  const approved = await check.approve!();
+  if (!approved) throw new Error('denied');
+}
+
+// After the action completes
+await tracker.recordTool({ tool: 'send_payment', args: { amount: 1000 }, amountUSD: 1000 });
+```
+
+### WARD.md integration
+
+Extend your `WARD.md` with a `spending_limits:` section. `@weave_protocol/witan/spending` reads it via `loadSpendingCapsFromWardFile()`.
+
+```yaml
+spending_limits:
+  - window: day
+    budget:
+      usd: 5.00
+    on_exceeded: require_approval
+    label: daily budget
+
+  - window: run
+    budget:
+      tool_calls: 100
+    on_exceeded: block
+
+  - window: day
+    budget:
+      tools:
+        send_payment:
+          max_amount_usd: 500
+    on_exceeded: require_approval
+```
+
+Backward compatible: the legacy `behavioral_limits.maxCostUSD` is still honored as a run-window USD cap with `onExceeded: block`.
+
+### CLI
+
+```bash
+weave-witan-spending caps        # print caps parsed from WARD.md
+weave-witan-spending simulate    # dry-run: what would trigger?
+weave-witan-spending simulate --scenario=payment-1000
+```
+
+### The three cap actions
+
+| Action | Behavior |
+|---|---|
+| `block` | Deny the action outright. `check.blocked = true` |
+| `require_approval` | Dispatch to `approvalHandler`; on TTY, prompt interactively; block on denial |
+| `notify` | Allow the action; fire `onNotify` for observability/logging |
+
+### Approval handling
+
+Three modes, in order of precedence:
+
+1. **Programmatic**: pass `approvalHandler: async (event) => boolean` — plug in Slack, PagerDuty, custom UI, whatever
+2. **Interactive**: if no handler and process is a TTY, an in-terminal yellow-box prompt asks `Approve? [y/N]`
+3. **Safe default**: no handler + non-TTY → deny (never silent approval)
+
+### Multi-provider LLM pricing
+
+Built-in pricing for the major providers (per million tokens):
+
+| Provider | Models |
+|---|---|
+| Anthropic | claude-3-5-haiku, claude-3-5-sonnet, claude-3-7-sonnet, claude-opus-4-x, claude-sonnet-4-x, claude-haiku-4-x |
+| OpenAI | gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-4, o1, o1-mini, o3, o3-mini |
+| Google | gemini-1.5-flash / 8b / pro, gemini-2.0-flash, gemini-2.5-flash / pro |
+| Local (Ollama, LM Studio, etc.) | free ($0) |
+
+Register custom pricing:
+
+```typescript
+import { registerPricing } from '@weave_protocol/witan/spending';
+registerPricing('mycompany', 'internal-llm-v2', { input: 0.10, output: 0.30 });
+```
+
+### v1.2 roadmap
+
+- Persistent stores (Redis, SQLite) — for multi-process / cross-restart tracking
+- Real human approval workflows (Slack escalation, email approval links)
+- Adapter integrations for all 5 harness surfaces (currently: langchain only)
+- Dashboard integration in `@weave_protocol/api`
+- Real-time cap violation stream via WebSocket
