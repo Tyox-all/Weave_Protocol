@@ -42,16 +42,16 @@
     "@weave_protocol/adapter-antigravity": "^0.1.0",
     "@weave_protocol/adapter-claudecode": "^0.1.0",
     "@weave_protocol/adapter-msaf": "^0.1.0",
-    "@weave_protocol/api": "^1.0.12",
+    "@weave_protocol/api": "^1.1.1",
     "@weave_protocol/cli": "^0.1.0",
     "@weave_protocol/domere": "^1.3.4",
     "@weave_protocol/hord": "^0.1.6",
     "@weave_protocol/hundredmen": "^1.1.0",
-    "@weave_protocol/langchain": "^1.0.1",
+    "@weave_protocol/langchain": "^1.0.2",
     "@weave_protocol/mund": "^0.2.2",
     "@weave_protocol/tollere": "^0.2.2",
     "@weave_protocol/ward": "^0.1.0",
-    "@weave_protocol/witan": "^1.0.2"
+    "@weave_protocol/witan": "^1.1.0"
   },
   "files": [
     "index.js",
