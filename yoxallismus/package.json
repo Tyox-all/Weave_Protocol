@@ -1,0 +1,59 @@
+{
+  "name": "@weave_protocol/yoxallismus",
+  "version": "0.1.0-beta.0",
+  "description": "EXPERIMENTAL post-quantum cryptographic composition layer for AI agents. NOT AUDITED. Use only for research and development. See THREAT_MODEL.md for scope.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "weave-yoxall": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "THREAT_MODEL.md",
+    "SECURITY.md",
+    "SECURITY_ADVISORIES.md",
+    "SKILL.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tyox-all/Weave_Protocol.git",
+    "directory": "yoxallismus"
+  },
+  "keywords": [
+    "post-quantum",
+    "cryptography",
+    "pq",
+    "kyber",
+    "ml-kem",
+    "hybrid-kem",
+    "aead",
+    "ratcheting",
+    "agent-security",
+    "weave-protocol",
+    "experimental"
+  ],
+  "author": "Trent Yoxall",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@noble/post-quantum": "^0.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  }
+}
