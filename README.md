@@ -32,6 +32,8 @@
 [![npm](https://img.shields.io/npm/dm/@weave_protocol/witan.svg)](https://www.npmjs.com/package/@weave_protocol/witan)
 [![npm](https://img.shields.io/npm/v/@weave_protocol/tollere.svg?label=tollere)](https://www.npmjs.com/package/@weave_protocol/tollere)
 [![npm](https://img.shields.io/npm/dm/@weave_protocol/tollere.svg)](https://www.npmjs.com/package/@weave_protocol/tollere)
+[![npm](https://img.shields.io/npm/v/@weave_protocol/yoxallismus.svg?label=yoxallismus&color=red)](https://www.npmjs.com/package/@weave_protocol/yoxallismus)
+[![npm](https://img.shields.io/npm/dm/@weave_protocol/yoxallismus.svg)](https://www.npmjs.com/package/@weave_protocol/yoxallismus)
 [![npm](https://img.shields.io/npm/v/@weave_protocol/langchain.svg?label=langchain)](https://www.npmjs.com/package/@weave_protocol/langchain)
 [![npm](https://img.shields.io/npm/dm/@weave_protocol/langchain.svg)](https://www.npmjs.com/package/@weave_protocol/langchain)
 [![npm](https://img.shields.io/npm/v/@weave_protocol/api.svg?label=api)](https://www.npmjs.com/package/@weave_protocol/api)
@@ -123,6 +125,39 @@ Backward compatible with the existing `behavioral_limits.maxCostUSD`. In-memory 
 
 ---
 
+### 🔐 Yoxallismus v2 — post-quantum cipher (open beta)
+
+[`@weave_protocol/yoxallismus@0.1.0-beta.0`](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus) — post-quantum cryptographic composition layer built on **NIST FIPS 203 (ML-KEM-768)** hybridized with X25519. AES-256-GCM AEAD, HKDF-SHA-256 KDF, symmetric ratchet for session forward secrecy. Composition, not invention — the primitives are NIST-standardized, the composition (PQ-hybrid KEM + agent-scoped context binding + ratcheting) is what's new.
+
+```bash
+# Explicit opt-in required — the beta tag is NOT installed by default
+npm install @weave_protocol/yoxallismus@beta
+```
+
+```typescript
+import { PQCipher } from '@weave_protocol/yoxallismus';
+
+const alice = PQCipher.generateKeypair();
+const bundle = PQCipher.encryptTo(PQCipher.publicKeyOf(alice), plaintext);
+const message = PQCipher.decryptFrom(alice, bundle.ciphertext, bundle.payload);
+```
+
+**⚠️ EXPERIMENTAL — NOT AUDITED.** Do not use for regulated, medical, financial, or legal data. Validation is via public use, forks, community verification, and responsible disclosure — not paid audit. See [THREAT_MODEL.md](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus/THREAT_MODEL.md) and [SECURITY.md](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus/SECURITY.md) before adopting.
+
+**Verify every claim yourself:**
+
+```bash
+npx @weave_protocol/yoxallismus@beta --package weave-yoxall test         # 13 reproducible-claims tests
+npx @weave_protocol/yoxallismus@beta --package weave-yoxall audit-self   # 5 known-attack vectors
+npx @weave_protocol/yoxallismus@beta --package weave-yoxall benchmark    # perf micro-benchmarks
+```
+
+Measured on Node 22, single-threaded: **3.1 ms hybrid keypair generation · 2.4 ms encap+decap · 0.024 ms AEAD (1 KB)** — comfortably under the <5 ms target.
+
+**[See Yoxallismus README →](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus)**
+
+---
+
 ### 🛡️ Four runtimes. Three vendors. One policy file.
 
 The thesis was that [WARD.md](https://www.npmjs.com/package/@weave_protocol/ward) could be a **portable agent security standard** — write it once, enforce it everywhere. As of today, that's **shipped and live across the entire agent harness landscape**:
@@ -178,7 +213,7 @@ Industry analysis of agent security trends, platform maturity, supply chain risk
 
 The suite is now organized into three layers — **defense**, **offensive**, and **operations**. All 17 packages live on npm under the `@weave_protocol` scope, plus one Python package on PyPI.
 
-### 🛡️ Defense Layer (11 packages)
+### 🛡️ Defense Layer (12 packages)
 
 The packages that keep your agent within policy: declare it, enforce it across every harness, scan everything that enters, encrypt everything that exits.
 
@@ -192,6 +227,7 @@ The packages that keep your agent within policy: declare it, enforce it across e
 | [🔍 @weave_protocol/hundredmen](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen) | 1.1.0 | **MCP proxy** — intercept, scan, gate tool calls; enforces WARD.md as first gate |
 | [🛡️ @weave_protocol/mund](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund) | 0.2.2 | **Scanner** — secrets, PII, injection, MCP vetting, threat intel |
 | [🏛️ @weave_protocol/hord](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord) | 0.1.6 | **Vault** — encrypted storage with Yoxallismus dual-tumbler cipher |
+| [🔐 @weave_protocol/yoxallismus](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus) | **0.1.0-beta.0** | **Post-quantum cipher** — X25519 + ML-KEM-768 hybrid KEM · AES-256-GCM · HKDF · ratcheting · ⚠️ NOT AUDITED |
 | [⚖️ @weave_protocol/domere](https://github.com/Tyox-all/Weave_Protocol/blob/main/domere) | 1.3.4 | **Judge** — compliance (PCI-DSS, ISO27001, SOC2, HIPAA, GDPR, CCPA), blockchain anchoring |
 | [👥 @weave_protocol/witan](https://github.com/Tyox-all/Weave_Protocol/blob/main/witan) | **1.1.0** | **Council** — multi-agent consensus & governance, autonomous spending caps (Q4 v1.1) |
 | [🛂 @weave_protocol/tollere](https://github.com/Tyox-all/Weave_Protocol/blob/main/tollere) | 0.2.2 | **Customs** — supply chain security (npm, PyPI, Docker, IDE extensions, sandwich detection) |
@@ -233,6 +269,7 @@ Each package includes a `SKILL.md` file following the [Claude Agent Skills speci
 | 🌐 browser | `browser-security` | secure browser agent, IPI scanning, hidden CSS detection, page-context safety |
 | 🛡️ Mund | `security-scanning` | scan, detect secrets, check injection, vet MCP server, threat intel |
 | 🏛️ Hord | `encrypting-data` | encrypt, decrypt, vault, Yoxallismus, protect |
+| 🔐 Yoxallismus | `pq-crypto` | post-quantum, ML-KEM, Kyber, hybrid KEM, PQ-hybrid, quantum-safe |
 | ⚖️ Domere | `compliance-auditing` | audit, checkpoint, SOC2, HIPAA, PCI-DSS, GDPR, CCPA, blockchain |
 | 👥 Witan | `consensus-governance` | consensus, vote, approve, policy, escalate |
 | 🔍 Hundredmen | `security-inspection` | intercept, drift, reputation, approve, block, live feed, enforce WARD |
@@ -397,6 +434,32 @@ Real-time security scanning for AI agents. Catches secrets (30+ patterns), PII, 
 Encrypted storage with the Yoxallismus dual-tumbler cipher. AES-256-GCM, ChaCha20-Poly1305, Argon2id key derivation, secure memory handling.
 
 📄 **Skill:** [`encrypting-data`](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord/SKILL.md)
+
+---
+
+### 🔐 Yoxallismus — Post-Quantum Cipher (open beta)
+
+Standalone post-quantum cryptographic composition layer. NIST FIPS 203 (ML-KEM-768) hybridized with X25519 for the KEM, AES-256-GCM for AEAD, HKDF-SHA-256 for KDF, symmetric ratchet for session forward secrecy. Composition over invention — all primitives NIST-standardized or de facto industry standard.
+
+⚠️ **EXPERIMENTAL. NOT AUDITED.** Do not use for regulated, medical, financial, or legal data. Validation is via public use, forks, and responsible disclosure — not paid audit.
+
+```bash
+# Explicit opt-in required — beta tag not installed by default
+npm install @weave_protocol/yoxallismus@beta
+
+# CLI subcommands
+weave-yoxall status         # library posture + known limitations
+weave-yoxall keygen         # hybrid keypair (X25519 + ML-KEM-768)
+weave-yoxall encrypt        # encrypt to a recipient's public key
+weave-yoxall decrypt        # decrypt with private key
+weave-yoxall test           # reproducible-claims tests
+weave-yoxall audit-self     # known-attack test vectors
+weave-yoxall benchmark      # perf micro-benchmarks
+```
+
+**Performance** — 3.1 ms hybrid keypair generation · 2.4 ms encap+decap · 0.024 ms AEAD (1 KB), all under the <5 ms target.
+
+📄 **Skill:** [`pq-crypto`](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus/SKILL.md) · 📋 **Threat model:** [THREAT_MODEL.md](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus/THREAT_MODEL.md) · 🔒 **Disclosure:** [SECURITY.md](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus/SECURITY.md)
 
 ---
 
@@ -667,7 +730,7 @@ done
 - [x] **Adversarial agents** (`@weave_protocol/adversary` v0.2.1) — 68 documented + novel attacks, real Playwright browser target, real-LLM demo mode
 - [x] **AgentSecBench** (`@weave_protocol/agentsecbench` v0.1.0) — standardized benchmark, tier grades A–F
 - [x] **Witan autonomous spending caps** (`@weave_protocol/witan` v1.1.0) — per-window budgets on LLM cost + tokens + tool calls, gated by block / approval / notify
-- [ ] **Yoxallismus v2** (multi-agent, memory-aware, post-quantum cipher) — **under-development / research**, targeted for Q3 2027 release after external cryptographic review
+- [x] **Yoxallismus v2** (`@weave_protocol/yoxallismus@0.1.0-beta.0`) — **open beta shipped**. PQ-hybrid KEM (X25519 + ML-KEM-768 / NIST FIPS 203) + AEAD + ratcheting. Unaudited by design; validated by public use, forks, and responsible disclosure. v0.2+ adds DH double-ratchet, cascade cipher, threshold encryption; v0.3+ adds ZK/VDF/QRNG; v0.4+ adds FHE. See [yoxallismus/README.md](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus).
 
 ---
 
