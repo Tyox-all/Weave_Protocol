@@ -1,8 +1,11 @@
 # .github/workflows/publish-all.yml
-# Publishes ALL packages to npm with provenance attestation
-
+# Publishes ALL packages to npm with provenance attestation.
+# Manual trigger only. Requires each package's version to be bumped in
+# package.json before running (npm publish errors if the version already exists).
+#
+# For yoxallismus: published with --tag beta to preserve the stub-as-latest
+# labeling strategy. All other packages published as latest.
 name: Publish All Packages
-
 on:
   workflow_dispatch:
 
@@ -15,9 +18,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        package: [mund, hord, domere, witan, hundredmen, tollere, langchain, api, full, cli, ward, adapter-claudecode, adapter-antigravity, adapter-msaf, browser, adversary, agentsecbench]
+        package: [mund, hord, domere, witan, hundredmen, tollere, langchain, api, full, cli, ward, adapter-claudecode, adapter-antigravity, adapter-msaf, browser, adversary, agentsecbench, yoxallismus]
       fail-fast: false  # Continue publishing other packages if one fails
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,7 +42,15 @@ jobs:
         working-directory: ${{ matrix.package }}
         run: npm run build
 
-      - name: Publish with provenance
+      - name: Publish (yoxallismus → @beta tag)
+        if: matrix.package == 'yoxallismus'
+        working-directory: ${{ matrix.package }}
+        run: npm publish --tag beta --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish (all other packages → latest)
+        if: matrix.package != 'yoxallismus'
         working-directory: ${{ matrix.package }}
         run: npm publish --provenance --access public
         env:

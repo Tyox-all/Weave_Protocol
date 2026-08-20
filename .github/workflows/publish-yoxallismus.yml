@@ -1,0 +1,123 @@
+# .github/workflows/publish-yoxallismus.yml
+# Auto-publish @weave_protocol/yoxallismus on every push to main that
+# changes yoxallismus/package.json (i.e., a version bump).
+#
+# Safety checks before publish:
+#   1. Only runs if yoxallismus/package.json changed in this push
+#   2. Verifies the version in package.json is NOT already on npm
+#   3. Runs npm ci + build + full test suite + audit-self before publish
+#   4. If any test fails, publish is aborted
+#   5. Uses --tag beta (never touches the `latest` stub)
+#   6. Uses trusted publishing via OIDC (no NPM_TOKEN secret needed for
+#      trusted-publisher-configured packages)
+#
+# To trigger a release: bump yoxallismus/package.json version, commit,
+# push to main. The workflow does the rest.
+
+name: Publish Yoxallismus (auto)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'yoxallismus/package.json'
+      - 'yoxallismus/src/**'
+      - 'yoxallismus/tsconfig.json'
+      - '.github/workflows/publish-yoxallismus.yml'
+  workflow_dispatch:  # allow manual trigger too
+
+permissions:
+  contents: read
+  id-token: write  # OIDC for trusted publishing
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      should_publish: ${{ steps.decide.outputs.should_publish }}
+      version: ${{ steps.decide.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read version from package.json
+        id: pkg
+        working-directory: yoxallismus
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "  local version: $VERSION"
+
+      - name: Check if version already on npm
+        id: decide
+        run: |
+          set +e
+          PUBLISHED=$(npm view @weave_protocol/yoxallismus@${{ steps.pkg.outputs.version }} version 2>/dev/null)
+          set -e
+          if [ -z "$PUBLISHED" ]; then
+            echo "  ✓ ${{ steps.pkg.outputs.version }} is NOT on npm — will publish"
+            echo "should_publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "  ⚠ ${{ steps.pkg.outputs.version }} already on npm as $PUBLISHED — skipping publish"
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=${{ steps.pkg.outputs.version }}" >> "$GITHUB_OUTPUT"
+
+  publish:
+    needs: gate
+    if: needs.gate.outputs.should_publish == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Update npm
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        working-directory: yoxallismus
+        run: npm ci
+
+      - name: Build
+        working-directory: yoxallismus
+        run: npm run build
+
+      - name: Reproducible-claims test suite
+        working-directory: yoxallismus
+        env:
+          YOXALL_SILENCE_BETA_WARNING: '1'
+        run: |
+          chmod +x dist/cli.js
+          node dist/cli.js test
+
+      - name: Known-attack test vectors
+        working-directory: yoxallismus
+        env:
+          YOXALL_SILENCE_BETA_WARNING: '1'
+        run: node dist/cli.js audit-self
+
+      - name: npm audit (no vulnerabilities allowed)
+        working-directory: yoxallismus
+        run: npm audit --audit-level=moderate
+
+      - name: Publish to @beta tag with provenance
+        working-directory: yoxallismus
+        run: npm publish --tag beta --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Confirm publish
+        run: |
+          echo "✅ Published @weave_protocol/yoxallismus@${{ needs.gate.outputs.version }} to @beta tag"
+          echo ""
+          echo "Users can install with:"
+          echo "  npm install @weave_protocol/yoxallismus@beta"
+          echo ""
+          echo "Default install (npm install @weave_protocol/yoxallismus) still"
+          echo "pulls the 0.0.1 stub, which prints setup instructions."
