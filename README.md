@@ -62,13 +62,46 @@ npm install @weave_protocol/full
 
 ## 🆕 What's New
 
-### ⚔️ Q4 Moat Quarter — *we attack what we defend*
+### 🗓️ October 2026 update — what landed
+
+A big stretch across offense, defense, and how releases ship. Highlights:
+
+#### ⚔️ Adversary v0.3.0, on npm now
+[`@weave_protocol/adversary@0.3.0`](https://www.npmjs.com/package/@weave_protocol/adversary) is published with signed SLSA provenance.
+
+- **Dynamic mutation (`--dynamic`).** When a target refuses but still engages with an attack, an LLM writes a variant with the same intent and Adversary retries it. In the first live run on Claude Haiku 5.5, **2 of 5 attacks landed only through a variant**, for **$0.003** total. That tests whether a safeguard generalizes or only caught the original wording.
+- **Real-model mode works again.** The previous default model, Claude 3.5 Haiku, was retired in Feb 2026, so every `--real` run had been failing. The default is now Claude Haiku 5.5, and the pricing table is corrected.
+- **No more false perfect scores.** Attacks that hit an API error used to count as "blocked", so a run with no API access scored 100/100. Adversary now exits with the real error instead.
+- **Scorecard fixes.** Findings record the agent's tool calls again, `timeToExploit` means conversation turns again, and `--redact-evidence` also scrubs the per-attempt evidence it used to leak.
+- **First test suite for Adversary**, covering retry logic, v0.2 compatibility, and redaction.
+
+#### 🛡️ Mund security hardening (merged; next npm release)
+- Patched `express`, `qs` and `proxy-addr`, and updated the MCP SDK to 1.32.1. `npm audit` now reports **0 production vulnerabilities**.
+- Removed `nodemailer`, which carried a high-severity CVE and was never actually wired up. The email notifier now says plainly that it isn't implemented instead of silently dropping alerts.
+- Mund has its **first real test suite**.
+
+#### 🧬 Mund parity floor (in review, [PR #74](https://github.com/Tyox-all/Weave_Protocol/pull/74))
+- **`mund-mcp scan --format=sarif`**: findings appear as GitHub code-scanning alerts.
+- **Live dependency CVEs** from OSV.dev, with an offline cache. Unchecked packages are reported as unchecked, never as clean.
+- A **0–100 risk score** with a severity label on every scan.
+- **OWASP coverage tables** for the LLM Top 10 and the Agentic Top 10, marking honestly what's covered and what isn't.
+- **23 secret-detection rules that had never matched anything** (including AWS secret keys) are fixed.
+
+#### 🔏 How releases ship
+- **npm Trusted Publishing (OIDC).** CI publishes without any long-lived npm token, and every release carries a Sigstore-signed provenance statement tying it to the exact commit and workflow.
+- **CycloneDX SBOM and Sigstore attestations** for every package in `publish-all` (lands with PR #74).
+- Hardened CI: Node 22 builds, npm pinned to 11, and GitHub Actions moved to Node 24 runtimes. `publish.yml` can now release any single package without republishing all 18.
+
+---
+
+
+### ⚔️  *we attack what we defend*
 
 The first agent security platform to publish its own offensive engine. Two new packages flipped the suite from purely defensive to **defense + offense in the same monorepo**, validated against each other:
 
 | Package | Role | Version |
 |---|---|---|
-| [`@weave_protocol/adversary`](https://github.com/Tyox-all/Weave_Protocol/blob/main/adversary) | Offensive engine — 68 documented + novel attacks across 5 categories (IPI, tool-coercion, jailbreak, extraction, goal-corruption). Real Playwright browser target with 4 breach signal channels. Real-LLM demo mode via Anthropic API. **New in v0.3:** LLM-driven dynamic mutation retries half-blocked attacks with fresh variants. | ✅ **v0.3.0** |
+| [`@weave_protocol/adversary`](https://github.com/Tyox-all/Weave_Protocol/blob/main/adversary) | Offensive engine — 68 documented + novel attacks across 5 categories (IPI, tool-coercion, jailbreak, extraction, goal-corruption). Real Playwright browser target with 4 breach signal channels. Real-LLM demo mode via Anthropic API. **New in v0.3:** LLM-driven dynamic mutation retries half-blocked attacks with fresh variants. | ✅ **v0.3.0** ~! |
 | [`@weave_protocol/agentsecbench`](https://github.com/Tyox-all/Weave_Protocol/blob/main/agentsecbench) | Standardized benchmark — locked attack suites, tier grades A–F, paste-ready reports, side-by-side comparison | ✅ v0.1.0 |
 
 **Trophy attacks** — documented in-the-wild incidents reproduced in the corpus:
