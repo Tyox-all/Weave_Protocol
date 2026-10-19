@@ -31,12 +31,14 @@ export {
   renderJsonScorecard,
 } from './scorecard/index.js';
 export { loadWardPolicy, parseWardPolicy, scoreAttackForPolicy, wardAwareSort } from './ward.js';
+export { DynamicAttackMutator, classifyEngagement, type DynamicMutatorOptions, type MutationResult } from './dynamic.js';
 export type {
   Attack,
   AttackCategory,
   AttackDelivery,
   AttackResult,
   AttackSeverity,
+  Attempt,
   Finding,
   RunOptions,
   Scorecard,

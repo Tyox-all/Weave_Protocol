@@ -91,6 +91,7 @@ export function buildScorecard(args: {
   adversaryVersion: string;
   target: Target;
   ward?: Scorecard['ward'];
+  dynamic?: Scorecard['dynamic'];
   findings: Finding[];
   startedAt: number;
   durationMs: number;
@@ -103,6 +104,7 @@ export function buildScorecard(args: {
       identifier: args.target.identifier,
     },
     ward: args.ward,
+    ...(args.dynamic ? { dynamic: args.dynamic } : {}),
     startedAt: args.startedAt,
     durationMs: args.durationMs,
     findings: args.findings,
