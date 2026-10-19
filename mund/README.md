@@ -394,41 +394,45 @@ Output: {
 
 ## 🛡️ OWASP Coverage
 
-What Mund itself detects today, mapped to the OWASP lists. ✅ = covered,
-🟡 = partly covered (the gap is noted), ⬜ = not covered by Mund. Detection
-is pattern-based: Mund catches known shapes of an attack, not every
-variant. Some gaps are handled by other Weave Protocol packages, noted
-where relevant.
+How the OWASP lists are covered, in two columns:
+
+- **Mund**: what this package detects on its own.
+- **Weave suite**: Mund together with the other Weave Protocol packages. A suite ✅ means another package **enforces or detects** the control on the row's main attack path. Each one was checked in that package's source, which is linked.
+
+✅ = covered · 🟡 = partly covered (the gap is noted) · ⬜ = not covered · N/A = out of scope for agent security tooling.
+Detection is pattern-based: it catches known shapes of an attack, not every variant.
 
 ### OWASP Top 10 for LLM Applications (2025)
 
-| ID | Risk | Mund | What covers it / gap |
-|----|------|------|----------------------|
-| LLM01 | Prompt Injection | 🟡 | 4 injection patterns (instruction override, jailbreak, system-prompt extraction, role-play); MCP tool/schema/resource description injection; hidden Unicode. Novel or paraphrased injections can slip past regexes. |
-| LLM02 | Sensitive Information Disclosure | ✅ | 31 secret rules (cloud, AI-provider, VCS, payment, DB URLs, private keys), 5 PII rules, exfiltration patterns (data POSTs, DNS tunneling, encoded blobs). |
-| LLM03 | Supply Chain | 🟡 | OSV.dev CVE lookups for npm lockfiles; MCP server typosquatting, suspicious repos/URIs, unpinned versions. No model/dataset provenance; npm only. |
-| LLM04 | Data and Model Poisoning | ⬜ | Out of scope for a content scanner. |
-| LLM05 | Improper Output Handling | 🟡 | Code-pattern rules (shell/SQL injection, `rm -rf`, `curl \| bash`, base64 → exec, disabled TLS verification); `mund_validate_command`, `mund_check_url` on model output. |
-| LLM06 | Excessive Agency | 🟡 | `mund_audit_mcp_permissions` and capability analysis (execution, filesystem, network, env, DB); excessive-tool warnings. Detection only; runtime call gating is in **Hundredmen**. |
-| LLM07 | System Prompt Leakage | 🟡 | Flags system-prompt extraction attempts and secrets embedded in prompts. Does not detect a leaked prompt in output. |
-| LLM08 | Vector and Embedding Weaknesses | ⬜ | Not covered. |
-| LLM09 | Misinformation | ⬜ | Out of scope. |
-| LLM10 | Unbounded Consumption | ⬜ | Not covered. |
+| ID | Risk | Mund | Weave suite | Coverage and gaps |
+|----|------|:----:|:-----------:|-------------------|
+| LLM01 | Prompt Injection | 🟡 | 🟡 | Mund: 4 injection rules, MCP description/schema/resource injection, hidden Unicode. **Browser** adds DOM-aware IPI scanning, including hidden CSS text ([ipi.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/browser/src/ipi.ts)). Gap: paraphrased or novel injections can evade patterns. |
+| LLM02 | Sensitive Information Disclosure | ✅ | ✅ | Mund: 31 secret rules, 5 PII rules, exfiltration patterns. **Hord** adds reversible PII tokenization and redaction ([redaction/engine.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord/src/redaction/engine.ts)). |
+| LLM03 | Supply Chain | 🟡 | ✅ | Mund: OSV.dev CVEs for npm lockfiles, MCP typosquatting. **Tollere** covers npm, PyPI, Cargo, Go and Maven CVEs, typosquats, maintainer reputation, sandwich attacks, Docker images and IDE extensions ([cve.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/tollere/src/cve.ts), [sandwich.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/tollere/src/sandwich.ts), [docker.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/tollere/src/docker.ts)). Gap: no model or dataset provenance. |
+| LLM04 | Data and Model Poisoning | N/A | N/A | Out of scope: training-time risk. |
+| LLM05 | Improper Output Handling | 🟡 | ✅ | Mund: dangerous-code rules, `mund_validate_command`, `mund_check_url`. **Hundredmen** scans every tool call's arguments before execution and blocks or holds risky ones ([interceptor.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen/src/interceptor.ts)). Gap: output rendered to a browser (XSS) isn't checked. |
+| LLM06 | Excessive Agency | 🟡 | ✅ | **Hundredmen**: approve or block per call, auto-block of high-risk calls in strict mode, approval queues by category ([interceptor.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen/src/interceptor.ts)). **Hord**: signed, expiring, scope-limited capability tokens with a delegation-depth cap ([capability/token.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord/src/capability/token.ts)). |
+| LLM07 | System Prompt Leakage | 🟡 | 🟡 | Mund flags extraction attempts and secrets inside prompts. Gap: a leaked prompt in output isn't detected (canary tokens planned). |
+| LLM08 | Vector and Embedding Weaknesses | ⬜ | ⬜ | Not covered. |
+| LLM09 | Misinformation | N/A | N/A | Out of scope: content accuracy, not security. |
+| LLM10 | Unbounded Consumption | ⬜ | ✅ | **Witan**: per-window USD, token and tool-call caps that block, require approval, or notify ([spending/tracker.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/witan/src/spending/tracker.ts)), plus rate-limit and quota policies ([policy.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/witan/src/policy.ts)). |
 
 ### OWASP Top 10 for Agentic Applications
 
-| ID | Risk | Mund | What covers it / gap |
-|----|------|------|----------------------|
-| ASI01 | Agent Goal Hijack | 🟡 | Injection patterns plus MCP tool-poisoning checks on descriptions, schemas and resources. Intent-drift detection is in **Domere**. |
-| ASI02 | Tool Misuse and Exploitation | 🟡 | `mund_validate_command`, `mund_check_url`, MCP capability audit. Per-call approve/block is in **Hundredmen**. |
-| ASI03 | Identity and Privilege Abuse | 🟡 | Catches leaked credentials and over-privileged MCP servers. No identity or delegation model; capability delegation is in **Hord**. |
-| ASI04 | Agentic Supply Chain Vulnerabilities | 🟡 | Mund's strongest area: static MCP manifest scanning (tool poisoning, hidden Unicode, typosquatting, embedded secrets, suspicious sources) plus OSV dependency CVEs. Gap: no rug-pull detection (a manifest changing after install). |
-| ASI05 | Unexpected Code Execution | 🟡 | Code-pattern rules, command validation, MCP execution-capability warnings. |
-| ASI06 | Memory and Context Poisoning | 🟡 | Scans content before it enters context. No integrity checks on stored memory; vaulted memory is in **Hord**. |
-| ASI07 | Insecure Inter-Agent Communication | ⬜ | Not covered by Mund; verifiable message threads are in **Domere**. |
-| ASI08 | Cascading Failures | ⬜ | Not covered. |
-| ASI09 | Human-Agent Trust Exploitation | ⬜ | Not covered. |
-| ASI10 | Rogue Agents | ⬜ | Not covered. |
+| ID | Risk | Mund | Weave suite | Coverage and gaps |
+|----|------|:----:|:-----------:|-------------------|
+| ASI01 | Agent Goal Hijack | 🟡 | 🟡 | Mund: injection and MCP tool-poisoning checks. **Hundredmen** and **Domere** flag drift from the declared intent ([thread/drift.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/domere/src/thread/drift.ts)). Gap: drift is scored by word overlap, not meaning, so a reworded hijack can pass. |
+| ASI02 | Tool Misuse and Exploitation | 🟡 | ✅ | **Hundredmen** intercepts every MCP tool call: argument scanning, server reputation, intent analysis, then approve, block or hold for review ([interceptor.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen/src/interceptor.ts)). |
+| ASI03 | Identity and Privilege Abuse | 🟡 | ✅ | **Hord**: HMAC-signed capability tokens with expiry, revocation and a delegation-depth cap ([capability/token.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord/src/capability/token.ts)). **Domere**: signed handoff tokens bound to one agent, with expiry and revocation ([handoff/verification.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/domere/src/handoff/verification.ts)). Mund catches leaked credentials. |
+| ASI04 | Agentic Supply Chain Vulnerabilities | 🟡 | 🟡 | Mund: static MCP manifest scanning plus OSV CVEs. **Tollere**: package, container and extension supply chain. Gap: no rug-pull detection (a server's tools changing after install). |
+| ASI05 | Unexpected Code Execution | 🟡 | 🟡 | Mund: dangerous-code rules and command validation. **Hundredmen** can block or hold execution calls. Gap: **Hord**'s sandbox enforces a timeout and a temp working directory, but not memory, network or filesystem isolation ([sandbox/executor.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord/src/sandbox/executor.ts)). |
+| ASI06 | Memory and Context Poisoning | 🟡 | 🟡 | Mund scans content before it enters context, and **Hord** stores memory encrypted. Gap: stored memory isn't scanned on write or integrity-checked. |
+| ASI07 | Insecure Inter-Agent Communication | ⬜ | ✅ | **Domere**: handoffs carry a signed token with an intent hash, are bound to the receiving agent, and expire or can be revoked ([handoff/verification.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/domere/src/handoff/verification.ts)). |
+| ASI08 | Cascading Failures | ⬜ | 🟡 | **Witan**: checkpoints, transaction rollback and recovery plans ([recovery.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/witan/src/recovery.ts)). Gap: recovers after failure; no circuit breaker to contain one. |
+| ASI09 | Human-Agent Trust Exploitation | ⬜ | ⬜ | Not covered. |
+| ASI10 | Rogue Agents | ⬜ | 🟡 | **Hord**: signed, hash-chained attestations of agent actions ([attestation/service.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord/src/attestation/service.ts)). **Hundredmen** monitors and can block calls. Gap: no behavioral baseline to spot a rogue agent automatically. |
+
+**Totals:** Mund alone has 1 ✅ out of 20; the Weave suite has **8 ✅**. Next on the path to more green: canary tokens (LLM07), MCP rug-pull detection (ASI04), and real sandbox isolation in Hord (ASI05).
 
 ---
 
