@@ -9,7 +9,9 @@
 
 Mund (Old English: "protection, guardian") is a real-time security scanner for AI agent systems. It detects prompt injection, secrets, PII, dangerous code patterns, and data exfiltration attempts.
 
-**🆕 New in v0.3.0:** `mund-mcp scan` scans files on disk and outputs text, JSON, or **SARIF for GitHub code scanning**. It checks npm dependencies against **OSV.dev**, with an offline cache. Every scan gets a **0–100 risk score**, and the README adds [OWASP coverage tables](#️-owasp-coverage). This release also fixes 23 secret rules that had never matched anything.
+**🆕 New in v0.3.1:** [Canary tokens](#-canary-tokens-system-prompt-leakage) catch leaked system prompts, and [rug-pull detection](#rug-pull-detection) flags MCP servers whose tools change after you approved them.
+
+**v0.3.0:** `mund-mcp scan` scans files on disk and outputs text, JSON, or **SARIF for GitHub code scanning**. It checks npm dependencies against **OSV.dev**, with an offline cache. Every scan gets a **0–100 risk score**, and the README adds [OWASP coverage tables](#️-owasp-coverage). This release also fixes 23 secret rules that had never matched anything.
 
 **v0.2.0:** Automated threat intelligence with MITRE ATT&CK mapping and community feeds.
 
