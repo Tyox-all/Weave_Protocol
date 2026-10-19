@@ -80,7 +80,7 @@ A big stretch across offense, defense, and how releases ship. Highlights:
 - Removed `nodemailer`, which carried a high-severity CVE and was never actually wired up. The email notifier now says plainly that it isn't implemented instead of silently dropping alerts.
 - Mund has its **first real test suite**.
 
-#### 🧬 Mund parity floor (in review, [PR #74](https://github.com/Tyox-all/Weave_Protocol/pull/74))
+#### 🧬 Mund parity floor (merged; next npm release, [details below](#️-mund-parity-floor--plugs-into-github-code-scanning))
 - **`mund-mcp scan --format=sarif`**: findings appear as GitHub code-scanning alerts.
 - **Live dependency CVEs** from OSV.dev, with an offline cache. Unchecked packages are reported as unchecked, never as clean.
 - A **0–100 risk score** with a severity label on every scan.
@@ -89,7 +89,7 @@ A big stretch across offense, defense, and how releases ship. Highlights:
 
 #### 🔏 How releases ship
 - **npm Trusted Publishing (OIDC).** CI publishes without any long-lived npm token, and every release carries a Sigstore-signed provenance statement tying it to the exact commit and workflow.
-- **CycloneDX SBOM and Sigstore attestations** for every package in `publish-all` (lands with PR #74).
+- **CycloneDX SBOM and Sigstore attestations** for every package published by `publish-all`.
 - Hardened CI: Node 22 builds, npm pinned to 11, and GitHub Actions moved to Node 24 runtimes. `publish.yml` can now release any single package without republishing all 18.
 
 ---
