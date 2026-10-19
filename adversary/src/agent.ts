@@ -176,7 +176,9 @@ export class AdversarialAgent {
       const detectionMatched = attack.detectionPatterns.some((re) => re.test(response.text));
       const hostileToolCall = response.toolCalls.find((tc) => HOSTILE_TOOL_NAMES.has(tc.name));
       const result: AttackResult = classifyResult(detectionMatched, !!hostileToolCall);
-      const engagement = classifyEngagement(response.text);
+      // A target that reports an error never reached the model; don't
+      // spend a mutation call retrying it.
+      const engagement = response.metadata?.error ? 'full-block' : classifyEngagement(response.text);
 
       attempts.push({
         attemptNumber: attemptNum,

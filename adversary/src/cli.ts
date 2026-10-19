@@ -290,6 +290,35 @@ async function cmdDemo() {
     console.log(`    Model:           ${u.model}`);
   }
 
+  // ── API health: errored attacks are scored "blocked", so a run where
+  //    the API failed would otherwise look like a perfect defense. ──
+  if (isReal) {
+    const errors = target.getUsage().errors;
+    const firstError = scorecard.findings.find((f) => f.evidence.startsWith('(real-mode API error'))?.evidence;
+    if (errors > 0 && errors >= planned.length) {
+      redCallout(`All ${errors} target API calls failed — no score`, [
+        'Every attack errored before reaching the model, so the run measured',
+        'nothing. Errored attacks would otherwise be scored as "blocked".',
+        '',
+        ...(firstError ? [firstError.slice(0, 160)] : []),
+      ]);
+      process.exit(2);
+    }
+    if (errors > 0) {
+      yellowCallout(`${errors} of ${planned.length} attacks errored`, [
+        'Errored attacks are scored as "blocked", so the score below is',
+        'inflated. Fix the errors and re-run for a trustworthy result.',
+        ...(firstError ? ['', firstError.slice(0, 160)] : []),
+      ]);
+    }
+  }
+  if (isDynamic && mutator && mutator.getUsage().errors > 0) {
+    yellowCallout(`${mutator.getUsage().errors} mutation calls failed`, [
+      'Those attacks were not retried with a variant, so dynamic mode',
+      'under-tested them.',
+    ]);
+  }
+
   printSummary(scorecard);
 
   // ── Apply redaction if requested ──────────────────────────
