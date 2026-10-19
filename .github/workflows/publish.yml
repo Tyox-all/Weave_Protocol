@@ -19,6 +19,16 @@ on:
           - hundredmen
           - langchain
           - api
+          - tollere
+          - cli
+          - ward
+          - full
+          - browser
+          - adapter-claudecode
+          - adapter-antigravity
+          - adapter-msaf
+          - adversary
+          - agentsecbench
   push:
     tags:
       - 'v*'  # Triggers on tags like v1.0.0
