@@ -67,7 +67,7 @@ npm install @weave_protocol/full
 A big stretch across offense, defense, and how releases ship. Highlights:
 
 #### ⚔️ Adversary v0.3.0, on npm now
-[`@weave_protocol/adversary@0.3.0`](https://www.npmjs.com/package/@weave_protocol/adversary) is published with signed SLSA provenance.
+[`@weave_protocol/adversary@0.3.0`](https://www.npmjs.com/package/@weave_protocol/adversary) is published.
 
 - **Dynamic mutation (`--dynamic`).** When a target refuses but still engages with an attack, an LLM writes a variant with the same intent and Adversary retries it. In the first live run on Claude Haiku 5.5, **2 of 5 attacks landed only through a variant**, for **$0.003** total. That tests whether a safeguard generalizes or only caught the original wording.
 - **Real-model mode works again.** The previous default model, Claude 3.5 Haiku, was retired in Feb 2026, so every `--real` run had been failing. The default is now Claude Haiku 5.5, and the pricing table is corrected.
@@ -88,7 +88,7 @@ A big stretch across offense, defense, and how releases ship. Highlights:
 - **23 secret-detection rules that had never matched anything** (including AWS secret keys) are fixed.
 
 #### 🔏 How releases ship
-- **npm Trusted Publishing (OIDC).** CI publishes without any long-lived npm token, and every release carries a Sigstore-signed provenance statement tying it to the exact commit and workflow.
+- **npm Trusted Publishing (OIDC).** CI publishes without any long-lived npm token.
 - **CycloneDX SBOM and Sigstore attestations** for every package published by `publish-all`.
 - Hardened CI: Node 22 builds, npm pinned to 11, and GitHub Actions moved to Node 24 runtimes. `publish.yml` can now release any single package without republishing all 18.
 
@@ -136,7 +136,7 @@ npx @weave_protocol/adversary demo --real --dynamic
 - **Live dependency CVEs** from OSV.dev for npm lockfiles, with an on-disk cache for offline runs. Packages that couldn't be checked are reported as unchecked, never as clean
 - **0–100 risk score** with a severity label on every scan
 - **OWASP coverage tables** for the [LLM Top 10 (2025) and the Agentic Top 10](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund#%EF%B8%8F-owasp-coverage), marking honestly what's covered, partly covered, or not covered
-- **Release supply chain**: `publish-all` generates a CycloneDX SBOM per package and Sigstore-signed build-provenance and SBOM attestations for the exact tarball it publishes
+- **Release supply chain**: `publish-all` generates a CycloneDX SBOM per package and Sigstore-signed SBOM attestations for the exact tarball it publishes
 
 ```bash
 npx @weave_protocol/mund scan . --format=sarif -o mund.sarif
