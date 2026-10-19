@@ -5,13 +5,23 @@
 #
 # For yoxallismus: published with --tag beta to preserve the stub-as-latest
 # labeling strategy. All other packages published as latest.
+#
+# Supply-chain artifacts per package:
+#   - CycloneDX SBOM (npm sbom), uploaded as the `sbom-<package>` artifact
+#   - Sigstore-signed GitHub attestations for the exact tarball published:
+#     SLSA build provenance + the SBOM. Verify with:
+#       gh attestation verify <tarball> -R Tyox-all/Weave_Protocol
+#       gh attestation verify <tarball> -R Tyox-all/Weave_Protocol \
+#         --predicate-type https://cyclonedx.org/bom
+#   - npm registry provenance (--provenance), also Sigstore-backed
 name: Publish All Packages
 on:
   workflow_dispatch:
 
 permissions:
   contents: read
-  id-token: write
+  id-token: write       # Sigstore keyless signing (npm provenance + attestations)
+  attestations: write   # actions/attest-build-provenance, actions/attest-sbom
 
 jobs:
   publish-all:
@@ -42,19 +52,49 @@ jobs:
         working-directory: ${{ matrix.package }}
         run: npm run build
 
+      - name: Pack
+        id: pack
+        working-directory: ${{ matrix.package }}
+        run: echo "tarball=$(npm pack --json | jq -r '.[0].filename')" >> "$GITHUB_OUTPUT"
+
+      - name: Generate CycloneDX SBOM
+        working-directory: ${{ matrix.package }}
+        run: npm sbom --sbom-format cyclonedx --omit dev > sbom.cdx.json
+
+      - name: Attest build provenance (Sigstore)
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ${{ matrix.package }}/${{ steps.pack.outputs.tarball }}
+
+      - name: Attest SBOM (Sigstore)
+        uses: actions/attest-sbom@v2
+        with:
+          subject-path: ${{ matrix.package }}/${{ steps.pack.outputs.tarball }}
+          sbom-path: ${{ matrix.package }}/sbom.cdx.json
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.package }}
+          path: |
+            ${{ matrix.package }}/sbom.cdx.json
+            ${{ matrix.package }}/${{ steps.pack.outputs.tarball }}
+
+      # Publish the attested tarball itself so the attestation digest
+      # matches what lands on the registry byte-for-byte.
       - name: Publish (yoxallismus → @beta tag)
         if: matrix.package == 'yoxallismus'
         working-directory: ${{ matrix.package }}
-        run: npm publish --tag beta --provenance --access public
+        run: npm publish "./${{ steps.pack.outputs.tarball }}" --tag beta --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish (all other packages → latest)
         if: matrix.package != 'yoxallismus'
         working-directory: ${{ matrix.package }}
-        run: npm publish --provenance --access public
+        run: npm publish "./${{ steps.pack.outputs.tarball }}" --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Success
-        run: echo "✅ Published @weave_protocol/${{ matrix.package }} with provenance"
+        run: echo "✅ Published @weave_protocol/${{ matrix.package }} with provenance, SBOM and attestations"
