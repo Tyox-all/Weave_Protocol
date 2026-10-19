@@ -29,9 +29,7 @@ describe('AnalyzerEngine', () => {
     expect(issues.map(i => i.rule_id)).toEqual(['high', 'med', 'low']);
   });
 
-  // KNOWN BUG: analyzeAll uses `severityOrder[x] || 4`, and critical is 0
-  // (falsy), so critical issues sort alongside info instead of first.
-  it.fails('sorts critical issues first', async () => {
+  it('sorts critical issues first', async () => {
     const fake: IAnalyzer = {
       name: 'Fake', type: 'secret',
       analyze: async () => [issue('low', 'low'), issue('crit', 'critical'), issue('med', 'medium'), issue('high', 'high')],

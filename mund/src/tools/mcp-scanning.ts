@@ -17,6 +17,7 @@ import {
   type McpScanResult 
 } from '../analyzers/mcp-server-analyzer.js';
 import type { SecurityIssue } from '../types.js';
+import { computeRiskScore } from '../scoring.js';
 
 // ============================================================================
 // Tool Schemas
@@ -76,6 +77,8 @@ export function registerMcpScanningTools(server: McpServer): void {
         const capabilities = McpServerAnalyzer.analyzeCapabilities(parsed);
         const riskLevel = McpServerAnalyzer.getRiskLevel(capabilities);
 
+        const risk = computeRiskScore(issues);
+
         // Count by severity
         const bySeverity = {
           critical: issues.filter(i => i.severity === 'critical').length,
@@ -103,6 +106,8 @@ export function registerMcpScanningTools(server: McpServer): void {
           scanned_at: new Date().toISOString(),
           source,
           issue_count: issues.length,
+          risk_score: risk.score,
+          risk_label: risk.label,
           by_severity: bySeverity,
           recommendation,
           capabilities,

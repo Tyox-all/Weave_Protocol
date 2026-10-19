@@ -18,6 +18,9 @@ import type {
 } from '../types.js';
 import { AnalyzerEngine } from '../analyzers/index.js';
 import { NotificationHub } from '../notifications/index.js';
+import { computeRiskScore } from '../scoring.js';
+import { toSarif } from '../sarif.js';
+import { getVersion } from '../version.js';
 import { MAX_SNIPPET_LENGTH, DEFAULT_EVENTS_LIMIT, MAX_EVENTS_PER_QUERY } from '../constants.js';
 
 // ============================================================================
@@ -34,7 +37,11 @@ const ScanContentInputSchema = z.object({
     .describe('Type of content being scanned'),
   tool_name: z.string().optional().describe('Name of the tool that generated this content'),
   agent_id: z.string().optional().describe('ID of the agent making this request'),
-  session_id: z.string().optional().describe('Current session ID')
+  session_id: z.string().optional().describe('Current session ID'),
+  format: z.enum(['json', 'sarif']).default('json')
+    .describe('Response format: json (default) or sarif (SARIF 2.1.0 for code-scanning tools)'),
+  file_path: z.string().optional()
+    .describe('Path to report in SARIF locations (defaults to "content")')
 }).strict();
 
 const CheckUrlInputSchema = z.object({
@@ -103,11 +110,15 @@ Args:
   - tool_name (string): Name of tool that generated this content (optional)
   - agent_id (string): ID of the requesting agent (optional)
   - session_id (string): Current session ID (optional)
+  - format ('json' | 'sarif'): Response format (default: 'json')
+  - file_path (string): Path to use in SARIF locations (optional)
 
 Returns:
   JSON object with:
   - scan_id: Unique identifier for this scan
   - issues_found: Number of security issues detected
+  - risk_score: 0-100 aggregate risk
+  - risk_label: none | low | medium | high | critical
   - blocked: Whether the content was blocked (if block_mode is enabled)
   - issues: Array of detected issues with severity, type, and suggestions
   - scan_duration_ms: Time taken to complete the scan
@@ -173,10 +184,21 @@ Examples:
         await notificationHub.notify(event);
       }
 
+      if (params.format === 'sarif') {
+        const sarif = toSarif([{ uri: params.file_path ?? 'content', issues }], { toolVersion: getVersion() });
+        return {
+          content: [{ type: 'text', text: JSON.stringify(sarif, null, 2) }],
+          structuredContent: sarif as Record<string, unknown>
+        };
+      }
+
       // Format response
+      const risk = computeRiskScore(issues);
       const response = {
         scan_id: scanResult.id,
         issues_found: issues.length,
+        risk_score: risk.score,
+        risk_label: risk.label,
         blocked: shouldBlock,
         issues: issues.map(i => ({
           rule_id: i.rule_id,

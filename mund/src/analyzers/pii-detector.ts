@@ -9,6 +9,7 @@ import {
   type IAnalyzer,
   type IssueLocation 
 } from '../types.js';
+import { compileRulePattern } from './regex.js';
 
 export class PIIDetector implements IAnalyzer {
   name = 'PIIDetector';
@@ -22,7 +23,7 @@ export class PIIDetector implements IAnalyzer {
       if (!rule.pattern) continue;
 
       try {
-        const regex = new RegExp(rule.pattern, 'g');
+        const regex = compileRulePattern(rule.pattern, 'g');
         let match: RegExpExecArray | null;
 
         while ((match = regex.exec(content)) !== null) {

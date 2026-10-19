@@ -15,6 +15,8 @@ import { createStorage } from './storage/index.js';
 import { AnalyzerEngine } from './analyzers/index.js';
 import { NotificationHub } from './notifications/index.js';
 import { registerAllTools } from './tools/index.js';
+import { runScanCli } from './cli/scan.js';
+import { getVersion } from './version.js';
 
 // Threat Intelligence imports
 import { threatIntel } from './threat-intel-manager.js';
@@ -154,7 +156,7 @@ async function createMundServer(config: MundConfig): Promise<McpServer> {
   // Create MCP server
   const server = new McpServer({
     name: 'mund-mcp-server',
-    version: '0.2.0'
+    version: getVersion()
   });
 
   // Initialize storage
@@ -218,7 +220,7 @@ async function runHTTP(config: MundConfig): Promise<void> {
 
   // Health check endpoint
   app.get('/health', (_req, res) => {
-    res.json({ status: 'ok', version: '0.2.0' });
+    res.json({ status: 'ok', version: getVersion() });
   });
 
   // Threat intel status endpoint
@@ -254,7 +256,8 @@ function printHelp(): void {
 Mund - The Guardian Protocol
 MCP-based security monitoring for agentic AI systems
 
-Usage: mund-mcp [options]
+Usage: mund-mcp [options]          Run the MCP server
+       mund-mcp scan [paths...]    Scan files (see: mund-mcp scan --help)
 
 Options:
   --help, -h          Show this help message
@@ -314,6 +317,10 @@ For more information, visit: https://github.com/Tyox-all/Weave_Protocol
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
 
+  if (args[0] === 'scan') {
+    process.exit(await runScanCli(args.slice(1)));
+  }
+
   // Parse CLI arguments
   if (args.includes('--help') || args.includes('-h')) {
     printHelp();
@@ -321,7 +328,7 @@ async function main(): Promise<void> {
   }
 
   if (args.includes('--version') || args.includes('-v')) {
-    console.log('0.2.0');
+    console.log(getVersion());
     process.exit(0);
   }
 

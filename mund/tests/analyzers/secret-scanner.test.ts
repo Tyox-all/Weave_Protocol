@@ -55,7 +55,7 @@ describe('SecretScanner', () => {
 
   it('skips a rule with an invalid regex instead of throwing', async () => {
     const rules: DetectionRule[] = [
-      { id: 'bad', name: 'Bad', description: '', type: 'secret', pattern: '(?i)foo', severity: 'high', action: 'alert', enabled: true },
+      { id: 'bad', name: 'Bad', description: '', type: 'secret', pattern: '(foo', severity: 'high', action: 'alert', enabled: true },
       { id: 'good', name: 'Good', description: '', type: 'secret', pattern: 'foo', severity: 'high', action: 'alert', enabled: true },
     ];
     const issues = await scanner.analyze('foo', rules);

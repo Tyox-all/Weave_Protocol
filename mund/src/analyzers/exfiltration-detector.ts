@@ -10,6 +10,7 @@ import {
   type IssueLocation 
 } from '../types.js';
 import { DANGEROUS_URL_PATTERNS } from '../constants.js';
+import { compileRulePattern } from './regex.js';
 
 export class ExfiltrationDetector implements IAnalyzer {
   name = 'ExfiltrationDetector';
@@ -24,7 +25,7 @@ export class ExfiltrationDetector implements IAnalyzer {
       if (!rule.pattern) continue;
 
       try {
-        const regex = new RegExp(rule.pattern, 'gi');
+        const regex = compileRulePattern(rule.pattern, 'gi');
         let match: RegExpExecArray | null;
 
         while ((match = regex.exec(content)) !== null) {

@@ -57,7 +57,7 @@ export class AnalyzerEngine {
     // Sort by severity (critical first)
     const severityOrder = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
     allIssues.sort((a, b) => 
-      (severityOrder[a.severity] || 4) - (severityOrder[b.severity] || 4)
+      (severityOrder[a.severity] ?? 4) - (severityOrder[b.severity] ?? 4)
     );
 
     return allIssues;
