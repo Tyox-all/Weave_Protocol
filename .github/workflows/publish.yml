@@ -76,12 +76,20 @@ jobs:
         working-directory: ${{ steps.pkg.outputs.dir }}
         run: npm run build
 
-      # Publish with provenance attestation
+      # Publish via npm Trusted Publishing (OIDC, needs id-token: write).
+      # No NODE_AUTH_TOKEN on purpose: if a token is configured, npm uses
+      # it instead of OIDC. Each package needs a Trusted Publisher entry on
+      # npmjs.com (Settings -> Trusted Publisher -> GitHub Actions,
+      # repo Tyox-all/Weave_Protocol, workflow publish.yml).
       - name: Publish to npm
         working-directory: ${{ steps.pkg.outputs.dir }}
-        run: npm publish --provenance --access public
+        run: |
+          npm --version
+          npm publish --provenance --access public --loglevel verbose
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # setup-node exports a placeholder token when registry-url is set;
+          # clear it so npm falls through to OIDC trusted publishing.
+          NODE_AUTH_TOKEN: ''
 
       - name: Published
         run: |
