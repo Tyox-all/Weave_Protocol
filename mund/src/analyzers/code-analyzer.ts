@@ -9,6 +9,7 @@ import {
   type IAnalyzer,
   type IssueLocation 
 } from '../types.js';
+import { compileRulePattern } from './regex.js';
 
 export class CodeAnalyzer implements IAnalyzer {
   name = 'CodeAnalyzer';
@@ -22,7 +23,7 @@ export class CodeAnalyzer implements IAnalyzer {
       if (!rule.pattern) continue;
 
       try {
-        const regex = new RegExp(rule.pattern, 'gm');
+        const regex = compileRulePattern(rule.pattern, 'gm');
         let match: RegExpExecArray | null;
 
         while ((match = regex.exec(content)) !== null) {

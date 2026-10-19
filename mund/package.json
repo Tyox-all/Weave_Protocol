@@ -12,7 +12,7 @@
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "lint": "eslint src/**/*.ts",
-    "test": "vitest",
+    "test": "vitest run",
     "prepublishOnly": "npm run build"
   },
   "keywords": "[\"mcp\",\"mcp-server\",\"ai\",\"ai-security\",\"llm-security\",\"agent-security\",\"security\",\"prompt-injection\",\"secret-detection\",\"pii-detection\",\"claude\",\"openai\",\"compliance\",\"scanning\",\"guardian\"]",

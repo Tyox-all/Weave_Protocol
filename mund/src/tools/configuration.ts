@@ -12,6 +12,7 @@ import type {
   Severity,
   ActionType
 } from '../types.js';
+import { compileRulePattern } from '../analyzers/regex.js';
 
 // ============================================================================
 // Input Schemas
@@ -131,7 +132,7 @@ Returns:
     async (params) => {
       // Validate the regex pattern
       try {
-        new RegExp(params.pattern);
+        compileRulePattern(params.pattern);
       } catch {
         return {
           content: [{ type: 'text', text: JSON.stringify({

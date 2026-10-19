@@ -80,7 +80,7 @@ A big stretch across offense, defense, and how releases ship. Highlights:
 - Removed `nodemailer`, which carried a high-severity CVE and was never actually wired up. The email notifier now says plainly that it isn't implemented instead of silently dropping alerts.
 - Mund has its **first real test suite**.
 
-#### 🧬 Mund parity floor (in review, [PR #74](https://github.com/Tyox-all/Weave_Protocol/pull/74))
+#### 🧬 Mund parity floor (merged; next npm release, [details below](#️-mund-parity-floor--plugs-into-github-code-scanning))
 - **`mund-mcp scan --format=sarif`**: findings appear as GitHub code-scanning alerts.
 - **Live dependency CVEs** from OSV.dev, with an offline cache. Unchecked packages are reported as unchecked, never as clean.
 - A **0–100 risk score** with a severity label on every scan.
@@ -89,7 +89,7 @@ A big stretch across offense, defense, and how releases ship. Highlights:
 
 #### 🔏 How releases ship
 - **npm Trusted Publishing (OIDC).** CI publishes without any long-lived npm token.
-- **CycloneDX SBOM and Sigstore attestations** for every package in `publish-all` (lands with PR #74).
+- **CycloneDX SBOM and Sigstore attestations** for every package published by `publish-all`.
 - Hardened CI: Node 22 builds, npm pinned to 11, and GitHub Actions moved to Node 24 runtimes. `publish.yml` can now release any single package without republishing all 18.
 
 ---
@@ -125,6 +125,24 @@ npx @weave_protocol/adversary demo --real --dynamic
 **Why this matters:** every model release, every WARD policy change, every adapter update can be re-benchmarked against the same locked suite. Did your score regress? `agentsecbench compare` will show you. Does your WARD policy actually defend anything? `--measure-ward-delta` will tell you. This is how a category gets defined.
 
 **[See Adversary README →](https://github.com/Tyox-all/Weave_Protocol/blob/main/adversary)** · **[See AgentSecBench README →](https://github.com/Tyox-all/Weave_Protocol/blob/main/agentsecbench)** · **[See METHODOLOGY.md →](https://github.com/Tyox-all/Weave_Protocol/blob/main/agentsecbench/METHODOLOGY.md)**
+
+---
+
+### 🛡️ Mund parity floor — plugs into GitHub code scanning
+
+[`@weave_protocol/mund`](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund) now runs as a file scanner as well as an MCP server:
+
+- **`mund-mcp scan --format=sarif`**: SARIF 2.1.0 output with GitHub `security-severity`, so findings show up as code-scanning alerts in any repo
+- **Live dependency CVEs** from OSV.dev for npm lockfiles, with an on-disk cache for offline runs. Packages that couldn't be checked are reported as unchecked, never as clean
+- **0–100 risk score** with a severity label on every scan
+- **OWASP coverage tables** for the [LLM Top 10 (2025) and the Agentic Top 10](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund#%EF%B8%8F-owasp-coverage), marking honestly what's covered, partly covered, or not covered
+- **Release supply chain**: `publish-all` generates a CycloneDX SBOM per package and Sigstore-signed SBOM attestations for the exact tarball it publishes
+
+```bash
+npx @weave_protocol/mund scan . --format=sarif -o mund.sarif
+```
+
+This work also fixed 23 secret rules that had never matched anything, because they used PCRE `(?i)` syntax that JavaScript rejects.
 
 ---
 
@@ -261,7 +279,7 @@ The packages that keep your agent within policy: declare it, enforce it across e
 | [🛡️ @weave_protocol/adapter-msaf](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-msaf) | 0.1.0 | **Microsoft Agent Framework adapter** — middleware-based WARD enforcement |
 | [🌐 @weave_protocol/browser](https://github.com/Tyox-all/Weave_Protocol/blob/main/browser) | 0.1.0 | **Browser agent security** — runtime IPI scanner (33 patterns) for headless agents |
 | [🔍 @weave_protocol/hundredmen](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen) | 1.1.0 | **MCP proxy** — intercept, scan, gate tool calls; enforces WARD.md as first gate |
-| [🛡️ @weave_protocol/mund](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund) | 0.2.2 | **Scanner** — secrets, PII, injection, MCP vetting, threat intel |
+| [🛡️ @weave_protocol/mund](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund) | 0.2.2 | **Scanner** — secrets, PII, injection, MCP vetting, OSV dependency CVEs, SARIF output, threat intel |
 | [🏛️ @weave_protocol/hord](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord) | 0.1.6 | **Vault** — encrypted storage with Yoxallismus dual-tumbler cipher |
 | [🔐 @weave_protocol/yoxallismus](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus) | **0.1.0-beta.0** | **Post-quantum cipher** — X25519 + ML-KEM-768 hybrid KEM · AES-256-GCM · HKDF · ratcheting · ⚠️ NOT AUDITED |
 | [⚖️ @weave_protocol/domere](https://github.com/Tyox-all/Weave_Protocol/blob/main/domere) | 1.3.4 | **Judge** — compliance (PCI-DSS, ISO27001, SOC2, HIPAA, GDPR, CCPA), blockchain anchoring |
@@ -460,6 +478,8 @@ WARD resolution (all adapters): `$WEAVE_WARD_PATH` → `<cwd>/WARD.md` → `<cwd
 ### 🛡️ Mund — The Guardian
 
 Real-time security scanning for AI agents. Catches secrets (30+ patterns), PII, prompt injection, dangerous code, malicious MCP server descriptions. Threat intel auto-updates from community feeds.
+
+Also runs as a CLI: `mund-mcp scan` scans files on disk and checks npm dependencies against OSV.dev. It prints a 0–100 risk score and can output text, JSON, or SARIF for GitHub code scanning. See the [OWASP coverage tables](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund#%EF%B8%8F-owasp-coverage).
 
 📄 **Skill:** [`security-scanning`](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund/SKILL.md)
 
@@ -667,6 +687,15 @@ flowchart TD
         ADV --> ASB
     end
 
+    subgraph EXTERNAL["🌍 External integrations"]
+        direction LR
+        OSV["📚 OSV.dev<br/><i>dependency CVEs</i>"]
+        GHCS["📋 GitHub code scanning<br/><i>SARIF alerts</i>"]
+    end
+
+    OSV -.->|advisories, cached offline| MUND
+    MUND -.->|SARIF 2.1.0| GHCS
+
     AGENT -.->|attacked by| OFFENSIVE
     OFFENSIVE -.->|scorecards inform| WARD
 
@@ -675,12 +704,14 @@ flowchart TD
     classDef core fill:#312e81,stroke:#818cf8,stroke-width:1px,color:#fff
     classDef ops fill:#1e3a8a,stroke:#60a5fa,stroke-width:1px,color:#fff
     classDef offensive fill:#7f1d1d,stroke:#ef4444,stroke-width:2px,color:#fff
+    classDef external fill:#374151,stroke:#9ca3af,stroke-width:1px,color:#fff
 
     class CLI,WARD policy
     class HM,CC,AG,MSAF,BR enforcer
     class MUND,HORD,DOMERE,WITAN core
     class TOLLERE,API,LC ops
     class ADV,ASB,MUT offensive
+    class OSV,GHCS external
 ```
 
 The diagram shows the loop. Defense surfaces enforce the policy at runtime. The offensive engine attacks the agent. Scorecards feed back into WARD as new evidence — what attacks land, which need new policy domains, what regressed since the last release. **The loop is what makes the moat.**
@@ -773,6 +804,7 @@ done
 - [x] **AgentSecBench** (`@weave_protocol/agentsecbench` v0.1.0) — standardized benchmark, tier grades A–F
 - [x] **Witan autonomous spending caps** (`@weave_protocol/witan` v1.1.0) — per-window budgets on LLM cost + tokens + tool calls, gated by block / approval / notify
 - [x] **Yoxallismus v2** (`@weave_protocol/yoxallismus@0.1.0-beta.0`) — **open beta shipped**. PQ-hybrid KEM (X25519 + ML-KEM-768 / NIST FIPS 203) + AEAD + ratcheting. Unaudited by design; validated by public use, forks, and responsible disclosure. v0.2+ adds DH double-ratchet, cascade cipher, threshold encryption; v0.3+ adds ZK/VDF/QRNG; v0.4+ adds FHE. See [yoxallismus/README.md](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus).
+- [x] **Mund parity floor**: SARIF output (`mund-mcp scan --format=sarif`), OSV.dev live CVE lookups with offline fallback, 0–100 risk score, CycloneDX SBOM + Sigstore attestations in `publish-all`, OWASP LLM + Agentic coverage tables
 
 ---
 

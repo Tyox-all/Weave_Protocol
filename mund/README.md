@@ -21,6 +21,7 @@ Mund (Old English: "protection, guardian") is a real-time security scanner for A
 | **Code Patterns** | Shell injection, SQL injection, dangerous chmod, curl\|bash, eval |
 | **Exfiltration** | Suspicious URLs, DNS tunneling, base64-encoded data blocks |
 | **MCP Servers** | Malicious tool descriptions, typosquatting, dangerous permissions, embedded secrets |
+| **Dependencies** | Known-vulnerable npm packages in `package-lock.json`, via OSV.dev with an offline cache |
 | **Threat Intel** | 20+ built-in patterns, MITRE ATT&CK mapping, auto-updating community feeds |
 
 ## 📦 Installation
@@ -64,6 +65,59 @@ if (issues.some(i => i.severity === 'critical')) {
   console.error('Critical security issues detected!');
 }
 ```
+
+### Scan Files and Upload to GitHub Code Scanning
+
+`mund-mcp scan` checks files on disk, plus the npm dependencies in any
+`package-lock.json` (looked up on OSV.dev). Every report includes a
+0–100 risk score and a severity label.
+
+```bash
+npx @weave_protocol/mund scan .                                  # human-readable
+npx @weave_protocol/mund scan src --format=json                  # machine-readable
+npx @weave_protocol/mund scan . --format=sarif -o mund.sarif     # SARIF 2.1.0
+```
+
+| Option | Meaning |
+|--------|---------|
+| `--format=text\|json\|sarif` | Output format (default `text`) |
+| `--output=FILE`, `-o` | Write to a file instead of stdout |
+| `--fail-on=LEVEL` | Exit 1 if any finding is at or above `critical`, `high` (default), `medium`, `low`; `none` never fails |
+| `--no-osv` | Skip dependency lookups |
+| `--offline` | Use only the local OSV cache (also `MUND_OFFLINE=1`; cache path `MUND_OSV_CACHE`) |
+
+When OSV.dev can't be reached, results come from the cache of the last
+successful lookup and the report says so. Packages that were never
+looked up are listed as **unchecked**, never as clean.
+
+**GitHub Actions:**
+
+```yaml
+permissions:
+  security-events: write
+steps:
+  - uses: actions/checkout@v4
+  - run: npx -y @weave_protocol/mund scan . --format=sarif -o mund.sarif --fail-on=none
+  - uses: github/codeql-action/upload-sarif@v3
+    with:
+      sarif_file: mund.sarif
+      category: mund
+```
+
+**Risk score:** each finding takes a share of the remaining headroom
+(critical 80%, high 40%, medium 15%, low 5%), so the score climbs quickly
+for severe findings and never goes past 100.
+
+| Score | Label |
+|-------|-------|
+| 80–100 | critical |
+| 40–79 | high |
+| 15–39 | medium |
+| 1–14 | low |
+| 0 | none |
+
+`mund_scan_content` and `mund_scan_mcp_server` return `risk_score` and
+`risk_label`, and `mund_scan_content` also accepts `format: "sarif"`.
 
 ---
 
@@ -333,6 +387,46 @@ Output: {
   by_type: { secret: 34, pii: 28, injection: 15, ... }
 }
 ```
+
+---
+
+## 🛡️ OWASP Coverage
+
+What Mund itself detects today, mapped to the OWASP lists. ✅ = covered,
+🟡 = partly covered (the gap is noted), ⬜ = not covered by Mund. Detection
+is pattern-based: Mund catches known shapes of an attack, not every
+variant. Some gaps are handled by other Weave Protocol packages, noted
+where relevant.
+
+### OWASP Top 10 for LLM Applications (2025)
+
+| ID | Risk | Mund | What covers it / gap |
+|----|------|------|----------------------|
+| LLM01 | Prompt Injection | 🟡 | 4 injection patterns (instruction override, jailbreak, system-prompt extraction, role-play); MCP tool/schema/resource description injection; hidden Unicode. Novel or paraphrased injections can slip past regexes. |
+| LLM02 | Sensitive Information Disclosure | ✅ | 31 secret rules (cloud, AI-provider, VCS, payment, DB URLs, private keys), 5 PII rules, exfiltration patterns (data POSTs, DNS tunneling, encoded blobs). |
+| LLM03 | Supply Chain | 🟡 | OSV.dev CVE lookups for npm lockfiles; MCP server typosquatting, suspicious repos/URIs, unpinned versions. No model/dataset provenance; npm only. |
+| LLM04 | Data and Model Poisoning | ⬜ | Out of scope for a content scanner. |
+| LLM05 | Improper Output Handling | 🟡 | Code-pattern rules (shell/SQL injection, `rm -rf`, `curl \| bash`, base64 → exec, disabled TLS verification); `mund_validate_command`, `mund_check_url` on model output. |
+| LLM06 | Excessive Agency | 🟡 | `mund_audit_mcp_permissions` and capability analysis (execution, filesystem, network, env, DB); excessive-tool warnings. Detection only; runtime call gating is in **Hundredmen**. |
+| LLM07 | System Prompt Leakage | 🟡 | Flags system-prompt extraction attempts and secrets embedded in prompts. Does not detect a leaked prompt in output. |
+| LLM08 | Vector and Embedding Weaknesses | ⬜ | Not covered. |
+| LLM09 | Misinformation | ⬜ | Out of scope. |
+| LLM10 | Unbounded Consumption | ⬜ | Not covered. |
+
+### OWASP Top 10 for Agentic Applications
+
+| ID | Risk | Mund | What covers it / gap |
+|----|------|------|----------------------|
+| ASI01 | Agent Goal Hijack | 🟡 | Injection patterns plus MCP tool-poisoning checks on descriptions, schemas and resources. Intent-drift detection is in **Domere**. |
+| ASI02 | Tool Misuse and Exploitation | 🟡 | `mund_validate_command`, `mund_check_url`, MCP capability audit. Per-call approve/block is in **Hundredmen**. |
+| ASI03 | Identity and Privilege Abuse | 🟡 | Catches leaked credentials and over-privileged MCP servers. No identity or delegation model; capability delegation is in **Hord**. |
+| ASI04 | Agentic Supply Chain Vulnerabilities | 🟡 | Mund's strongest area: static MCP manifest scanning (tool poisoning, hidden Unicode, typosquatting, embedded secrets, suspicious sources) plus OSV dependency CVEs. Gap: no rug-pull detection (a manifest changing after install). |
+| ASI05 | Unexpected Code Execution | 🟡 | Code-pattern rules, command validation, MCP execution-capability warnings. |
+| ASI06 | Memory and Context Poisoning | 🟡 | Scans content before it enters context. No integrity checks on stored memory; vaulted memory is in **Hord**. |
+| ASI07 | Insecure Inter-Agent Communication | ⬜ | Not covered by Mund; verifiable message threads are in **Domere**. |
+| ASI08 | Cascading Failures | ⬜ | Not covered. |
+| ASI09 | Human-Agent Trust Exploitation | ⬜ | Not covered. |
+| ASI10 | Rogue Agents | ⬜ | Not covered. |
 
 ---
 

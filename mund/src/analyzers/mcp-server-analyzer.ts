@@ -61,6 +61,8 @@ export interface McpScanResult {
   scanned_at: string;
   source?: string;
   issue_count: number;
+  risk_score: number;
+  risk_label: 'none' | 'low' | 'medium' | 'high' | 'critical';
   by_severity: {
     critical: number;
     high: number;

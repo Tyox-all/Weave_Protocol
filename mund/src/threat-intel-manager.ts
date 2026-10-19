@@ -16,6 +16,7 @@ import type {
   ThreatScanResult,
   Severity,
 } from './threat-intel-types.js';
+import { compileRulePattern } from './analyzers/regex.js';
 
 // ============================================================================
 // Built-in Threat Patterns
@@ -759,7 +760,7 @@ export class ThreatIntelManager {
 
       // Check pattern
       try {
-        const regex = new RegExp(pattern.pattern, 'gi');
+        const regex = compileRulePattern(pattern.pattern, 'gi');
         let match;
         while ((match = regex.exec(content)) !== null) {
           matches.push({

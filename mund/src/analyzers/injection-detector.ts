@@ -9,6 +9,7 @@ import {
   type IAnalyzer,
   type IssueLocation 
 } from '../types.js';
+import { compileRulePattern } from './regex.js';
 
 export class InjectionDetector implements IAnalyzer {
   name = 'InjectionDetector';
@@ -25,7 +26,7 @@ export class InjectionDetector implements IAnalyzer {
       if (!rule.pattern) continue;
 
       try {
-        const regex = new RegExp(rule.pattern, 'gi');
+        const regex = compileRulePattern(rule.pattern, 'gi');
         let match: RegExpExecArray | null;
 
         while ((match = regex.exec(normalizedContent)) !== null) {
