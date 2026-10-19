@@ -279,7 +279,7 @@ The packages that keep your agent within policy: declare it, enforce it across e
 | [🛡️ @weave_protocol/adapter-msaf](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-msaf) | 0.1.0 | **Microsoft Agent Framework adapter** — middleware-based WARD enforcement |
 | [🌐 @weave_protocol/browser](https://github.com/Tyox-all/Weave_Protocol/blob/main/browser) | 0.1.0 | **Browser agent security** — runtime IPI scanner (33 patterns) for headless agents |
 | [🔍 @weave_protocol/hundredmen](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen) | 1.1.0 | **MCP proxy** — intercept, scan, gate tool calls; enforces WARD.md as first gate |
-| [🛡️ @weave_protocol/mund](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund) | 0.2.2 | **Scanner** — secrets, PII, injection, MCP vetting, OSV dependency CVEs, SARIF output, threat intel |
+| [🛡️ @weave_protocol/mund](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund) | 0.3.0 | **Scanner** — secrets, PII, injection, MCP vetting, OSV dependency CVEs, SARIF output, threat intel |
 | [🏛️ @weave_protocol/hord](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord) | 0.1.6 | **Vault** — encrypted storage with Yoxallismus dual-tumbler cipher |
 | [🔐 @weave_protocol/yoxallismus](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus) | **0.1.0-beta.0** | **Post-quantum cipher** — X25519 + ML-KEM-768 hybrid KEM · AES-256-GCM · HKDF · ratcheting · ⚠️ NOT AUDITED |
 | [⚖️ @weave_protocol/domere](https://github.com/Tyox-all/Weave_Protocol/blob/main/domere) | 1.3.4 | **Judge** — compliance (PCI-DSS, ISO27001, SOC2, HIPAA, GDPR, CCPA), blockchain anchoring |
