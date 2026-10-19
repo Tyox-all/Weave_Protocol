@@ -79,6 +79,14 @@ test('dynamic mode does not mutate after a full block', async () => {
   assert.equal(f.result, 'blocked');
 });
 
+test('dynamic mode does not mutate when the target reports an error', async () => {
+  const { target } = scriptedTarget([{ text: '(real-mode API error: 400 credit balance too low)', toolCalls: [], turns: 0, metadata: { error: '400' } }]);
+  const mutator = fakeMutator();
+  const f = await new AdversarialAgent(target, { ward: NO_WARD, mutator }).runOne(attack, { dynamic: true });
+  assert.equal(mutator.calls(), 0);
+  assert.equal(f.attempts[0].engagement, 'full-block');
+});
+
 test('dynamic mode stops at maxRetries', async () => {
   const { target, seen } = scriptedTarget([{ text: refusal, toolCalls: [], turns: 1 }]);
   const mutator = fakeMutator(2);

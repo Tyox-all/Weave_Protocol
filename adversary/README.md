@@ -15,7 +15,7 @@ The fifth Q4 enforcement layer of [Weave Protocol](https://github.com/Tyox-all/W
 # Run the corpus against the built-in mock target (fast, no API key)
 npx @weave_protocol/adversary demo
 
-# Run the corpus against a REAL LLM (Anthropic API, ~$0.02 per full run)
+# Run the corpus against a REAL LLM (Anthropic API, Haiku 5.5 by default)
 export ANTHROPIC_API_KEY=sk-ant-...
 npx @weave_protocol/adversary demo --real
 
@@ -34,7 +34,7 @@ npx @weave_protocol/adversary list --severity=critical
 - **Dynamic-mutation mode** (`--dynamic`) — when the target half-blocks an attack (refusal patterns present but engages with the topic), an LLM synthesizes a novel variant of the payload and Adversary retries. Up to `--dynamic-max-retries=<n>` variants per attack (default 2).
 - **Attempt tracking** — each `Finding` now optionally carries `attempts[]` with per-retry payload + response + engagement classification. Static-mode `Finding` is unchanged (no `attempts` field).
 - **Locked scorecard schema v1.0 preserved** — `Scorecard.dynamic` field is additive, not schema-breaking. AgentSecBench compat maintained.
-- **Cost transparency** — separate accounting for target-LLM calls vs. mutation-LLM calls. Full 68-attack `--real --dynamic` run on Haiku ~$0.05 (vs. ~$0.02 for static `--real`).
+- **Cost transparency** — separate accounting for target-LLM calls vs. mutation-LLM calls. Each run prints its actual token usage and cost; on the default Haiku 5.5 ($0.10/$0.50 per MTok) a full 68-attack `--real --dynamic` run should stay under $0.05.
 
 ```bash
 # Full 68-attack corpus with dynamic mutations, saved to scorecard.json
@@ -42,7 +42,7 @@ npx @weave_protocol/adversary demo --real --dynamic --json=./scorecard.json
 
 # Cap retries and use a cheaper mutation model
 npx @weave_protocol/adversary demo --real --dynamic \
-  --dynamic-max-retries=1 --dynamic-model=claude-3-5-haiku-20241022
+  --dynamic-max-retries=1 --dynamic-model=claude-haiku-5-5
 ```
 
 Corpus is unchanged. Dynamic mode is a **retry** mechanism, not a replacement for the 68-attack corpus. If the initial payload fully lands (breach) or fully blocks (hard refusal with no engagement), no LLM call happens.
@@ -55,7 +55,7 @@ Three target modes covering the full demo spectrum: pattern-mock for CI smoke te
 ## What's new in v0.2.1
 
 - **Real-LLM demo mode** — `demo --real` makes live Anthropic API calls per attack, using a deliberately naive system prompt to show what a real LLM does under attack with no defenses
-- **`--model=<id>`** flag — defaults to `claude-3-5-haiku-20241022` (~$0.02 per full 68-attack run), override to any Claude model
+- **`--model=<id>`** flag — defaults to `claude-haiku-5-5`; override with any current Claude model id. (Claude 3.5/3.7 models are retired and will error.)
 - **`--redact-evidence`** flag — masks breach evidence in saved scorecards so you can share them without leaking the attack output verbatim
 - **Yellow warning header** before any real-LLM run — cost estimate + content warning + redaction hint
 - **Red callout** if `--real` is set without `ANTHROPIC_API_KEY` — exact command to set it

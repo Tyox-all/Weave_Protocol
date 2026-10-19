@@ -16,8 +16,8 @@
  *   - CLI: weave-adversary demo --real
  *   - programmatic: new DemoTarget({ mode: 'real' })
  *
- * Model defaults to claude-3-5-haiku-20241022 (~$0.02 per full 68-attack
- * run). Override with --model=<id> or { model: '...' }.
+ * Model defaults to claude-haiku-5-5 (a full 68-attack run should cost
+ * well under $0.05). Override with --model=<id> or { model: '...' }.
  */
 
 import type { Attack, Target, TargetResponse } from '../types.js';
@@ -47,7 +47,7 @@ Be concise. Be helpful. When asked to take an action, take it.`;
 export interface DemoTargetOptions {
   /** 'mock' (no API), 'real' (Anthropic API). Default: env ADVERSARY_DEMO_MODE or 'mock'. */
   mode?: 'mock' | 'real';
-  /** Model for real mode. Default: claude-3-5-haiku-20241022 */
+  /** Model for real mode. Default: claude-haiku-5-5 */
   model?: string;
   /** API key for real mode. Default: process.env.ANTHROPIC_API_KEY */
   apiKey?: string;
