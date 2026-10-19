@@ -1,0 +1,11 @@
+{
+  "description": "Server renamed after approval",
+  "status": "changed",
+  "changes": [
+    {
+      "kind": "server_renamed",
+      "tool": "*",
+      "severity": "high"
+    }
+  ]
+}

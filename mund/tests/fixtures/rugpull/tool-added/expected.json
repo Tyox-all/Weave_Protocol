@@ -1,0 +1,11 @@
+{
+  "description": "A new tool appears",
+  "status": "changed",
+  "changes": [
+    {
+      "kind": "tool_added",
+      "tool": "list_notes",
+      "severity": "medium"
+    }
+  ]
+}

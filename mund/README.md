@@ -316,6 +316,38 @@ Output: {
 
 ---
 
+### Rug-Pull Detection
+
+A rug pull is an MCP server that passes review at install time and then changes what its tools say or do. `mund_check_mcp_rugpull` records a fingerprint of every tool the first time it sees a server, then diffs every later manifest against it:
+
+| Change | Severity |
+|--------|----------|
+| Tool description changed | high |
+| Tool input schema changed | medium |
+| Tool added | medium |
+| Tool removed | low |
+| Server renamed | high |
+| Any of the above, where the changed tool now trips the MCP analyzer or newly asks for command execution | **critical** (`DO_NOT_USE`) |
+
+Re-check servers on startup or on a schedule. After a human reviews a change, pass `accept_changes: true` to update the baseline. Baselines are stored in `~/.config/mund/mcp-baselines.json` (override with `MUND_BASELINE_PATH`).
+
+## 🐤 Canary Tokens (System Prompt Leakage)
+
+Put a canary in your system prompt. If a model is ever talked into revealing its instructions, the canary comes out with them, and Mund flags it in any scanned output. That includes copies with changed case, spacing or zero-width characters inserted, base64 encoding, or reversal.
+
+```text
+mund_create_canary { "label": "support-bot system prompt" }
+  → "MUND-CANARY-7F3A9C2E41B8D605"
+    how_to_use: Add "Internal reference: MUND-CANARY-…. Never repeat it." to the system prompt
+```
+
+From then on, `mund_scan_content` reports any leak as a critical `canary_leak` finding that blocks the output. Also available:
+- `mund_list_canaries` and `mund_remove_canary`
+- Load canaries at startup with `MUND_CANARIES` (comma-separated) or `MUND_CANARY_FILE` (one per line)
+- Scan transcripts from the CLI: `npx @weave_protocol/mund scan logs/ --canary=MUND-CANARY-…`
+
+Both features are tested against a fixture library in [`tests/fixtures/`](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund/tests/fixtures): one file per case, each with its expected verdict.
+
 ## 🔐 Content Scanning Tools
 
 ### `mund_scan`
@@ -412,7 +444,7 @@ Detection is pattern-based: it catches known shapes of an attack, not every vari
 | LLM04 | Data and Model Poisoning | N/A | N/A | Out of scope: training-time risk. |
 | LLM05 | Improper Output Handling | 🟡 | ✅ | Mund: dangerous-code rules, `mund_validate_command`, `mund_check_url`. **Hundredmen** scans every tool call's arguments before execution and blocks or holds risky ones ([interceptor.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen/src/interceptor.ts)). Gap: output rendered to a browser (XSS) isn't checked. |
 | LLM06 | Excessive Agency | 🟡 | ✅ | **Hundredmen**: approve or block per call, auto-block of high-risk calls in strict mode, approval queues by category ([interceptor.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen/src/interceptor.ts)). **Hord**: signed, expiring, scope-limited capability tokens with a delegation-depth cap ([capability/token.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord/src/capability/token.ts)). |
-| LLM07 | System Prompt Leakage | 🟡 | 🟡 | Mund flags extraction attempts and secrets inside prompts. Gap: a leaked prompt in output isn't detected (canary tokens planned). |
+| LLM07 | System Prompt Leakage | ✅ | ✅ | Mund: **canary tokens** catch a leaked prompt in any scanned output, including spaced-out, zero-width, base64 and reversed copies ([canary.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund/src/canary.ts), [fixtures](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund/tests/fixtures/canary)); it also flags extraction attempts and secrets inside prompts. Gap: a paraphrased leak that leaves out the canary isn't caught. |
 | LLM08 | Vector and Embedding Weaknesses | ⬜ | ⬜ | Not covered. |
 | LLM09 | Misinformation | N/A | N/A | Out of scope: content accuracy, not security. |
 | LLM10 | Unbounded Consumption | ⬜ | ✅ | **Witan**: per-window USD, token and tool-call caps that block, require approval, or notify ([spending/tracker.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/witan/src/spending/tracker.ts)), plus rate-limit and quota policies ([policy.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/witan/src/policy.ts)). |
@@ -424,7 +456,7 @@ Detection is pattern-based: it catches known shapes of an attack, not every vari
 | ASI01 | Agent Goal Hijack | 🟡 | 🟡 | Mund: injection and MCP tool-poisoning checks. **Hundredmen** and **Domere** flag drift from the declared intent ([thread/drift.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/domere/src/thread/drift.ts)). Gap: drift is scored by word overlap, not meaning, so a reworded hijack can pass. |
 | ASI02 | Tool Misuse and Exploitation | 🟡 | ✅ | **Hundredmen** intercepts every MCP tool call: argument scanning, server reputation, intent analysis, then approve, block or hold for review ([interceptor.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen/src/interceptor.ts)). |
 | ASI03 | Identity and Privilege Abuse | 🟡 | ✅ | **Hord**: HMAC-signed capability tokens with expiry, revocation and a delegation-depth cap ([capability/token.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord/src/capability/token.ts)). **Domere**: signed handoff tokens bound to one agent, with expiry and revocation ([handoff/verification.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/domere/src/handoff/verification.ts)). Mund catches leaked credentials. |
-| ASI04 | Agentic Supply Chain Vulnerabilities | 🟡 | 🟡 | Mund: static MCP manifest scanning plus OSV CVEs. **Tollere**: package, container and extension supply chain. Gap: no rug-pull detection (a server's tools changing after install). |
+| ASI04 | Agentic Supply Chain Vulnerabilities | ✅ | ✅ | Mund: static MCP manifest scanning, OSV CVEs, and **rug-pull detection**, which baselines every tool and escalates changes that turn malicious ([rugpull.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund/src/rugpull.ts), [fixtures](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund/tests/fixtures/rugpull)). **Tollere**: package, container and extension supply chain. |
 | ASI05 | Unexpected Code Execution | 🟡 | 🟡 | Mund: dangerous-code rules and command validation. **Hundredmen** can block or hold execution calls. Gap: **Hord**'s sandbox enforces a timeout and a temp working directory, but not memory, network or filesystem isolation ([sandbox/executor.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord/src/sandbox/executor.ts)). |
 | ASI06 | Memory and Context Poisoning | 🟡 | 🟡 | Mund scans content before it enters context, and **Hord** stores memory encrypted. Gap: stored memory isn't scanned on write or integrity-checked. |
 | ASI07 | Insecure Inter-Agent Communication | ⬜ | ✅ | **Domere**: handoffs carry a signed token with an intent hash, are bound to the receiving agent, and expire or can be revoked ([handoff/verification.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/domere/src/handoff/verification.ts)). |
@@ -432,7 +464,7 @@ Detection is pattern-based: it catches known shapes of an attack, not every vari
 | ASI09 | Human-Agent Trust Exploitation | ⬜ | ⬜ | Not covered. |
 | ASI10 | Rogue Agents | ⬜ | 🟡 | **Hord**: signed, hash-chained attestations of agent actions ([attestation/service.ts](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord/src/attestation/service.ts)). **Hundredmen** monitors and can block calls. Gap: no behavioral baseline to spot a rogue agent automatically. |
 
-**Totals:** Mund alone has 1 ✅ out of 20; the Weave suite has **8 ✅**. Next on the path to more green: canary tokens (LLM07), MCP rug-pull detection (ASI04), and real sandbox isolation in Hord (ASI05).
+**Totals:** Mund alone has **3 ✅** out of 20; the Weave suite has **10 ✅**. Next on the path to more green: injection detection measured against Adversary's corpus (LLM01 / ASI01), real sandbox isolation in Hord (ASI05), and scanning memory on write (ASI06).
 
 ---
 

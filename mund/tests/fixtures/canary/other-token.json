@@ -1,0 +1,8 @@
+{
+  "description": "A different canary-shaped string must not fire",
+  "canary": "MUND-CANARY-7F3A9C2E41B8D605",
+  "content": "Reference MUND-CANARY-0000000000000000 is unrelated.",
+  "expected": {
+    "detected": false
+  }
+}

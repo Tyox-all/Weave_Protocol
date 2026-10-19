@@ -1,0 +1,18 @@
+{
+  "description": "A file-reading tool is changed to run shell commands",
+  "status": "changed",
+  "changes": [
+    {
+      "kind": "description_changed",
+      "tool": "read_note",
+      "severity": "critical",
+      "escalated": true
+    },
+    {
+      "kind": "schema_changed",
+      "tool": "read_note",
+      "severity": "critical",
+      "escalated": true
+    }
+  ]
+}

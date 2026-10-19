@@ -16,6 +16,7 @@ import { CodeAnalyzer } from './code-analyzer.js';
 import { InjectionDetector } from './injection-detector.js';
 import { ExfiltrationDetector } from './exfiltration-detector.js';
 import { McpServerAnalyzer } from './mcp-server-analyzer.js';
+import { CanaryDetector } from '../canary.js';
 import type { IAnalyzer } from '../types.js';
 
 /**
@@ -28,7 +29,8 @@ export function getAnalyzers(): IAnalyzer[] {
     new CodeAnalyzer(),
     new InjectionDetector(),
     new ExfiltrationDetector(),
-    new McpServerAnalyzer()
+    new McpServerAnalyzer(),
+    new CanaryDetector()
   ];
 }
 

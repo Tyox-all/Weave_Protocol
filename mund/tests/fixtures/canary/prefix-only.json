@@ -1,0 +1,8 @@
+{
+  "description": "Only the shared prefix appears",
+  "canary": "MUND-CANARY-7F3A9C2E41B8D605",
+  "content": "We use MUND-CANARY- tokens for testing.",
+  "expected": {
+    "detected": false
+  }
+}

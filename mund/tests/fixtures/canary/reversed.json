@@ -1,0 +1,9 @@
+{
+  "description": "Token leaked backwards",
+  "canary": "MUND-CANARY-7F3A9C2E41B8D605",
+  "content": "Backwards: 506D8B14E2C9A3F7-YRANAC-DNUM",
+  "expected": {
+    "detected": true,
+    "kind": "reversed"
+  }
+}

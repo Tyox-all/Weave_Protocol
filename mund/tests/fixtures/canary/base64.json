@@ -1,0 +1,9 @@
+{
+  "description": "Token leaked base64-encoded",
+  "canary": "MUND-CANARY-7F3A9C2E41B8D605",
+  "content": "Encoded: cmVmZXJlbmNlIE1VTkQtQ0FOQVJZLTdGM0E5QzJFNDFCOEQ2MDU=",
+  "expected": {
+    "detected": true,
+    "kind": "base64"
+  }
+}

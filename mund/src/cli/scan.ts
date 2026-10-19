@@ -16,6 +16,7 @@ import { computeRiskScore, type RiskScore } from '../scoring.js';
 import { toSarif, type SarifTarget } from '../sarif.js';
 import { OsvClient, parseNpmLockfile, advisoriesToIssues, type OsvSource } from '../osv.js';
 import { getVersion } from '../version.js';
+import { canaries, loadCanariesFromEnv } from '../canary.js';
 
 export type OutputFormat = 'text' | 'json' | 'sarif';
 type FailOn = Severity | 'none';
@@ -27,6 +28,7 @@ export interface ScanCliOptions {
   failOn: FailOn;
   osv: boolean;
   offline: boolean;
+  canaries: string[];
 }
 
 export interface FileReport extends SarifTarget {
@@ -58,6 +60,8 @@ Options:
                      (critical, high [default], medium, low, none)
   --no-osv           Skip dependency vulnerability lookups
   --offline          Use only the local OSV cache (also: MUND_OFFLINE=1)
+  --canary=TOKEN     Flag any file containing this canary token (repeatable;
+                     also MUND_CANARIES / MUND_CANARY_FILE)
 
 Examples:
   mund-mcp scan .
@@ -65,7 +69,7 @@ Examples:
 `;
 
 export function parseScanArgs(args: string[]): ScanCliOptions {
-  const opts: ScanCliOptions = { paths: [], format: 'text', failOn: 'high', osv: true, offline: false };
+  const opts: ScanCliOptions = { paths: [], format: 'text', failOn: 'high', osv: true, offline: false, canaries: [] };
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -99,6 +103,9 @@ export function parseScanArgs(args: string[]): ScanCliOptions {
       case '--offline':
         opts.offline = true;
         break;
+      case '--canary':
+        opts.canaries.push(value());
+        break;
       default:
         if (flag.startsWith('-')) throw new Error(`Unknown option ${flag}`);
         opts.paths.push(arg);
@@ -111,6 +118,8 @@ export function parseScanArgs(args: string[]): ScanCliOptions {
 
 export async function runScan(opts: ScanCliOptions, osvClient?: OsvClient): Promise<ScanReport> {
   const cwd = process.cwd();
+  loadCanariesFromEnv();
+  for (const token of opts.canaries) canaries.register(token, 'cli');
   const engine = new AnalyzerEngine();
   const files: FileReport[] = [];
   const lockfiles: string[] = [];

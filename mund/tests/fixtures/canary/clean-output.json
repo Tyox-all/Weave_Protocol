@@ -1,0 +1,8 @@
+{
+  "description": "Normal answer with no leak",
+  "canary": "MUND-CANARY-7F3A9C2E41B8D605",
+  "content": "The capital of France is Paris.",
+  "expected": {
+    "detected": false
+  }
+}
