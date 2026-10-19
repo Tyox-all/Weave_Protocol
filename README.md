@@ -75,12 +75,13 @@ A big stretch across offense, defense, and how releases ship. Highlights:
 - **Scorecard fixes.** Findings record the agent's tool calls again, `timeToExploit` means conversation turns again, and `--redact-evidence` also scrubs the per-attempt evidence it used to leak.
 - **First test suite for Adversary**, covering retry logic, v0.2 compatibility, and redaction.
 
-#### 🛡️ Mund security hardening (merged; next npm release)
+#### 🛡️ Mund security hardening (in Mund 0.3.0)
 - Patched `express`, `qs` and `proxy-addr`, and updated the MCP SDK to 1.32.1. `npm audit` now reports **0 production vulnerabilities**.
 - Removed `nodemailer`, which carried a high-severity CVE and was never actually wired up. The email notifier now says plainly that it isn't implemented instead of silently dropping alerts.
 - Mund has its **first real test suite**.
 
-#### 🧬 Mund parity floor (merged; next npm release, [details below](#️-mund-parity-floor--plugs-into-github-code-scanning))
+#### 🧬 Mund 0.3.0, on npm now ([details below](#️-mund-parity-floor--plugs-into-github-code-scanning))
+[`@weave_protocol/mund@0.3.0`](https://www.npmjs.com/package/@weave_protocol/mund) ships the parity floor:
 - **`mund-mcp scan --format=sarif`**: findings appear as GitHub code-scanning alerts.
 - **Live dependency CVEs** from OSV.dev, with an offline cache. Unchecked packages are reported as unchecked, never as clean.
 - A **0–100 risk score** with a severity label on every scan.
@@ -130,7 +131,7 @@ npx @weave_protocol/adversary demo --real --dynamic
 
 ### 🛡️ Mund parity floor — plugs into GitHub code scanning
 
-[`@weave_protocol/mund`](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund) now runs as a file scanner as well as an MCP server:
+[`@weave_protocol/mund@0.3.0`](https://www.npmjs.com/package/@weave_protocol/mund) now runs as a file scanner as well as an MCP server:
 
 - **`mund-mcp scan --format=sarif`**: SARIF 2.1.0 output with GitHub `security-severity`, so findings show up as code-scanning alerts in any repo
 - **Live dependency CVEs** from OSV.dev for npm lockfiles, with an on-disk cache for offline runs. Packages that couldn't be checked are reported as unchecked, never as clean
