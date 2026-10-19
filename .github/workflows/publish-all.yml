@@ -3,6 +3,10 @@
 # Manual trigger only. Requires each package's version to be bumped in
 # package.json before running (npm publish errors if the version already exists).
 #
+# Auth: npm Trusted Publishing (OIDC). Each package needs a Trusted
+# Publisher on npmjs.com pointing at this workflow (publish-all.yml) with
+# "Allow npm publish" checked; packages without one fail their job.
+#
 # For yoxallismus: published with --tag beta to preserve the stub-as-latest
 # labeling strategy. All other packages published as latest.
 name: Publish All Packages
@@ -47,14 +51,18 @@ jobs:
         working-directory: ${{ matrix.package }}
         run: npm publish --tag beta --provenance --access public
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # Trusted Publishing (OIDC): clear setup-node's placeholder token
+          # so npm doesn't send it instead of exchanging an OIDC token.
+          NODE_AUTH_TOKEN: ''
 
       - name: Publish (all other packages → latest)
         if: matrix.package != 'yoxallismus'
         working-directory: ${{ matrix.package }}
         run: npm publish --provenance --access public
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # Trusted Publishing (OIDC): clear setup-node's placeholder token
+          # so npm doesn't send it instead of exchanging an OIDC token.
+          NODE_AUTH_TOKEN: ''
 
       - name: Success
         run: echo "✅ Published @weave_protocol/${{ matrix.package }} with provenance"
