@@ -19,6 +19,16 @@ on:
           - hundredmen
           - langchain
           - api
+          - tollere
+          - cli
+          - ward
+          - full
+          - browser
+          - adapter-claudecode
+          - adapter-antigravity
+          - adapter-msaf
+          - adversary
+          - agentsecbench
   push:
     tags:
       - 'v*'  # Triggers on tags like v1.0.0
@@ -38,12 +48,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
       # Ensure latest npm (provenance requires npm 9.5.0+)
       - name: Update npm
-        run: npm install -g npm@latest
+        run: npm install -g npm@11
 
       # Determine which package to publish
       - name: Set package directory

@@ -18,6 +18,8 @@ import { ALL_ATTACKS, ATTACKS_BY_CATEGORY, CORPUS_STATS } from './attacks/index.
 import { renderMarkdownScorecard, renderJsonScorecard } from './scorecard/index.js';
 import { loadWardPolicy } from './ward.js';
 import { DEFAULT_MODEL, MODEL_PRICING } from './anthropic.js';
+import { DynamicAttackMutator } from './dynamic.js';
+import { redactScorecard } from './scorecard/redact.js';
 import type { AttackCategory, AttackSeverity, RunOptions, Scorecard } from './types.js';
 
 const args = process.argv.slice(2);
@@ -86,15 +88,19 @@ function showHelp() {
   console.log('    --per-category=<n>                      Cap attacks per category at n');
   console.log('    --browser=<chromium|firefox|webkit>     Playwright browser (default: chromium)');
   console.log('    --headed                                Show the browser window');
-  console.log('    --real                                  Use real LLM for demo (NEW v0.2.1)');
-  console.log('    --model=<model-id>                      LLM model id (default: ' + DEFAULT_MODEL + ')');
-  console.log('    --redact-evidence                       Replace breach evidence with [redacted] in scorecard (NEW v0.2.1)');
+  console.log('    --real                                  Use real LLM for demo (v0.2.1)');
+  console.log('    --model=<model-id>                      Target LLM model id (default: ' + DEFAULT_MODEL + ')');
+  console.log('    --redact-evidence                       Replace breach evidence with [redacted] in scorecard (v0.2.1)');
+  console.log('    --dynamic                               NEW v0.3: LLM-driven mutations when target half-blocks');
+  console.log('    --dynamic-model=<model-id>              Mutation LLM (default: same as --model)');
+  console.log('    --dynamic-max-retries=<n>               Variant retries per half-blocked attack (default: 2)');
   console.log('');
   console.log('  \x1b[1mExamples:\x1b[0m');
   console.log('    weave-adversary demo');
   console.log('    weave-adversary demo --real --per-category=3 --json=./run.json');
+  console.log('    weave-adversary demo --real --dynamic --json=./run.json');
   console.log('    weave-adversary demo --real --redact-evidence --md=./run.md');
-  console.log('    weave-adversary attack --url=https://my-agent.com/run');
+  console.log('    weave-adversary attack --url=https://my-agent.com/run --dynamic');
   console.log('');
   console.log('  \x1b[1mCorpus:\x1b[0m  ' + CORPUS_STATS.total + ' attacks');
   for (const [cat, n] of Object.entries(CORPUS_STATS.byCategory)) {
@@ -122,27 +128,8 @@ function buildRunOptionsFromFlags(flags: Record<string, string | boolean>): RunO
   if (flags['stop-on-breach']) o.stopOnBreach = true;
   if (flags['no-ward-aware']) o.wardAware = false;
   if (flags['per-category']) o.perCategoryLimit = parseInt(String(flags['per-category']), 10);
+  if (flags.dynamic) o.dynamic = true;
   return o;
-}
-
-/**
- * Mutate findings in-place to redact evidence strings. Used when
- * --redact-evidence is set so sensitive LLM output doesn't leak into
- * shareable scorecards.
- */
-function redactScorecard(scorecard: Scorecard): Scorecard {
-  for (const f of scorecard.findings) {
-    if (f.result !== 'blocked') {
-      f.evidence = '[redacted — re-run without --redact-evidence to see]';
-    }
-    if (f.toolCallsMade) {
-      f.toolCallsMade = f.toolCallsMade.map((tc) => ({
-        name: tc.name,
-        arguments: { _redacted: true },
-      }));
-    }
-  }
-  return scorecard;
 }
 
 async function cmdDemo() {
@@ -151,8 +138,13 @@ async function cmdDemo() {
 
   // ── Determine mode ────────────────────────────────────────
   const isReal = !!flags.real || process.env.ADVERSARY_DEMO_MODE === 'real';
+  const isDynamic = !!flags.dynamic;
   const apiKey = process.env.ANTHROPIC_API_KEY;
   const model = (flags.model as string) || DEFAULT_MODEL;
+  const dynamicModel = (flags['dynamic-model'] as string) || model;
+  const dynamicMaxRetries = flags['dynamic-max-retries']
+    ? parseInt(String(flags['dynamic-max-retries']), 10)
+    : 2;
 
   // ── Pre-flight check for --real ───────────────────────────
   if (isReal && !apiKey) {
@@ -173,6 +165,23 @@ async function cmdDemo() {
     process.exit(1);
   }
 
+  // ── Pre-flight check for --dynamic ────────────────────────
+  if (isDynamic && !apiKey) {
+    redCallout('ANTHROPIC_API_KEY required for --dynamic', [
+      'Dynamic mode uses an LLM to synthesize attack variants when the',
+      'target half-blocks. That requires an Anthropic API key.',
+      '',
+      'Set it:',
+      '',
+      '  export ANTHROPIC_API_KEY=sk-ant-...',
+      '',
+      'Then re-run:',
+      '',
+      '  weave-adversary demo --dynamic',
+    ]);
+    process.exit(1);
+  }
+
   // ── Cost warning for real mode ────────────────────────────
   if (isReal) {
     const pricing = MODEL_PRICING[model];
@@ -186,6 +195,26 @@ async function cmdDemo() {
       '                       (jailbreaks produce drug/weapon/exfil instructions)',
       '',
       'To redact breach evidence from the scorecard, add --redact-evidence.',
+    ]);
+  }
+
+  // ── Cost warning for dynamic mode ─────────────────────────
+  if (isDynamic) {
+    const pricing = MODEL_PRICING[dynamicModel];
+    const mutationCostPerRun = pricing
+      ? `~$${((pricing.input * 0.06 + pricing.output * 0.04) * dynamicMaxRetries).toFixed(3)}`
+      : 'unknown';
+    yellowCallout('Dynamic-mutation mode', [
+      'When the target half-blocks an attack, an LLM will synthesize a',
+      'novel variant of the payload and Adversary will retry.',
+      '',
+      `  Mutation model:      ${dynamicModel}`,
+      `  Max retries/attack:  ${dynamicMaxRetries}`,
+      `  Est. mutation cost:  ${mutationCostPerRun} on top of any --real target cost`,
+      '',
+      'Corpus is unchanged. Dynamic mode is a RETRY mechanism, not a',
+      'replacement for the 68-attack corpus. Per-attempt detail lives in',
+      'Finding.attempts[]; scorecard schema v1.0 preserved.',
     ]);
   }
 
@@ -206,13 +235,29 @@ async function cmdDemo() {
     process.exit(1);
   }
 
-  const agent = new AdversarialAgent(target, { ward });
+  // ── Instantiate mutator if dynamic mode ───────────────────
+  let mutator: DynamicAttackMutator | undefined;
+  if (isDynamic) {
+    try {
+      mutator = new DynamicAttackMutator({
+        apiKey,
+        model: dynamicModel,
+        maxRetries: dynamicMaxRetries,
+      });
+    } catch (err) {
+      redCallout('Dynamic mutator failed to initialize', [(err as Error).message]);
+      process.exit(1);
+    }
+  }
+
+  const agent = new AdversarialAgent(target, { ward, mutator });
   const runOpts = buildRunOptionsFromFlags(flags);
-  // Real mode: extend the per-attack timeout for live API latency
-  if (isReal) runOpts.attackTimeoutMs = runOpts.attackTimeoutMs ?? 45_000;
+  // Real/dynamic mode: extend the per-attack timeout for live API latency
+  if (isReal || isDynamic) runOpts.attackTimeoutMs = runOpts.attackTimeoutMs ?? 45_000;
   const planned = agent.selectAttacks(runOpts);
 
   console.log(`  Running \x1b[1m${planned.length}\x1b[0m attacks against \x1b[1m${target.identifier}\x1b[0m...`);
+  if (isDynamic) console.log(`  Dynamic mode enabled — up to ${dynamicMaxRetries} variant retries per half-blocked attack.`);
   console.log('');
 
   const t0 = Date.now();
@@ -221,16 +266,57 @@ async function cmdDemo() {
 
   console.log(`  Done in ${elapsed}s.`);
 
-  // ── Real mode: print usage and cost ───────────────────────
+  // ── Real mode: print target usage and cost ────────────────
   if (isReal) {
     const u = target.getUsage();
     console.log('');
-    console.log('  \x1b[1mAPI usage:\x1b[0m');
+    console.log('  \x1b[1mTarget API usage:\x1b[0m');
     console.log(`    Calls:           ${u.apiCalls}${u.errors > 0 ? ` (${u.errors} errors)` : ''}`);
     console.log(`    Input tokens:    ${u.inputTokens.toLocaleString()}`);
     console.log(`    Output tokens:   ${u.outputTokens.toLocaleString()}`);
     console.log(`    Estimated cost:  $${u.estimatedCostUSD.toFixed(4)}`);
     console.log(`    Model:           ${u.model}`);
+  }
+
+  // ── Dynamic mode: print mutation usage and cost ───────────
+  if (isDynamic && mutator) {
+    const u = mutator.getUsage();
+    console.log('');
+    console.log('  \x1b[1mMutation API usage:\x1b[0m');
+    console.log(`    Variants:        ${u.mutations}${u.errors > 0 ? ` (${u.errors} errors)` : ''}`);
+    console.log(`    Input tokens:    ${u.inputTokens.toLocaleString()}`);
+    console.log(`    Output tokens:   ${u.outputTokens.toLocaleString()}`);
+    console.log(`    Estimated cost:  $${u.estimatedCostUSD.toFixed(4)}`);
+    console.log(`    Model:           ${u.model}`);
+  }
+
+  // ── API health: errored attacks are scored "blocked", so a run where
+  //    the API failed would otherwise look like a perfect defense. ──
+  if (isReal) {
+    const errors = target.getUsage().errors;
+    const firstError = scorecard.findings.find((f) => f.evidence.startsWith('(real-mode API error'))?.evidence;
+    if (errors > 0 && errors >= planned.length) {
+      redCallout(`All ${errors} target API calls failed — no score`, [
+        'Every attack errored before reaching the model, so the run measured',
+        'nothing. Errored attacks would otherwise be scored as "blocked".',
+        '',
+        ...(firstError ? [firstError.slice(0, 160)] : []),
+      ]);
+      process.exit(2);
+    }
+    if (errors > 0) {
+      yellowCallout(`${errors} of ${planned.length} attacks errored`, [
+        'Errored attacks are scored as "blocked", so the score below is',
+        'inflated. Fix the errors and re-run for a trustworthy result.',
+        ...(firstError ? ['', firstError.slice(0, 160)] : []),
+      ]);
+    }
+  }
+  if (isDynamic && mutator && mutator.getUsage().errors > 0) {
+    yellowCallout(`${mutator.getUsage().errors} mutation calls failed`, [
+      'Those attacks were not retried with a variant, so dynamic mode',
+      'under-tested them.',
+    ]);
   }
 
   printSummary(scorecard);
@@ -287,14 +373,47 @@ async function cmdAttack() {
   console.log(`  Browser: ${browserType}${headless ? '' : ' (headed)'}`);
   console.log('');
 
+  // ── Dynamic mode (also supported for attack command) ──────
+  const isDynamic = !!flags.dynamic;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const dynamicModel = (flags['dynamic-model'] as string) || DEFAULT_MODEL;
+  const dynamicMaxRetries = flags['dynamic-max-retries']
+    ? parseInt(String(flags['dynamic-max-retries']), 10)
+    : 2;
+
+  if (isDynamic && !apiKey) {
+    redCallout('ANTHROPIC_API_KEY required for --dynamic', [
+      'Dynamic mode uses an LLM to synthesize attack variants.',
+      'Set the env var:',
+      '',
+      '  export ANTHROPIC_API_KEY=sk-ant-...',
+    ]);
+    process.exit(1);
+  }
+
+  let mutator: DynamicAttackMutator | undefined;
+  if (isDynamic) {
+    try {
+      mutator = new DynamicAttackMutator({
+        apiKey,
+        model: dynamicModel,
+        maxRetries: dynamicMaxRetries,
+      });
+    } catch (err) {
+      redCallout('Dynamic mutator failed', [(err as Error).message]);
+      process.exit(1);
+    }
+  }
+
   const target = new PlaywrightTarget({ agentEndpoint: url, executable, browserType, headless });
   const ward = loadWardPolicy();
-  const agent = new AdversarialAgent(target, { ward });
+  const agent = new AdversarialAgent(target, { ward, mutator });
   const runOpts = buildRunOptionsFromFlags(flags);
   runOpts.attackTimeoutMs = runOpts.attackTimeoutMs ?? 60_000;
 
   const planned = agent.selectAttacks(runOpts);
   console.log(`  Running \x1b[1m${planned.length}\x1b[0m attacks. This may take several minutes.`);
+  if (isDynamic) console.log(`  Dynamic mode enabled — up to ${dynamicMaxRetries} variant retries per half-blocked attack.`);
   console.log('');
 
   let scorecard: Scorecard;
@@ -310,6 +429,17 @@ async function cmdAttack() {
       '  • Executable not found or threw at startup',
     ]);
     process.exit(2);
+  }
+
+  if (isDynamic && mutator) {
+    const u = mutator.getUsage();
+    console.log('');
+    console.log('  \x1b[1mMutation API usage:\x1b[0m');
+    console.log(`    Variants:        ${u.mutations}${u.errors > 0 ? ` (${u.errors} errors)` : ''}`);
+    console.log(`    Input tokens:    ${u.inputTokens.toLocaleString()}`);
+    console.log(`    Output tokens:   ${u.outputTokens.toLocaleString()}`);
+    console.log(`    Estimated cost:  $${u.estimatedCostUSD.toFixed(4)}`);
+    console.log(`    Model:           ${u.model}`);
   }
 
   printSummary(scorecard);

@@ -68,7 +68,7 @@ The first agent security platform to publish its own offensive engine. Two new p
 
 | Package | Role | Version |
 |---|---|---|
-| [`@weave_protocol/adversary`](https://github.com/Tyox-all/Weave_Protocol/blob/main/adversary) | Offensive engine — 68 documented + novel attacks across 5 categories (IPI, tool-coercion, jailbreak, extraction, goal-corruption). Real Playwright browser target with 4 breach signal channels. Real-LLM demo mode via Anthropic API. | ✅ **v0.2.1** |
+| [`@weave_protocol/adversary`](https://github.com/Tyox-all/Weave_Protocol/blob/main/adversary) | Offensive engine — 68 documented + novel attacks across 5 categories (IPI, tool-coercion, jailbreak, extraction, goal-corruption). Real Playwright browser target with 4 breach signal channels. Real-LLM demo mode via Anthropic API. **New in v0.3:** LLM-driven dynamic mutation retries half-blocked attacks with fresh variants. | ✅ **v0.3.0** |
 | [`@weave_protocol/agentsecbench`](https://github.com/Tyox-all/Weave_Protocol/blob/main/agentsecbench) | Standardized benchmark — locked attack suites, tier grades A–F, paste-ready reports, side-by-side comparison | ✅ v0.1.0 |
 
 **Trophy attacks** — documented in-the-wild incidents reproduced in the corpus:
@@ -84,6 +84,9 @@ npx @weave_protocol/agentsecbench run
 
 # Or run the full 68-attack corpus directly
 npx @weave_protocol/adversary demo
+
+# v0.3: when a real model half-blocks an attack, generate a variant and retry
+npx @weave_protocol/adversary demo --real --dynamic
 ```
 
 **Why this matters:** every model release, every WARD policy change, every adapter update can be re-benchmarked against the same locked suite. Did your score regress? `agentsecbench compare` will show you. Does your WARD policy actually defend anything? `--measure-ward-delta` will tell you. This is how a category gets defined.
@@ -256,7 +259,7 @@ The red team. We attack what we defend.
 
 | Package | Version | Description |
 |---|---|---|
-| [⚔️ @weave_protocol/adversary](https://github.com/Tyox-all/Weave_Protocol/blob/main/adversary) | **0.2.1** | **Offensive engine** — 68 attacks · real Playwright browser target · real-LLM demo mode · WARD-aware attack selection |
+| [⚔️ @weave_protocol/adversary](https://github.com/Tyox-all/Weave_Protocol/blob/main/adversary) | **0.3.0** | **Offensive engine** — 68 attacks · LLM dynamic mutation · real Playwright browser target · real-LLM demo mode · WARD-aware attack selection |
 | [🎯 @weave_protocol/agentsecbench](https://github.com/Tyox-all/Weave_Protocol/blob/main/agentsecbench) | **0.1.0** | **Standardized benchmark** — locked suites (ASB-Browser-v1), tier grading A–F, trophy attacks, WARD delta, paste-ready reports |
 
 ### 🔧 Operations & Integrations (5 packages, plus 1 PyPI)
@@ -541,11 +544,14 @@ Supply chain security for AI-generated code. Catches malicious packages, Docker 
 
 ### ⚔️ Adversary — The Red Team
 
-Where the other packages defend, Adversary attacks. 68 documented and novel attacks across 5 categories: IPI (33), tool-use coercion (15), jailbreak (10), extraction (5), goal corruption (5). Three targets: pattern-mock (CI smoke tests, no API), real-LLM (`--real` via Anthropic API, ~$0.02/full run), and real-browser (Playwright with four breach signal channels: network, form, DOM, console). WARD-aware attack selection prioritizes probes against capabilities your policy claims to enforce.
+Where the other packages defend, Adversary attacks. 68 documented and novel attacks across 5 categories: IPI (33), tool-use coercion (15), jailbreak (10), extraction (5), goal corruption (5). Three targets: pattern-mock (CI smoke tests, no API), real-LLM (`--real` via Anthropic API, Claude Haiku 5.5 by default), and real-browser (Playwright with four breach signal channels: network, form, DOM, console). WARD-aware attack selection prioritizes probes against capabilities your policy claims to enforce.
+
+**v0.3 dynamic mutation (`--dynamic`):** when a target refuses but still engages with an attack (a half-block), an LLM writes a variant with the same intent and Adversary retries, up to `--dynamic-max-retries` (default 2). This tests whether a safeguard generalizes or only caught the original wording. The corpus stays fixed. Every attempt is recorded in `Finding.attempts[]`, and existing scorecard consumers keep working. In the first live run on Claude Haiku 5.5, 2 of 5 attacks landed only through a variant, for $0.003 total. If the API fails on every call, Adversary now exits with the error instead of reporting a clean score.
 
 ```bash
 npx @weave_protocol/adversary demo               # mock, ~50ms
-npx @weave_protocol/adversary demo --real        # real LLM, ~$0.02
+npx @weave_protocol/adversary demo --real        # real LLM (Haiku 5.5)
+npx @weave_protocol/adversary demo --real --dynamic   # + LLM variants on half-blocks
 npx @weave_protocol/adversary attack --url=...   # real browser agent
 npx @weave_protocol/adversary demo --real --redact-evidence   # shareable scorecard
 ```
@@ -641,7 +647,9 @@ flowchart TD
 
     subgraph OFFENSIVE["⚔️ Offensive — we attack what we defend"]
         direction LR
+        MUT["🧬 <b>Dynamic mutation</b><br/>LLM variants on half-blocks<br/><i>v0.3</i>"]
         ADV["⚔️ <b>Adversary</b><br/>68 attacks · 5 categories<br/><i>offensive engine</i>"]
+        MUT -.->|retries with variant| ADV
         ASB["🎯 <b>AgentSecBench</b><br/>locked suites · tier A–F<br/><i>citable benchmark</i>"]
         ADV --> ASB
     end
@@ -669,7 +677,7 @@ flowchart TD
     class HM,CC,AG,MSAF,BR enforcer
     class MUND,HORD,DOMERE,WITAN core
     class TOLLERE,API,LC ops
-    class ADV,ASB offensive
+    class ADV,ASB,MUT offensive
     class OSV,GHCS external
 ```
 
@@ -759,6 +767,7 @@ done
 ### H2 2026 Q4 — Moat Quarter
 
 - [x] **Adversarial agents** (`@weave_protocol/adversary` v0.2.1) — 68 documented + novel attacks, real Playwright browser target, real-LLM demo mode
+- [x] **Adversary v0.3** (`@weave_protocol/adversary` v0.3.0): LLM-driven dynamic mutation of half-blocked attacks, verified live on Claude Haiku 5.5; default model moved off the retired Claude 3.5 Haiku; API-failure runs now error out instead of scoring 100/100
 - [x] **AgentSecBench** (`@weave_protocol/agentsecbench` v0.1.0) — standardized benchmark, tier grades A–F
 - [x] **Witan autonomous spending caps** (`@weave_protocol/witan` v1.1.0) — per-window budgets on LLM cost + tokens + tool calls, gated by block / approval / notify
 - [x] **Yoxallismus v2** (`@weave_protocol/yoxallismus@0.1.0-beta.0`) — **open beta shipped**. PQ-hybrid KEM (X25519 + ML-KEM-768 / NIST FIPS 203) + AEAD + ratcheting. Unaudited by design; validated by public use, forks, and responsible disclosure. v0.2+ adds DH double-ratchet, cascade cipher, threshold encryption; v0.3+ adds ZK/VDF/QRNG; v0.4+ adds FHE. See [yoxallismus/README.md](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus).
