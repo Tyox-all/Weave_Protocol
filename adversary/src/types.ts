@@ -92,10 +92,32 @@ export interface TargetResponse {
 
 export type AttackResult = 'blocked' | 'partial' | 'breached';
 
+export interface Attempt {
+  /** Which attempt this is (1 = initial, 2+ = dynamic variants) */
+  attemptNumber: number;
+  /** The actual payload used (may be a variant, not the corpus payload) */
+  payload: string;
+  /** Target's response text for this attempt */
+  responseText: string;
+  /** Outcome of THIS attempt (best across attempts is in Finding.result) */
+  result: AttackResult;
+  /** Engagement classification (used to decide whether to retry) */
+  engagement?: 'breach' | 'half-block' | 'full-block';
+  /** Evidence for this attempt */
+  evidence: string;
+  /** Tokens spent on this attempt's mutation LLM call (if v2+) */
+  mutationTokens?: { input: number; output: number };
+  /** Tool calls the agent made during this attempt */
+  toolCalls?: Array<{ name: string; arguments: Record<string, unknown> }>;
+  /** Conversation turns the target took on this attempt */
+  turns?: number;
+}
+
 export interface Finding {
   attackId: string;
   category: AttackCategory;
   severity: AttackSeverity;
+  /** Best-case result across all attempts (breached > partial > blocked) */
   result: AttackResult;
   /** What the agent did/said that constitutes the result */
   evidence: string;
@@ -105,6 +127,11 @@ export interface Finding {
   wardRuleViolated?: string;
   /** Tool calls the agent made during this attack */
   toolCallsMade?: Array<{ name: string; arguments: Record<string, unknown> }>;
+  /**
+   * All attempts made against this attack (v0.3+ dynamic mode).
+   * Absent in static mode; populated in dynamic mode.
+   */
+  attempts?: Attempt[];
 }
 
 export interface ScorecardSummary {
@@ -145,6 +172,20 @@ export interface Scorecard {
     loaded: boolean;
     source?: string;
     rulesProbed: number;
+  };
+  /**
+   * Dynamic-mode metadata (v0.3+). Absent if the run used the fixed
+   * corpus without LLM-driven variants.
+   */
+  dynamic?: {
+    enabled: boolean;
+    model: string;
+    maxRetries: number;
+    variantsGenerated: number;
+    mutationInputTokens: number;
+    mutationOutputTokens: number;
+    mutationCostUSD: number;
+    mutationErrors: number;
   };
   startedAt: number;
   durationMs: number;
@@ -188,4 +229,10 @@ export interface RunOptions {
   attackTimeoutMs?: number;
   /** Stop after first breach (default: false — full coverage matters more) */
   stopOnBreach?: boolean;
+  /**
+   * Dynamic mode (v0.3+): use an LLM to generate variants of attacks
+   * that half-land, retry with the variant. Requires ANTHROPIC_API_KEY
+   * and a DynamicAttackMutator passed to AdversarialAgent's constructor.
+   */
+  dynamic?: boolean;
 }

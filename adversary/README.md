@@ -19,12 +19,34 @@ npx @weave_protocol/adversary demo
 export ANTHROPIC_API_KEY=sk-ant-...
 npx @weave_protocol/adversary demo --real
 
+# NEW v0.3: dynamic-mutation mode — retries variants when target half-blocks
+npx @weave_protocol/adversary demo --real --dynamic
+
 # Attack a real browser-driving agent
 npx @weave_protocol/adversary attack --url=https://my-agent.example.com/run
 
 # List the attack corpus
 npx @weave_protocol/adversary list --severity=critical
 ```
+
+## What's new in v0.3
+
+- **Dynamic-mutation mode** (`--dynamic`) — when the target half-blocks an attack (refusal patterns present but engages with the topic), an LLM synthesizes a novel variant of the payload and Adversary retries. Up to `--dynamic-max-retries=<n>` variants per attack (default 2).
+- **Attempt tracking** — each `Finding` now optionally carries `attempts[]` with per-retry payload + response + engagement classification. Static-mode `Finding` is unchanged (no `attempts` field).
+- **Locked scorecard schema v1.0 preserved** — `Scorecard.dynamic` field is additive, not schema-breaking. AgentSecBench compat maintained.
+- **Cost transparency** — separate accounting for target-LLM calls vs. mutation-LLM calls. Full 68-attack `--real --dynamic` run on Haiku ~$0.05 (vs. ~$0.02 for static `--real`).
+
+```bash
+# Full 68-attack corpus with dynamic mutations, saved to scorecard.json
+npx @weave_protocol/adversary demo --real --dynamic --json=./scorecard.json
+
+# Cap retries and use a cheaper mutation model
+npx @weave_protocol/adversary demo --real --dynamic \
+  --dynamic-max-retries=1 --dynamic-model=claude-3-5-haiku-20241022
+```
+
+Corpus is unchanged. Dynamic mode is a **retry** mechanism, not a replacement for the 68-attack corpus. If the initial payload fully lands (breach) or fully blocks (hard refusal with no engagement), no LLM call happens.
+
 
 Three target modes covering the full demo spectrum: pattern-mock for CI smoke tests, real-LLM for live attack demos, real-browser for production agents.
 

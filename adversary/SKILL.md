@@ -1,6 +1,39 @@
 # ⚔️ Adversary skill — offensive testing for AI agents
 
-You have access to `@weave_protocol/adversary` v0.2 — a package that generates 68 documented and novel attacks against AI agents and produces standardized scorecards.
+You have access to `@weave_protocol/adversary` v0.3 — a package that generates 68 documented and novel attacks against AI agents and produces standardized scorecards. v0.3 adds LLM-driven dynamic mutation: when a target half-blocks an attack, an LLM synthesizes a variant and Adversary retries.
+
+
+## Dynamic mode (v0.3)
+
+Adversary can now retry variants when the target half-blocks — refuses to comply but engages with the topic (e.g., "I can't help with that, but here's some general info about..."). An LLM synthesizes a novel variant of the payload and Adversary retries with it. Up to `--dynamic-max-retries=<n>` variants per attack (default 2).
+
+Enable with `--dynamic`. Requires `ANTHROPIC_API_KEY`. Cost: ~$0.03 on top of a `--real` run (Haiku).
+
+```bash
+# Dynamic mode against real Claude
+weave-adversary demo --real --dynamic
+
+# Against a real agent endpoint
+weave-adversary attack --url=https://my-agent.com/run --dynamic
+```
+
+The 68-attack corpus is unchanged — dynamic mode is a RETRY mechanism, not a corpus replacement. If the first attempt fully lands (breach) or fully blocks (hard refusal), no LLM call is made.
+
+Programmatic:
+
+```typescript
+import { AdversarialAgent, DemoTarget, DynamicAttackMutator } from '@weave_protocol/adversary';
+
+const target = new DemoTarget({ mode: 'real' });
+const mutator = new DynamicAttackMutator({ maxRetries: 2 });
+const agent = new AdversarialAgent(target, { mutator });
+
+const scorecard = await agent.run({ dynamic: true });
+// scorecard.dynamic — mutation metadata + cost
+// scorecard.findings[i].attempts — per-attempt payload/response/engagement
+```
+
+Scorecard schema v1.0 is preserved. AgentSecBench compat unchanged.
 
 ## When to invoke
 

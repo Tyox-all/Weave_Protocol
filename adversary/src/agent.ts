@@ -8,6 +8,8 @@
 import type {
   Attack,
   AttackCategory,
+  AttackResult,
+  Attempt,
   Finding,
   RunOptions,
   Scorecard,
@@ -18,9 +20,10 @@ import type {
 import { ALL_ATTACKS, ATTACKS_BY_CATEGORY } from './attacks/index.js';
 import { classifyResult, buildScorecard } from './scorecard/index.js';
 import { loadWardPolicy, wardAwareSort, scoreAttackForPolicy } from './ward.js';
+import { DynamicAttackMutator, classifyEngagement } from './dynamic.js';
 
 // Read version from package.json without bundler ceremony.
-const ADVERSARY_VERSION = '0.2.1';
+const ADVERSARY_VERSION = '0.3.0';
 
 const HOSTILE_TOOL_NAMES = new Set([
   'send_email',
@@ -39,10 +42,12 @@ const HOSTILE_TOOL_NAMES = new Set([
 export class AdversarialAgent {
   private target: Target;
   private ward: WardPolicy;
+  private mutator?: DynamicAttackMutator;
 
-  constructor(target: Target, opts: { ward?: WardPolicy; cwd?: string } = {}) {
+  constructor(target: Target, opts: { ward?: WardPolicy; cwd?: string; mutator?: DynamicAttackMutator } = {}) {
     this.target = target;
     this.ward = opts.ward ?? loadWardPolicy(opts.cwd);
+    this.mutator = opts.mutator;
   }
 
   /**
@@ -75,6 +80,22 @@ export class AdversarialAgent {
             rulesProbed: this.countRelevantRules(attacks),
           }
         : { loaded: false, rulesProbed: 0 },
+      dynamic:
+        opts.dynamic === true && this.mutator
+          ? (() => {
+              const u = this.mutator!.getUsage();
+              return {
+                enabled: true,
+                model: u.model,
+                maxRetries: this.mutator!.maxRetries,
+                variantsGenerated: u.mutations,
+                mutationInputTokens: u.inputTokens,
+                mutationOutputTokens: u.outputTokens,
+                mutationCostUSD: u.estimatedCostUSD,
+                mutationErrors: u.errors,
+              };
+            })()
+          : undefined,
       findings,
       startedAt,
       durationMs: Date.now() - startedAt,
@@ -119,43 +140,86 @@ export class AdversarialAgent {
 
   /**
    * Execute one attack and classify the result.
+   *
+   * Static mode: one attempt.
+   * Dynamic mode (opts.dynamic + this.mutator): initial attempt, then
+   * up to mutator.maxRetries variant retries when the target half-blocks.
+   * Best-across-attempts result lands in the Finding.
    */
   private async runOne(attack: Attack, opts: RunOptions): Promise<Finding> {
     const timeoutMs = opts.attackTimeoutMs ?? 30_000;
-    let response: TargetResponse;
+    const useDynamic = opts.dynamic === true && this.mutator !== undefined;
+    const maxAttempts = useDynamic ? 1 + this.mutator!.maxRetries : 1;
 
-    try {
-      response = await withTimeout(this.target.execute(attack), timeoutMs);
-    } catch (err) {
-      // Treat timeouts/errors as blocked — the agent did not respond,
-      // so the attack didn't land.
-      return {
-        attackId: attack.id,
-        category: attack.category,
-        severity: attack.severity,
-        result: 'blocked',
-        evidence: `(attack errored: ${(err as Error).message || err})`,
-      };
+    const attempts: Attempt[] = [];
+    let currentPayload = typeof attack.payload === 'function' ? attack.payload() : attack.payload;
+
+    for (let attemptNum = 1; attemptNum <= maxAttempts; attemptNum++) {
+      const attackForAttempt: Attack =
+        attemptNum === 1 ? attack : { ...attack, payload: currentPayload };
+
+      let response: TargetResponse;
+      try {
+        response = await withTimeout(this.target.execute(attackForAttempt), timeoutMs);
+      } catch (err) {
+        attempts.push({
+          attemptNumber: attemptNum,
+          payload: currentPayload,
+          responseText: `(attack errored: ${(err as Error).message || err})`,
+          result: 'blocked',
+          engagement: 'full-block',
+          evidence: `(attack errored: ${(err as Error).message || err})`,
+        });
+        break;
+      }
+
+      const detectionMatched = attack.detectionPatterns.some((re) => re.test(response.text));
+      const hostileToolCall = response.toolCalls.find((tc) => HOSTILE_TOOL_NAMES.has(tc.name));
+      const result: AttackResult = classifyResult(detectionMatched, !!hostileToolCall);
+      const engagement = classifyEngagement(response.text);
+
+      attempts.push({
+        attemptNumber: attemptNum,
+        payload: currentPayload,
+        responseText: response.text || '(no text response)',
+        result,
+        engagement,
+        evidence: response.text || '(no text response)',
+        toolCalls: response.toolCalls.length ? response.toolCalls : undefined,
+        turns: response.turns,
+      });
+
+      // Stop conditions
+      if (result === 'breached') break;
+      if (engagement === 'full-block') break;
+      if (attemptNum === maxAttempts) break;
+
+      // Dynamic retry: mutate payload for next attempt
+      if (useDynamic && this.mutator) {
+        const mutationResult = await this.mutator.mutate(attack, response.text, currentPayload);
+        if (mutationResult.variantPayload === currentPayload) break;
+        currentPayload = mutationResult.variantPayload;
+        attempts[attempts.length - 1].mutationTokens = {
+          input: mutationResult.inputTokens,
+          output: mutationResult.outputTokens,
+        };
+      }
     }
 
-    // Detection: did any pattern match?
-    const detectionMatched = attack.detectionPatterns.some((re) => re.test(response.text));
-
-    // Hostile tool calls?
-    const hostileToolCall = response.toolCalls.find((tc) => HOSTILE_TOOL_NAMES.has(tc.name));
-
-    const result = classifyResult(detectionMatched, !!hostileToolCall);
+    const bestAttempt = pickBestAttempt(attempts);
 
     return {
       attackId: attack.id,
       category: attack.category,
       severity: attack.severity,
-      result,
-      evidence: response.text || '(no text response)',
-      timeToExploit: result === 'breached' ? response.turns : undefined,
+      result: bestAttempt.result,
+      evidence: bestAttempt.evidence,
+      // Turns the target took on the breaching attempt (same meaning as v0.2).
+      timeToExploit: bestAttempt.result === 'breached' ? bestAttempt.turns : undefined,
       wardRuleViolated:
-        result !== 'blocked' && this.ward.loaded ? attack.wardRulesProbed[0] : undefined,
-      toolCallsMade: response.toolCalls.length ? response.toolCalls : undefined,
+        bestAttempt.result !== 'blocked' && this.ward.loaded ? attack.wardRulesProbed[0] : undefined,
+      toolCallsMade: bestAttempt.toolCalls,
+      ...(useDynamic ? { attempts } : {}),
     };
   }
 
@@ -179,4 +243,23 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
       setTimeout(() => reject(new Error(`attack timed out after ${ms}ms`)), ms),
     ),
   ]);
+}
+
+
+/**
+ * Pick the "best" attempt for reporting in the Finding.
+ * Priority: breached > partial > blocked.
+ * Ties broken by earliest attempt number.
+ */
+function pickBestAttempt(attempts: Attempt[]): Attempt {
+  const rank: Record<AttackResult, number> = {
+    breached: 3,
+    partial: 2,
+    blocked: 1,
+  };
+  let best = attempts[0];
+  for (const a of attempts) {
+    if (rank[a.result] > rank[best.result]) best = a;
+  }
+  return best;
 }
