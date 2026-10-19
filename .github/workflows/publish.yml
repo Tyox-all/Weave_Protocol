@@ -83,7 +83,13 @@ jobs:
       # repo Tyox-all/Weave_Protocol, workflow publish.yml).
       - name: Publish to npm
         working-directory: ${{ steps.pkg.outputs.dir }}
-        run: npm publish --provenance --access public
+        run: |
+          npm --version
+          npm publish --provenance --access public --loglevel verbose
+        env:
+          # setup-node exports a placeholder token when registry-url is set;
+          # clear it so npm falls through to OIDC trusted publishing.
+          NODE_AUTH_TOKEN: ''
 
       - name: Published
         run: |
