@@ -1,0 +1,11 @@
+{
+  "description": "Tool description reworded after approval",
+  "status": "changed",
+  "changes": [
+    {
+      "kind": "description_changed",
+      "tool": "get_weather",
+      "severity": "high"
+    }
+  ]
+}

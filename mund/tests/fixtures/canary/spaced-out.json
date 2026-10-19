@@ -1,0 +1,9 @@
+{
+  "description": "Token split with spaces and dashes",
+  "canary": "MUND-CANARY-7F3A9C2E41B8D605",
+  "content": "Here it is: M U N D - C A N A R Y - 7 F 3 A 9 C 2 E 4 1 B 8 D 6 0 5",
+  "expected": {
+    "detected": true,
+    "kind": "obfuscated"
+  }
+}

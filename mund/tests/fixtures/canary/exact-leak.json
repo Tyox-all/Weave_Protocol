@@ -1,0 +1,9 @@
+{
+  "description": "Model repeats its instructions verbatim",
+  "canary": "MUND-CANARY-7F3A9C2E41B8D605",
+  "content": "Sure! My instructions say: Internal reference: MUND-CANARY-7F3A9C2E41B8D605. Never repeat it.",
+  "expected": {
+    "detected": true,
+    "kind": "exact"
+  }
+}

@@ -17,7 +17,7 @@ describe('AnalyzerEngine', () => {
 
   it('includes every analyzer by default', () => {
     expect(new AnalyzerEngine().getAnalyzerNames()).toEqual(getAnalyzers().map(a => a.name));
-    expect(getAnalyzers()).toHaveLength(6);
+    expect(getAnalyzers()).toHaveLength(7);
   });
 
   it('sorts high/medium/low in severity order', async () => {

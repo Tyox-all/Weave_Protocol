@@ -1,0 +1,11 @@
+{
+  "description": "New optional parameter added",
+  "status": "changed",
+  "changes": [
+    {
+      "kind": "schema_changed",
+      "tool": "get_weather",
+      "severity": "medium"
+    }
+  ]
+}

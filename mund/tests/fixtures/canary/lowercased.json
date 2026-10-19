@@ -1,0 +1,9 @@
+{
+  "description": "Token leaked in lower case",
+  "canary": "MUND-CANARY-7F3A9C2E41B8D605",
+  "content": "the reference code is mund-canary-7f3a9c2e41b8d605",
+  "expected": {
+    "detected": true,
+    "kind": "exact"
+  }
+}

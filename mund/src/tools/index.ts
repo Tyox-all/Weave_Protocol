@@ -6,10 +6,12 @@
 export { registerMonitoringTools } from './monitoring.js';
 export { registerConfigurationTools } from './configuration.js';
 export { registerMcpScanningTools } from './mcp-scanning.js';
+export { registerCanaryRugPullTools } from './canary-rugpull.js';
 
 import { registerMonitoringTools } from './monitoring.js';
 import { registerConfigurationTools } from './configuration.js';
 import { registerMcpScanningTools } from './mcp-scanning.js';
+import { registerCanaryRugPullTools } from './canary-rugpull.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { IStorage, DetectionRule } from '../types.js';
 import { AnalyzerEngine } from '../analyzers/index.js';
@@ -34,4 +36,7 @@ export function registerAllTools(
   
   // MCP server scanning tools (new)
   registerMcpScanningTools(server);
+
+  // Canary tokens (LLM07) and MCP rug-pull detection (ASI04)
+  registerCanaryRugPullTools(server);
 }

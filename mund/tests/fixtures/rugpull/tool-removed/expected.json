@@ -1,0 +1,11 @@
+{
+  "description": "A tool disappears",
+  "status": "changed",
+  "changes": [
+    {
+      "kind": "tool_removed",
+      "tool": "read_note",
+      "severity": "low"
+    }
+  ]
+}

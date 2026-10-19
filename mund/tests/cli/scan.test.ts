@@ -7,12 +7,12 @@ import { OsvClient } from '../../src/osv.js';
 
 describe('parseScanArgs', () => {
   it('defaults to text, fail-on high, current dir, OSV on', () => {
-    expect(parseScanArgs([])).toEqual({ paths: ['.'], format: 'text', failOn: 'high', osv: true, offline: false });
+    expect(parseScanArgs([])).toEqual({ paths: ['.'], format: 'text', failOn: 'high', osv: true, offline: false, canaries: [] });
   });
 
   it('accepts --flag=value and --flag value', () => {
     expect(parseScanArgs(['src', '--format=sarif', '--output', 'o.sarif', '--fail-on=none', '--no-osv', '--offline']))
-      .toEqual({ paths: ['src'], format: 'sarif', output: 'o.sarif', failOn: 'none', osv: false, offline: true });
+      .toEqual({ paths: ['src'], format: 'sarif', output: 'o.sarif', failOn: 'none', osv: false, offline: true, canaries: [] });
   });
 
   it('rejects unknown formats and options', () => {

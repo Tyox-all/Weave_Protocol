@@ -17,6 +17,7 @@ import { NotificationHub } from './notifications/index.js';
 import { registerAllTools } from './tools/index.js';
 import { runScanCli } from './cli/scan.js';
 import { getVersion } from './version.js';
+import { loadCanariesFromEnv } from './canary.js';
 
 // Threat Intelligence imports
 import { threatIntel } from './threat-intel-manager.js';
@@ -180,6 +181,7 @@ async function createMundServer(config: MundConfig): Promise<McpServer> {
   }
 
   // Register all core tools
+  loadCanariesFromEnv();
   registerAllTools(server, storage, rules, analyzer, notificationHub, config.block_mode);
 
   // Register threat intelligence tools
