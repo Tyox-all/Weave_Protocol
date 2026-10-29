@@ -66,6 +66,14 @@ npm install @weave_protocol/full
 
 A big stretch across offense, defense, and how releases ship. Highlights:
 
+#### 🔐 Yoxallismus 0.2.0-beta.0: Double Ratchet, and a wire format you can build on
+[`@weave_protocol/yoxallismus@beta`](https://www.npmjs.com/package/@weave_protocol/yoxallismus) moves from a cipher toward a messaging protocol:
+
+- **Signal's Double Ratchet, started post-quantum.** Conversations get fresh keys every message, and a stolen session stops working after one round trip (post-compromise security). Messages can arrive out of order or go missing. Sessions start from the hybrid X25519 + ML-KEM-768 key exchange, so no setup is needed beyond the recipient's public key.
+- **`seal()` / `open()`** for one-shot encryption to a public key, with an optional **cascade mode** that layers AES-256-GCM inside ChaCha20-Poly1305 so data stays safe if either cipher falls.
+- **Wire format `yoxall/2` is locked through 1.0**, specified byte by byte, with test vectors that fail CI if anything drifts.
+- **Three security advisories, published openly.** The biggest one: Hord's original `YoxallismusCipher` could never decrypt its own output. It's now deprecated (Hord 0.1.8), so `unlock()` fails loudly instead of returning the wrong bytes.
+
 #### 🎯 AgentSecBench 0.2.0, with a public results page
 [`@weave_protocol/agentsecbench@0.2.0`](https://www.npmjs.com/package/@weave_protocol/agentsecbench) turns benchmark runs into something you can publish and compare:
 
@@ -194,7 +202,7 @@ Backward compatible with the existing `behavioral_limits.maxCostUSD`. In-memory 
 
 ### 🔐 Yoxallismus v2 — post-quantum cipher (open beta)
 
-[`@weave_protocol/yoxallismus@0.1.0-beta.0`](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus) — post-quantum cryptographic composition layer built on **NIST FIPS 203 (ML-KEM-768)** hybridized with X25519. AES-256-GCM AEAD, HKDF-SHA-256 KDF, symmetric ratchet for session forward secrecy. Composition, not invention — the primitives are NIST-standardized, the composition (PQ-hybrid KEM + agent-scoped context binding + ratcheting) is what's new.
+[`@weave_protocol/yoxallismus@0.2.0-beta.0`](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus): a post-quantum cryptographic composition layer built on **NIST FIPS 203 (ML-KEM-768)** hybridized with X25519. Sealed boxes (AES-256-GCM, or a cascade inside ChaCha20-Poly1305), and Signal's **Double Ratchet** for conversations with forward secrecy and post-compromise security. Composition, not invention: the primitives are standard, and the wire format (`yoxall/2`) is [locked through 1.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus/WIRE_FORMAT.md).
 
 ```bash
 # Explicit opt-in required — the beta tag is NOT installed by default
@@ -202,11 +210,16 @@ npm install @weave_protocol/yoxallismus@beta
 ```
 
 ```typescript
-import { PQCipher } from '@weave_protocol/yoxallismus';
+import { generateHybridKeypair, publicKeyOf, seal, open, initiateSession, acceptSession, drEncrypt } from '@weave_protocol/yoxallismus';
 
-const alice = PQCipher.generateKeypair();
-const bundle = PQCipher.encryptTo(PQCipher.publicKeyOf(alice), plaintext);
-const message = PQCipher.decryptFrom(alice, bundle.ciphertext, bundle.payload);
+const bob = generateHybridKeypair();
+
+// One-shot: seal to Bob's public key
+const msg = open(bob, seal(publicKeyOf(bob), plaintext));
+
+// Conversation: Double Ratchet, started from Bob's public key alone
+const alice = initiateSession(publicKeyOf(bob));
+const { session: bobSession } = acceptSession(bob, drEncrypt(alice, plaintext));
 ```
 
 **⚠️ EXPERIMENTAL — NOT AUDITED.** Do not use for regulated, medical, financial, or legal data. Validation is via public use, forks, community verification, and responsible disclosure — not paid audit. See [THREAT_MODEL.md](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus/THREAT_MODEL.md) and [SECURITY.md](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus/SECURITY.md) before adopting.
@@ -214,7 +227,7 @@ const message = PQCipher.decryptFrom(alice, bundle.ciphertext, bundle.payload);
 **Verify every claim yourself:**
 
 ```bash
-npx @weave_protocol/yoxallismus@beta --package weave-yoxall test         # 13 reproducible-claims tests
+npx @weave_protocol/yoxallismus@beta --package weave-yoxall test         # 20 reproducible-claims tests
 npx @weave_protocol/yoxallismus@beta --package weave-yoxall audit-self   # 5 known-attack vectors
 npx @weave_protocol/yoxallismus@beta --package weave-yoxall benchmark    # perf micro-benchmarks
 ```
@@ -294,7 +307,7 @@ The packages that keep your agent within policy: declare it, enforce it across e
 | [🔍 @weave_protocol/hundredmen](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen) | 1.1.0 | **MCP proxy** — intercept, scan, gate tool calls; enforces WARD.md as first gate |
 | [🛡️ @weave_protocol/mund](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund) | 0.3.1 | **Scanner** — secrets, PII, injection, MCP vetting, OSV dependency CVEs, SARIF output, threat intel |
 | [🏛️ @weave_protocol/hord](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord) | 0.1.8 | **Vault** — encrypted storage, sandboxing, capability tokens, attestation |
-| [🔐 @weave_protocol/yoxallismus](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus) | **0.1.0-beta.0** | **Post-quantum cipher** — X25519 + ML-KEM-768 hybrid KEM · AES-256-GCM · HKDF · ratcheting · ⚠️ NOT AUDITED |
+| [🔐 @weave_protocol/yoxallismus](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus) | **0.2.0-beta.0** | **Post-quantum cipher** — X25519 + ML-KEM-768 hybrid KEM · sealed boxes · cascade AEAD · Double Ratchet · locked `yoxall/2` format · ⚠️ NOT AUDITED |
 | [⚖️ @weave_protocol/domere](https://github.com/Tyox-all/Weave_Protocol/blob/main/domere) | 1.3.4 | **Judge** — compliance (PCI-DSS, ISO27001, SOC2, HIPAA, GDPR, CCPA), blockchain anchoring |
 | [👥 @weave_protocol/witan](https://github.com/Tyox-all/Weave_Protocol/blob/main/witan) | **1.1.0** | **Council** — multi-agent consensus & governance, autonomous spending caps (Q4 v1.1) |
 | [🛂 @weave_protocol/tollere](https://github.com/Tyox-all/Weave_Protocol/blob/main/tollere) | 0.2.2 | **Customs** — supply chain security (npm, PyPI, Docker, IDE extensions, sandwich detection) |
@@ -508,7 +521,7 @@ Encrypted vault storage (AES-256-GCM), PII redaction and tokenization, sandboxed
 
 ### 🔐 Yoxallismus — Post-Quantum Cipher (open beta)
 
-Standalone post-quantum cryptographic composition layer. NIST FIPS 203 (ML-KEM-768) hybridized with X25519 for the KEM, AES-256-GCM for AEAD, HKDF-SHA-256 for KDF, symmetric ratchet for session forward secrecy. Composition over invention — all primitives NIST-standardized or de facto industry standard.
+Standalone post-quantum cryptographic composition layer. NIST FIPS 203 (ML-KEM-768) hybridized with X25519 for the KEM, AES-256-GCM (optionally cascaded inside ChaCha20-Poly1305) for AEAD, HKDF-SHA-256 for KDF, and Signal's Double Ratchet for sessions with forward secrecy and post-compromise security. Composition over invention: all primitives are NIST-standardized or de facto industry standard.
 
 ⚠️ **EXPERIMENTAL. NOT AUDITED.** Do not use for regulated, medical, financial, or legal data. Validation is via public use, forks, and responsible disclosure — not paid audit.
 
@@ -818,6 +831,7 @@ done
 - [x] **AgentSecBench v0.2** (`@weave_protocol/agentsecbench` v0.2.0): report schema v1.1, hash-locked suites with pre-run validation, suite files, and a [public results page](https://tyox-all.github.io/Weave_Protocol/asb/)
 - [x] **Witan autonomous spending caps** (`@weave_protocol/witan` v1.1.0) — per-window budgets on LLM cost + tokens + tool calls, gated by block / approval / notify
 - [x] **Yoxallismus v2** (`@weave_protocol/yoxallismus@0.1.0-beta.0`) — **open beta shipped**. PQ-hybrid KEM (X25519 + ML-KEM-768 / NIST FIPS 203) + AEAD + ratcheting. Unaudited by design; validated by public use, forks, and responsible disclosure. v0.2+ adds DH double-ratchet, cascade cipher, threshold encryption; v0.3+ adds ZK/VDF/QRNG; v0.4+ adds FHE. See [yoxallismus/README.md](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus).
+- [x] **Yoxallismus v0.2** (`@weave_protocol/yoxallismus@0.2.0-beta.0`): Double Ratchet seeded by the hybrid KEM, X-Wing-style KEM combiner, sealed boxes, cascade AEAD, `yoxall/2` wire format locked through 1.0, advisories YOXALL-2026-001 to 003, and Hord's broken v1 cipher deprecated (Hord 0.1.8)
 - [x] **Mund parity floor**: SARIF output (`mund-mcp scan --format=sarif`), OSV.dev live CVE lookups with offline fallback, 0–100 risk score, CycloneDX SBOM + Sigstore attestations in `publish-all`, OWASP LLM + Agentic coverage tables
 
 ---
