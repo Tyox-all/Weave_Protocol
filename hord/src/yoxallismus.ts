@@ -1,7 +1,18 @@
 /**
- * Yoxallismus Vault Cipher
- * 
- * A dual-mechanism obfuscation layer combining:
+ * Yoxallismus Vault Cipher (v1). DEPRECATED.
+ *
+ * ⚠️ Output of lock() cannot be decrypted, by unlock() or by any other
+ * implementation: the XOR mask is derived from a seed that hashes the
+ * plaintext, and only part of that seed is stored. See
+ * @weave_protocol/yoxallismus SECURITY_ADVISORIES.md, YOXALL-2026-003.
+ *
+ * Use @weave_protocol/yoxallismus instead:
+ *   import { generateHybridKeypair, publicKeyOf, seal, open } from '@weave_protocol/yoxallismus';
+ *
+ * This class is kept only so existing imports don't break. lock()/encode()
+ * still run (one-way) and warn once; unlock()/decode() throw.
+ *
+ * Original design: a dual-mechanism obfuscation layer combining:
  * - Tumbler: Revolving permutation (like a vault dial)
  * - Deadbolt: Entropy injection with XOR masking (like a manual lock)
  * 
@@ -42,6 +53,28 @@ export interface VaultState {
 // Yoxallismus Vault Cipher
 // =============================================================================
 
+export const YOXALLISMUS_V1_DEPRECATION =
+  'YoxallismusCipher is deprecated: its output cannot be decrypted (YOXALL-2026-003). ' +
+  'Use seal()/open() from @weave_protocol/yoxallismus instead.';
+
+/** Thrown by unlock()/decode(): v1 output is unrecoverable. */
+export class YoxallismusV1UnrecoverableError extends Error {
+  constructor() {
+    super(
+      'YoxallismusCipher.unlock() cannot recover data: v1 lock() output is not decryptable by any ' +
+        'implementation (YOXALL-2026-003). Re-encrypt from the original data with seal() from ' +
+        '@weave_protocol/yoxallismus.',
+    );
+    this.name = 'YoxallismusV1UnrecoverableError';
+  }
+}
+
+let deprecationWarned = false;
+
+/**
+ * @deprecated Output cannot be decrypted (YOXALL-2026-003). Use `seal()` /
+ * `open()` from `@weave_protocol/yoxallismus`.
+ */
 export class YoxallismusCipher {
   private masterKey: Buffer;
   private tumblers: number;
@@ -55,6 +88,10 @@ export class YoxallismusCipher {
   private entropyKey: Buffer;
   
   constructor(config: YoxallismusConfig) {
+    if (!deprecationWarned) {
+      deprecationWarned = true;
+      process.emitWarning(YOXALLISMUS_V1_DEPRECATION, { type: 'DeprecationWarning', code: 'HORD_YOXALLISMUS_V1' });
+    }
     this.masterKey = crypto.scryptSync(config.key, 'yoxallismus-vault', 32);
     this.tumblers = Math.min(12, Math.max(1, config.tumblers || 7));
     this.entropyRatio = Math.min(0.5, Math.max(0.1, config.entropy_ratio || 0.2));
@@ -92,22 +129,13 @@ export class YoxallismusCipher {
   }
   
   /**
-   * Unlock data from the vault (decode/reveal)
+   * @deprecated Always throws. v1 output cannot be decrypted; the previous
+   * implementation silently returned the wrong bytes (YOXALL-2026-003).
    */
   unlock(data: Buffer): Buffer {
-    // Extract state from header
-    const { payload, state } = this.unpackHeader(data);
-    
-    // Step 1: Remove deadbolt
-    const unbolted = this.removeDeadbolt(payload, state);
-    
-    // Step 2: Reverse tumbler permutation
-    const unpermuted = this.reverseTumblers(unbolted, state);
-    
-    // Step 3: Remove entropy (decoy bytes)
-    const original = this.removeEntropy(unpermuted, state);
-    
-    return original;
+    // Still validate the header so non-v1 input gets the "bad magic" error.
+    this.unpackHeader(data);
+    throw new YoxallismusV1UnrecoverableError();
   }
   
   /**

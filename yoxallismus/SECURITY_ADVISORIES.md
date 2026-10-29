@@ -68,7 +68,7 @@ Each entry follows this structure:
 
 - **Severity:** High for data written with it (unrecoverable); not a confidentiality leak
 - **Affects:** `YoxallismusCipher` in @weave_protocol/hord (all versions to date)
-- **Fixed in:** not fixable for existing payloads; @weave_protocol/yoxallismus 0.2.0-beta.0 detects them
+- **Fixed in:** not fixable for existing payloads. @weave_protocol/hord 0.1.8 deprecates `YoxallismusCipher` (`unlock()` now throws instead of returning wrong bytes), and @weave_protocol/yoxallismus 0.2.0-beta.0 detects v1 payloads
 - **Reporter:** found internally while building the planned v1 decoder
 
 **Description:** `lock()` derives its XOR mask from `HMAC(deadboltKey, seed)`, where `seed = SHA-256(tumblerKey ‖ SHA-256(plaintext))`. The header stores only the first 1-12 seed bytes, and stores them after they've been advanced during encryption. `unlock()` rebuilds the mask from the header bytes instead, so Hord's own `unlock()` never round-trips (we verified this for every configuration tested). No decoder holding the key can recover the remaining seed bytes, which depend on the unknown plaintext, short of brute force.

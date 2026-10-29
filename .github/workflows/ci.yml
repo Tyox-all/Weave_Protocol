@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [mund, adversary, agentsecbench, yoxallismus]
+        package: [mund, hord, adversary, agentsecbench, yoxallismus]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
