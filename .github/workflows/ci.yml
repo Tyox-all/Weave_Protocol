@@ -11,3 +11,23 @@ jobs:
       - run: cd mund && npm install && npm run build
       - run: cd hord && npm install && npm run build
       - run: cd domere && npm install && npm run build
+
+  # Packages with test suites. Yoxallismus' suite includes the yoxall/2
+  # known-answer vectors, so this job is what keeps that wire format locked.
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [mund, adversary, agentsecbench, yoxallismus]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Install
+        working-directory: ${{ matrix.package }}
+        run: npm ci
+      - name: Test
+        working-directory: ${{ matrix.package }}
+        run: npm test
