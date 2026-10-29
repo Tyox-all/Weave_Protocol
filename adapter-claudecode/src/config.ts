@@ -152,3 +152,52 @@ export function removeHook(): { removed: number; settings: ClaudeSettings } {
   if (removed > 0) writeSettings(settings);
   return { removed, settings };
 }
+
+// ============================================================================
+// Mund pre-install hooks
+// ============================================================================
+
+export const MUND_HOOK_MARKER = '# WEAVE_MUND_HOOK';
+
+/** [event, matcher, subcommand, timeout seconds] */
+export const MUND_HOOKS: Array<[string, string | undefined, string, number]> = [
+  ['SessionStart', 'startup|resume|clear', 'session-start', 120],
+  ['PreToolUse', '^mcp__', 'mcp-gate', 5],
+  ['PreToolUse', '^(Write|Edit|MultiEdit)$', 'skill-guard', 30],
+  ['ConfigChange', 'skills', 'skill-change', 30],
+];
+
+const isMund = (e: ClaudeSettingsHooksEntry) => e.hooks?.some((h) => h.command.includes(MUND_HOOK_MARKER));
+
+export function isMundInstalled(settings: ClaudeSettings): boolean {
+  return Object.values(settings.hooks ?? {}).some((entries) => (entries ?? []).some(isMund));
+}
+
+export function installMundHooks(opts: { binary?: string } = {}): ClaudeSettings {
+  const settings = readSettings();
+  const binary = opts.binary || 'weave-claude-code';
+  if (!settings.hooks) settings.hooks = {};
+  for (const event of new Set(MUND_HOOKS.map(([e]) => e))) {
+    settings.hooks[event] = (settings.hooks[event] ?? []).filter((e) => !isMund(e));
+  }
+  for (const [event, matcher, sub, timeout] of MUND_HOOKS) {
+    settings.hooks[event]!.push({
+      ...(matcher ? { matcher } : {}),
+      hooks: [{ type: 'command', command: `${binary} mund ${sub} ${MUND_HOOK_MARKER}`, timeout }],
+    } as ClaudeSettingsHooksEntry);
+  }
+  writeSettings(settings);
+  return settings;
+}
+
+export function removeMundHooks(): number {
+  const settings = readSettings();
+  let removed = 0;
+  for (const [event, entries] of Object.entries(settings.hooks ?? {})) {
+    const kept = (entries ?? []).filter((e) => !isMund(e));
+    removed += (entries ?? []).length - kept.length;
+    settings.hooks![event] = kept;
+  }
+  if (removed) writeSettings(settings);
+  return removed;
+}

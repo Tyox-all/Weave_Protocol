@@ -22,6 +22,7 @@ import {
   userWardPath,
 } from './config.js';
 import { resolveWardForCwd, evaluateCall, runPreToolUseHook } from './hook.js';
+import { installMundHooks, removeMundHooks, hooksJsonPath, runMundHook, mundCommand, HOOK_NAME } from './mund.js';
 
 // ─── ANSI colors ───────────────────────────────────────────────
 const tty = process.stdout.isTTY && !process.env.NO_COLOR;
@@ -53,6 +54,9 @@ function help(): void {
   console.error(`  ${c.cyan}disable${c.reset}                            Remove the WARD hook`);
   console.error(`  ${c.cyan}status${c.reset}                             Show hook installation + active WARD policy`);
   console.error(`  ${c.cyan}test${c.reset} ${c.gray}<tool> [--input=JSON]${c.reset}         Dry-run a tool call against your WARD.md`);
+  console.error(`  ${c.cyan}mund install${c.reset} ${c.gray}[--workspace=DIR]${c.reset}    Install Mund pre-install hooks (~/.gemini/config/hooks.json)`);
+  console.error(`  ${c.cyan}mund uninstall${c.reset} ${c.gray}[--workspace=DIR]${c.reset}  Remove the Mund hooks`);
+  console.error(`  ${c.cyan}mund status${c.reset}                        Show where Mund hooks live and how Mund is resolved`);
   console.error(`  ${c.cyan}hook${c.reset} ${c.gray}<event>${c.reset}                       Internal: called by Antigravity as a hook`);
   console.error(`  ${c.cyan}help${c.reset}                               Show this message\n`);
   console.error(`${c.bold}Examples:${c.reset}`);
@@ -236,6 +240,38 @@ async function main(): Promise<void> {
         }
         process.stdout.write('{}');
         process.exit(0);
+      }
+      case 'mund': {
+        const sub = rest[0];
+        const ws = rest.find((a) => a.startsWith('--workspace='))?.slice('--workspace='.length);
+        if (sub === 'install') {
+          const path = installMundHooks({ workspace: ws });
+          const m = mundCommand();
+          console.error(`${c.green}✓${c.reset} Installed hook "${HOOK_NAME}" (SessionStart + PreToolUse) in ${c.cyan}${path}${c.reset}`);
+          console.error(`  Mund runs via: ${c.gray}${[m.cmd, ...m.args].join(' ')}${c.reset}`);
+          console.error(`  Live MCP checks start only global servers you configured. Disable with ${c.gray}WEAVE_MUND_LIVE=0${c.reset}.`);
+          break;
+        }
+        if (sub === 'uninstall') {
+          console.error(removeMundHooks({ workspace: ws }) ? `${c.green}✓${c.reset} Removed "${HOOK_NAME}" from ${hooksJsonPath({ workspace: ws })}` : `${c.yellow}⚠${c.reset}  No Mund hook found`);
+          break;
+        }
+        if (sub === 'status') {
+          const path = hooksJsonPath({ workspace: ws });
+          let installed = false;
+          try { installed = HOOK_NAME in JSON.parse(readFileSync(path, 'utf8')); } catch { /* none */ }
+          const m = mundCommand();
+          console.error(`Mund hooks: ${installed ? `${c.green}installed${c.reset}` : `${c.gray}not installed${c.reset}`} (${path})`);
+          console.error(`Mund runs via: ${[m.cmd, ...m.args].join(' ')}`);
+          break;
+        }
+        if (sub === 'session-start' || sub === 'pre-tool-use') {
+          await runMundHook(sub);
+          return;
+        }
+        console.error(`${c.red}Unknown mund subcommand: ${sub ?? '(none)'}${c.reset} (install | uninstall | status)`);
+        code = 2;
+        break;
       }
       case 'help':
       case '--help':

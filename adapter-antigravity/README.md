@@ -58,6 +58,28 @@ weave-antigravity status
 
 ---
 
+## Mund pre-install hooks
+
+Scan skills and MCP servers with [Mund](../mund#-pre-install-checks-for-skills-and-mcp-servers) before they can act:
+
+```bash
+npm i -g @weave_protocol/mund              # optional: faster than the npx fallback
+weave-antigravity mund install             # global: ~/.gemini/config/hooks.json
+weave-antigravity mund install --workspace=.   # or this workspace: .agents/hooks.json
+```
+
+This installs a hook named `weave-mund`, built against [Antigravity's hook docs](https://antigravity.google/docs/hooks):
+
+| Event | What it does | Can block? |
+|---|---|---|
+| `SessionStart` | Audits skills (`.agents/skills`, `~/.gemini/config/skills`, CLI and plugin skills) and MCP servers (`.agents/mcp_config.json`, `~/.gemini/config/mcp_config.json`), and injects a summary | Reports only |
+| `PreToolUse` | Scans content that `write_to_file`, `replace_file_content` or `multi_replace_file_content` would put into a skills folder, **before** it's written; **denies** MCP calls to servers Mund blocked and **asks** for flagged ones | ✅ |
+
+Notes:
+- Antigravity has no config-change event, so a skill copied in outside the agent is caught at the next session start, not before.
+- Antigravity documents MCP permission patterns but not the runtime tool-name format, so the gate recognizes the common forms (`mcp__server__tool`, `mcp_server_tool`, `server__tool`, `server/tool`).
+- Live checks start only global servers you configured; workspace servers and servers marked `disabled` get static checks only. Turn live checks off with `WEAVE_MUND_LIVE=0`.
+
 ## How WARD.md is resolved
 
 When the hook fires, it looks for a WARD.md in this order:

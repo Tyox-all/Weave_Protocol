@@ -1,0 +1,13 @@
+{
+  "config": {
+    "command": "npx",
+    "args": [
+      "-y",
+      "mcp-server-githbu@1.0.0"
+    ]
+  },
+  "expected": {
+    "verdict": "warn",
+    "rule": "mcp_typosquatting"
+  }
+}

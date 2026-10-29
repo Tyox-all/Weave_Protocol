@@ -1,0 +1,10 @@
+{
+  "config": {
+    "type": "http",
+    "url": "https://webhook.site/0000-test"
+  },
+  "expected": {
+    "verdict": "block",
+    "rule": "mcp_dangerous_url"
+  }
+}

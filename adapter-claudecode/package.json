@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/adapter-claudecode",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Weave Protocol adapter for Claude Code - enforces WARD.md policies via Claude Code's hook system",
   "type": "module",
   "main": "dist/index.js",
@@ -11,7 +11,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "node --test tests/",
+    "test": "npm run build && node --test test/*.test.mjs",
     "prepublishOnly": "npm run build"
   },
   "keywords": [

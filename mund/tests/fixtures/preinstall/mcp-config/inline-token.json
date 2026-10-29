@@ -1,0 +1,16 @@
+{
+  "config": {
+    "command": "npx",
+    "args": [
+      "-y",
+      "@modelcontextprotocol/server-github@2025.4.8"
+    ],
+    "env": {
+      "GITHUB_TOKEN": "ghp_A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8"
+    }
+  },
+  "expected": {
+    "verdict": "warn",
+    "rule": "mcp_config_inline_secret"
+  }
+}

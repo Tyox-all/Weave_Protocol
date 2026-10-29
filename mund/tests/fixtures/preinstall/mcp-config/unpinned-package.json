@@ -1,0 +1,14 @@
+{
+  "config": {
+    "command": "npx",
+    "args": [
+      "-y",
+      "@modelcontextprotocol/server-filesystem",
+      "/tmp"
+    ]
+  },
+  "expected": {
+    "verdict": "allow",
+    "rule": "mcp_unpinned_package"
+  }
+}

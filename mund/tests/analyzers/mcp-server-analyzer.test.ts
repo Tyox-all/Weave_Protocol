@@ -10,9 +10,7 @@ describe('McpServerAnalyzer.checkTyposquatting', () => {
     expect(analyzer.checkTyposquatting({ name: 'kubernetes', version: '1.0.0' })).toEqual([]);
   });
 
-  // KNOWN BUG: only the identical entry is skipped, so legitimate names that
-  // are close to each other ("github" vs "gitlab") flag one another.
-  it.fails('does not flag a legitimate name that is close to another legitimate name', () => {
+  it('does not flag a legitimate name that is close to another legitimate name', () => {
     expect(analyzer.checkTyposquatting({ name: 'github', version: '1.0.0' })).toEqual([]);
   });
 

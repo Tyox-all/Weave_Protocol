@@ -16,6 +16,7 @@ import { AnalyzerEngine } from './analyzers/index.js';
 import { NotificationHub } from './notifications/index.js';
 import { registerAllTools } from './tools/index.js';
 import { runScanCli } from './cli/scan.js';
+import { runAgentAuditCli, runCheckSkillCli } from './cli/agent.js';
 import { getVersion } from './version.js';
 import { loadCanariesFromEnv } from './canary.js';
 
@@ -260,6 +261,8 @@ MCP-based security monitoring for agentic AI systems
 
 Usage: mund-mcp [options]          Run the MCP server
        mund-mcp scan [paths...]    Scan files (see: mund-mcp scan --help)
+       mund-mcp agent-audit        Audit installed skills + MCP servers
+       mund-mcp check-skill <path> Scan a skill before installing it
 
 Options:
   --help, -h          Show this help message
@@ -321,6 +324,12 @@ async function main(): Promise<void> {
 
   if (args[0] === 'scan') {
     process.exit(await runScanCli(args.slice(1)));
+  }
+  if (args[0] === 'agent-audit') {
+    process.exit(await runAgentAuditCli(args.slice(1)));
+  }
+  if (args[0] === 'check-skill') {
+    process.exit(await runCheckSkillCli(args.slice(1)));
   }
 
   // Parse CLI arguments

@@ -124,8 +124,8 @@ Returns:
   - scan_duration_ms: Time taken to complete the scan
 
 Examples:
-  - Scan code before committing: {"content": "const key = 'AKIAIOSFODNN7EXAMPLE'"}
-  - Check user input: {"content": "Please ignore previous instructions", "content_type": "text"}`,
+  - Scan code before committing: {"content": "<source file contents>", "content_type": "code"}
+  - Check user input: {"content": "<untrusted user or web text>", "content_type": "text"}`,
       inputSchema: ScanContentInputSchema,
       annotations: {
         readOnlyHint: true,

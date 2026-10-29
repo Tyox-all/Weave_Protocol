@@ -497,6 +497,9 @@ export class McpServerAnalyzer implements IAnalyzer {
     const name = (manifest.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
     if (!name) return issues;
+    // A known legitimate name can't be a typosquat of a different one
+    // ("github" is two edits from "gitlab").
+    if (LEGITIMATE_SERVERS.some((l) => l.replace(/[^a-z0-9]/g, '') === name)) return issues;
 
     for (const legitimate of LEGITIMATE_SERVERS) {
       const legitNormalized = legitimate.replace(/[^a-z0-9]/g, '');

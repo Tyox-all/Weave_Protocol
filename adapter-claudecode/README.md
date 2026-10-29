@@ -58,6 +58,28 @@ weave-claude-code status
 
 ---
 
+## Mund pre-install hooks
+
+Scan skills and MCP servers with [Mund](../mund#-pre-install-checks-for-skills-and-mcp-servers) before they can act:
+
+```bash
+npm i -g @weave_protocol/mund          # optional: faster than the npx fallback
+weave-claude-code mund install         # adds 4 hooks to ~/.claude/settings.json
+```
+
+| Hook | What it does | Can block? |
+|---|---|---|
+| `SessionStart` | Audits installed skills and MCP servers (`mund agent-audit --live`), caches the verdicts, and tells you and Claude what's flagged | Reports only |
+| `PreToolUse` `^mcp__` | **Denies** tool calls to MCP servers Mund blocked; **asks** you for flagged ones | ✅ |
+| `PreToolUse` `Write`/`Edit`/`MultiEdit` | Scans content an agent writes into `.claude/skills/` **before** it's written | ✅ |
+| `ConfigChange` `skills` | Scans a changed skill file and stops a blocked change from taking effect | ✅ |
+
+Notes:
+- Claude Code has no hook that runs before it *connects* to an MCP server, so a flagged server may still start. The gate makes sure no tool call reaches it.
+- Live checks only start servers you configured yourself or approved. Turn them off with `WEAVE_MUND_LIVE=0`.
+- Every hook fails open (allows, with a note on stderr) if Mund can't run. `weave-claude-code mund status` shows how Mund is resolved: `$WEAVE_MUND_BIN`, then a local install, then `npx`.
+- Remove the hooks with `weave-claude-code mund uninstall`; your other hooks are left alone.
+
 ## How WARD.md is resolved
 
 When the hook fires, it looks for a WARD.md in this order:

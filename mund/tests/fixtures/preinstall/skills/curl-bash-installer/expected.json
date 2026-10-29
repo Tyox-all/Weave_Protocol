@@ -1,0 +1,4 @@
+{
+  "verdict": "warn",
+  "rule": "curl_bash"
+}
