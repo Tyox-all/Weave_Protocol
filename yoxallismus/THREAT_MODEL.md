@@ -1,4 +1,4 @@
-# Threat Model — @weave_protocol/yoxallismus v0.1.0-beta.0
+# Threat Model — @weave_protocol/yoxallismus v0.2.0-beta.0
 
 **Status:** EXPERIMENTAL. NOT AUDITED. Beta software.
 
@@ -55,32 +55,48 @@ We assume the following adversary capabilities:
 **Behavior:** A wrong recipient trying to decapsulate produces a *different* shared secret; subsequent AEAD decryption fails with authentication error
 
 ### C7. Forward secrecy within a session
-**Primitive:** Symmetric ratcheting via HKDF chain advance
-**Guarantee:** Compromising the chain key at message N does not reveal messages 1..N-1
-**Limitation:** Does NOT provide post-compromise recovery (see § Not defended)
+**Primitive:** Double Ratchet symmetric chains (HMAC-SHA-256); message keys deleted after use
+**Guarantee:** Compromising session state at message N does not reveal earlier messages
 
 ### C8. Chosen-ciphertext security (IND-CCA2)
 **Primitive:** ML-KEM-768 provides IND-CCA2 by construction; X25519 is used with ephemeral keys per encapsulation
 **Behavior:** An attacker cannot use the recipient as a decryption oracle to extract information about other ciphertexts
 
+### C9. Post-compromise security (new in v0.2)
+**Primitive:** Double Ratchet DH ratchet (fresh X25519 keys every round trip)
+**Guarantee:** An attacker who copies a party's full session state can read traffic only until both parties have sent again. After that round trip the session derives keys from DH secrets the attacker never saw. The test suite demonstrates this with a stolen session copy.
+**Limitation:** Healing requires the attacker to be passive during the round trip. An active attacker holding the state can impersonate the party instead.
+
+### C10. Out-of-order and lost messages (new in v0.2)
+**Primitive:** Skipped-message key retention (at most 1000 per chain step, 2000 in total)
+**Guarantee:** Messages can arrive in any order and some can be lost; the session stays in sync. A lost first message doesn't strand the session, because the handshake is repeated until the first reply.
+
+### C11. Robust decryption (new in v0.2)
+**Behavior:** Forged, replayed, or out-of-window ratchet messages throw and leave the session unchanged, because decryption runs on a copy that is committed only after authentication succeeds.
+
+### C12. Single-primitive break of the symmetric cipher (optional, new in v0.2)
+**Primitive:** Cascade mode, with AES-256-GCM inside ChaCha20-Poly1305 under independent HKDF-derived keys
+**Guarantee:** Confidentiality holds if either AES-256 or ChaCha20 holds.
+
+
 ---
 
-## What v0.1 does NOT defend against
+## What v0.2 does NOT defend against
 
-### N1. Post-compromise recovery
-**Missing:** DH double-ratchet (Signal Protocol style)
-**Impact:** If a chain key is compromised at message N, all *future* messages in that session become readable to the attacker until the session is torn down and re-established
-**Planned:** v0.2
+### N1. Post-quantum post-compromise security
+**Missing:** A PQ KEM inside the ratchet (as in Signal's SPQR / triple ratchet)
+**Impact:** The session start is hybrid post-quantum, but ongoing DH ratchet steps are classical X25519. A future quantum attacker who recorded the traffic and later breaks X25519 can follow the ratchet *after* the first DH step. Messages protected only by the initial KEM chain remain PQ-safe.
+**Planned:** after v0.3
 
 ### N2. Multi-agent m-of-n threshold decryption
 **Missing:** Threshold encryption primitive
 **Impact:** Any single compromised agent that holds a private key can decrypt state that was intended to require multi-party approval
 **Planned:** v0.3
 
-### N3. Out-of-order message delivery
-**Missing:** Skipped-message key retention
-**Impact:** Messages must be decrypted in order. Skipping a message breaks the chain for all subsequent messages
-**Planned:** v0.2
+### N3. Sender authentication
+**Missing:** Identity keys or signatures
+**Impact:** Sealed boxes and ratchet sessions are **sender-anonymous**: the recipient learns that someone who knew its public key sent the message, not who. Authenticate peers at a higher layer (for example Domere handoff tokens).
+**Planned:** v0.3
 
 ### N4. Side-channel attacks
 **Missing:** Constant-time guarantees, memory-cleared secret handling, side-channel resistant primitives
@@ -159,6 +175,7 @@ Documented so we don't pretend we've thought of everything:
 
 ## Version history
 
+- **v0.2.0-beta.0**: Double Ratchet (post-compromise security, out-of-order delivery), hybrid KEM combiner v2, sealed boxes, cascade AEAD, and the locked `yoxall/2` wire format (WIRE_FORMAT.md). Advisories YOXALL-2026-001, -002 and -003 published.
 - **v0.1.0-beta.0** — Initial public beta. PQ-hybrid KEM, AEAD, symmetric ratcheting. Aggressive experimental labeling. Threat model established.
 
 ---

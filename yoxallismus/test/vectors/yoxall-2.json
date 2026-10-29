@@ -1,0 +1,50 @@
+{
+  "format": "yoxall/2",
+  "kem": {
+    "description": "Hybrid KEM, deterministic inputs. Byte fields are hex; large fields as SHA-256.",
+    "inputs": {
+      "recipientX25519Private": "1111111111111111111111111111111111111111111111111111111111111111",
+      "recipientMlkemSeed": "22222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222",
+      "ephemeralX25519Private": "3333333333333333333333333333333333333333333333333333333333333333",
+      "mlkemRandomness": "4444444444444444444444444444444444444444444444444444444444444444"
+    },
+    "recipientX25519Public": "7b4e909bbe7ffe44c465a220037d608ee35897d31ef972f07f74892cb0f73f13",
+    "recipientMlkemPublicSha256": "35818cf22b7ec19f99e196636a482c55a7b33aa58764d0fdf00d5b456876d23f",
+    "ephemeralX25519Public": "7b0d47d93427f8311160781c7c733fd89f88970aef490d8aa0ee19a4cb8a1b14",
+    "mlkemCiphertextSha256": "9eef2d8754b867ab9a277b25badbaa62966ddfea750bd99018a75dbc320aae61",
+    "sharedSecretV2": "63735eaa9bbe8df9d86450e98728e9354b10c0ac34b1d2b0f38a0d9c863b1c3a",
+    "sharedSecretV1Legacy": "9d8237a60b368b8aac81b76f3c495540428746b02aec8a4eb3c0942ee991d974"
+  },
+  "cascade": {
+    "key": "5555555555555555555555555555555555555555555555555555555555555555",
+    "plaintext": "yoxall/2 cascade vector",
+    "aad": "aad",
+    "n1": "666666666666666666666666",
+    "n2": "777777777777777777777777",
+    "nonce": "777777777777777777777777",
+    "ciphertext": "2a27c8824fe90085d2ff8565d9be881f1db5e17bd7792312bdbd48e147f12cec42960219f5e6946dab9949e2cce100d1977527411fb6f3a85b5ca51a2a79370e97e136"
+  },
+  "ratchet": {
+    "sharedSecret": "8888888888888888888888888888888888888888888888888888888888888888",
+    "rootKey0": "e53a75600b62269b86f031bf9300a607434bf61a22d95447b0426c35c56ccb14",
+    "chainKey0": "d3f229452f37e83fb8c44b190d21094b82bf88b6137b995dc2b044e24c45b0c5",
+    "dhOut": "9999999999999999999999999999999999999999999999999999999999999999",
+    "rootKey1": "747e70b81400bc86bea6d651e83814686833e1bb91271338938c4fe3bd5e735c",
+    "chainKey1": "be735f7f0795d17d8917389f0c129bbace3ddf9295f214da2ab9eb1498887c0c",
+    "chainKey0Next": "71192aba8290fd70f75d4ba27bbe2aa18d20280349b52db55fe68841ac58125c",
+    "messageKey0": "f0bdb42cb2af977b1535d438de6acc033e446cf94f45a07466dd3b35cbde4c29",
+    "aesKey": "83e2f1681fb8ce10aad51aff8176c55e1c69f8b253f33aedcbd585c4e3b7de93",
+    "aesNonce": "f68cf6e8b2ffb949d99e6b91",
+    "header": {
+      "dh": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "pn": 3,
+      "n": 7,
+      "encoded": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa0000000300000007"
+    }
+  },
+  "seal": {
+    "sharedSecret": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "keyAesGcm": "d4e72446a96ee9b3b00c6f484a234ce809bf769f911f903cf78fddd652450d60",
+    "keyCascade": "0fd260cdedf87f9e7d5489cd6de44ab842f705cedec6c520422878516b8b8085"
+  }
+}

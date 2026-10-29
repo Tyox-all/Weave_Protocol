@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * weave-yoxall — CLI for @weave_protocol/yoxallismus v0.1.0-beta.0.
+ * weave-yoxall — CLI for @weave_protocol/yoxallismus.
  *
  * Subcommands:
  *   status         Print library status, primitives, known limitations
@@ -29,6 +29,9 @@ import {
   serializePublicKey, deserializePublicKey,
   serializeCiphertext, deserializeCiphertext,
   serializePayload, deserializePayload,
+  seal, open, serializeSealed, deserializeSealed,
+  initiateSession, acceptSession, drEncrypt, drDecrypt, serializeSession, deserializeSession,
+  inspectV1,
 } from './index.js';
 
 const args = process.argv.slice(2);
@@ -65,8 +68,9 @@ function showHelp(): void {
   console.log('  Commands:');
   console.log('    status                              Print library status + known limitations');
   console.log('    keygen --out=<basename>             Generate hybrid keypair → <basename>.pub, <basename>.priv');
-  console.log('    encrypt --to=<pub> --in=<file>      Encrypt file to recipient\'s public key');
-  console.log('    decrypt --with=<priv> --in=<file>   Decrypt file with private key');
+  console.log('    encrypt --to=<pub> --in=<file>      Encrypt file to recipient\'s public key (yoxall/2 sealed box)');
+  console.log('            [--cascade]                 AES-256-GCM inside ChaCha20-Poly1305');
+  console.log('    decrypt --with=<priv> --in=<file>   Decrypt file with private key (reads yoxall/2 and v0.1 files)');
   console.log('    test                                Run all self-tests (reproducible-claims suite)');
   console.log('    benchmark                           Micro-benchmarks');
   console.log('    audit-self                          Run known-attack test vectors');
@@ -122,7 +126,7 @@ function cmdStatus(): void {
   console.log('  \x1b[1mNOT for use with:\x1b[0m');
   for (const s of STATUS.scopeForNonUse) console.log('    ❌ ' + s);
   console.log('');
-  console.log('  \x1b[1mKnown limitations (v0.1.0-beta.0):\x1b[0m');
+  console.log(`  \x1b[1mKnown limitations (v${STATUS.version}):\x1b[0m`);
   for (const s of STATUS.knownLimitations) console.log('    ⚠️  ' + s);
   console.log('');
 }
@@ -181,16 +185,10 @@ function cmdEncrypt(): void {
   }
   const recipientPub = deserializePublicKey(readFileSync(toPath, 'utf8'));
   const plaintext = readFileSync(inPath);
-  const { ciphertext, payload } = PQCipher.encryptTo(recipientPub, new Uint8Array(plaintext));
-  const envelope = JSON.stringify({
-    _type: 'yoxall-encrypted-file',
-    _version: 'yoxall/0.1.0-beta.0',
-    kem: JSON.parse(serializeCiphertext(ciphertext)),
-    payload: JSON.parse(serializePayload(payload)),
-  }, null, 2);
-  writeFileSync(outPath!, envelope);
+  const mode = flags.cascade ? 'cascade' : 'aes-256-gcm';
+  writeFileSync(outPath!, serializeSealed(seal(recipientPub, new Uint8Array(plaintext), { mode })));
   console.log(`  ✅ encrypted ${inPath} (${plaintext.length} bytes) → ${outPath}`);
-  console.log(`     hybrid KEM (X25519+ML-KEM-768) + AES-256-GCM`);
+  console.log(`     yoxall/2 sealed box: hybrid KEM (X25519+ML-KEM-768) + ${mode === 'cascade' ? 'AES-256-GCM inside ChaCha20-Poly1305' : 'AES-256-GCM'}`);
 }
 
 // ─── decrypt ────────────────────────────────────────────────────
@@ -212,15 +210,29 @@ function cmdDecrypt(): void {
     process.exit(1);
   }
   const kp = deserializeKeypair(readFileSync(withPath, 'utf8'));
-  const env = JSON.parse(readFileSync(inPath, 'utf8'));
-  if (env._type !== 'yoxall-encrypted-file') {
-    redCallout('Wrong file type', [`Expected yoxall-encrypted-file, got ${env._type}`]);
+  const raw = readFileSync(inPath);
+  let env: { _type?: string; kem?: unknown; payload?: unknown } = {};
+  try {
+    env = JSON.parse(raw.toString('utf8'));
+  } catch {
+    const v1 = inspectV1(new Uint8Array(raw)) ?? inspectV1(new Uint8Array(Buffer.from(raw.toString('utf8').trim(), 'base64')));
+    if (v1) {
+      redCallout('Yoxallismus v1 payload: cannot be decrypted', [
+        `Hord YoxallismusCipher output (${v1.tumblers} tumblers, ${v1.payloadBytes} bytes).`,
+        'v1 payloads are unrecoverable by any implementation; see SECURITY_ADVISORIES.md',
+        'YOXALL-2026-003. Re-encrypt from the original data with `encrypt`.',
+      ]);
+      process.exit(2);
+    }
+  }
+  if (env._type !== 'yoxall-encrypted-file' && env._type !== 'yoxall-sealed') {
+    redCallout('Wrong file type', [`Expected yoxall-sealed (v0.2) or yoxall-encrypted-file (v0.1), got ${env._type}`]);
     process.exit(1);
   }
-  const ct = deserializeCiphertext(JSON.stringify(env.kem));
-  const payload = deserializePayload(JSON.stringify(env.payload));
   try {
-    const plaintext = PQCipher.decryptFrom(kp, ct, payload);
+    const plaintext = env._type === 'yoxall-sealed'
+      ? open(kp, deserializeSealed(raw.toString('utf8')))
+      : PQCipher.decryptFrom(kp, deserializeCiphertext(JSON.stringify(env.kem)), deserializePayload(JSON.stringify(env.payload)));
     writeFileSync(outPath!, Buffer.from(plaintext));
     console.log(`  ✅ decrypted ${inPath} → ${outPath} (${plaintext.length} bytes)`);
   } catch (err) {
@@ -305,6 +317,38 @@ function cmdTest(): void {
   ok('public key JSON roundtrip preserves bytes',
     Buffer.compare(kp3.x25519PublicKey, r3.x25519PublicKey) === 0 &&
     Buffer.compare(kp3.mlkemPublicKey, r3.mlkemPublicKey) === 0);
+  console.log('');
+
+  console.log('  6. v0.2 sealed boxes (yoxall/2)');
+  const sb = generateHybridKeypair();
+  const sbPub = { x25519PublicKey: sb.x25519PublicKey, mlkemPublicKey: sb.mlkemPublicKey };
+  for (const mode of ['aes-256-gcm', 'cascade'] as const) {
+    const m = deserializeSealed(serializeSealed(seal(sbPub, enc.encode(mode), { mode, aad: enc.encode('ctx') })));
+    ok(`${mode} seal/open roundtrip`, dec.decode(open(sb, m, { aad: enc.encode('ctx') })) === mode);
+    let aadRejected = false;
+    try { open(sb, m, { aad: enc.encode('other') }); } catch { aadRejected = true; }
+    ok(`${mode} rejects wrong AAD`, aadRejected);
+  }
+  console.log('');
+
+  console.log('  7. v0.2 double ratchet (post-compromise security)');
+  const drBob = generateHybridKeypair();
+  const drAlice = initiateSession({ x25519PublicKey: drBob.x25519PublicKey, mlkemPublicKey: drBob.mlkemPublicKey });
+  const { session: drB, plaintext: first } = acceptSession(drBob, drEncrypt(drAlice, enc.encode('hello')));
+  ok('session established from the handshake alone', dec.decode(first) === 'hello');
+  dec.decode(drDecrypt(drAlice, drEncrypt(drB, enc.encode('b1'))));
+  dec.decode(drDecrypt(drB, drEncrypt(drAlice, enc.encode('a2'))));
+  const stolen = deserializeSession(serializeSession(drB));
+  dec.decode(drDecrypt(drAlice, drEncrypt(drB, enc.encode('b2'))));
+  const a3 = drEncrypt(drAlice, enc.encode('a3'));
+  drDecrypt(stolen, a3);
+  drDecrypt(drB, a3);
+  dec.decode(drDecrypt(drAlice, drEncrypt(drB, enc.encode('b3'))));
+  const a4 = drEncrypt(drAlice, enc.encode('a4'));
+  let healed = false;
+  try { drDecrypt(stolen, a4); } catch { healed = true; }
+  ok('stolen state stops decrypting after a DH round trip', healed);
+  ok('real session still decrypts', dec.decode(drDecrypt(drB, a4)) === 'a4');
   console.log('');
 
   console.log('  ═══ Results ═══');

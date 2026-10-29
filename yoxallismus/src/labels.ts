@@ -55,7 +55,8 @@ export function showBetaBanner(): void {
  * Consumed by CLI, by import-time banner, and by test harness.
  */
 export const STATUS = {
-  version: '0.1.0-beta.0',
+  version: '0.2.0-beta.0',
+  wireFormat: 'yoxall/2 (locked through 1.0)',
   audited: false,
   auditPlanned: false,
   status: 'experimental',
@@ -74,18 +75,18 @@ export const STATUS = {
     'production security-critical systems',
   ],
   primitivesUsed: {
-    kem: ['X25519 (classical)', 'ML-KEM-768 (post-quantum, NIST FIPS 203)'],
-    aead: ['AES-256-GCM (Node crypto)'],
-    kdf: ['HKDF-SHA-256 (Node crypto)'],
-    ratchet: ['symmetric ratchet only in v0.1; DH double-ratchet planned v0.2'],
+    kem: ['X25519 (classical)', 'ML-KEM-768 (post-quantum, NIST FIPS 203)', 'X-Wing-style v2 combiner'],
+    aead: ['AES-256-GCM (Node crypto)', 'cascade: AES-256-GCM inside ChaCha20-Poly1305 (Node crypto)'],
+    kdf: ['HKDF-SHA-256 (Node crypto)', 'HMAC-SHA-256 chain keys'],
+    ratchet: ['Signal Double Ratchet over X25519, seeded by the hybrid KEM'],
   },
   knownLimitations: [
     'no threshold encryption yet',
     'no zero-knowledge proofs yet',
     'no verifiable delay functions yet',
-    'no cascade cipher yet',
+    'double-ratchet DH steps are classical X25519 (PQ only at session start)',
     'no FHE integration yet',
-    'no Yoxallismus v1 backward-compat shim yet',
+    'Yoxallismus v1 (Hord) payloads cannot be decrypted (detector only; YOXALL-2026-003)',
     'no formal audit performed',
     'no quantum RNG integration yet',
   ],

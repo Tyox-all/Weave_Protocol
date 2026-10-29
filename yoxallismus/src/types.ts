@@ -1,5 +1,5 @@
 /**
- * Public types for @weave_protocol/yoxallismus v0.1.0-beta.0.
+ * Public types for @weave_protocol/yoxallismus.
  * See THREAT_MODEL.md for the security model these types operate within.
  */
 

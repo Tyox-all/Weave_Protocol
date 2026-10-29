@@ -1,7 +1,7 @@
 {
   "name": "@weave_protocol/yoxallismus",
-  "version": "0.1.0-beta.0",
-  "description": "EXPERIMENTAL post-quantum cryptographic composition layer for AI agents. NOT AUDITED. Use only for research and development. See THREAT_MODEL.md for scope.",
+  "version": "0.2.0-beta.0",
+  "description": "EXPERIMENTAL post-quantum cryptographic composition layer for AI agents: hybrid X25519 + ML-KEM-768, sealed boxes, cascade AEAD, Signal-style Double Ratchet, locked yoxall/2 wire format. NOT AUDITED. Use only for research and development.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -14,7 +14,8 @@
     "THREAT_MODEL.md",
     "SECURITY.md",
     "SECURITY_ADVISORIES.md",
-    "SKILL.md"
+    "SKILL.md",
+    "WIRE_FORMAT.md"
   ],
   "exports": {
     ".": {
@@ -24,7 +25,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "test": "npm run build && node --test test/*.test.mjs"
   },
   "repository": {
     "type": "git",

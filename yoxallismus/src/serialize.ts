@@ -1,9 +1,9 @@
 /**
- * Wire format for @weave_protocol/yoxallismus v0.1.0-beta.0.
+ * Legacy wire format yoxall/0.1.0-beta.0 (keys, KEM ciphertexts, payloads).
  *
- * SUBJECT TO CHANGE. This is beta. The wire format may break between
- * v0.1 and v0.2 as we integrate DH ratcheting and other v0.2 pieces.
- * Migration tooling will be provided when the format stabilizes.
+ * Key envelopes are unchanged in yoxall/2. The KEM-ciphertext and payload
+ * envelopes are kept so v0.1 data stays readable; new data uses the
+ * locked yoxall/2 envelopes in wire.ts (spec: WIRE_FORMAT.md).
  *
  * Current format: base64url-encoded JSON envelopes with explicit
  * versioning. Simple, debuggable, forward-compatible via version tag.

@@ -12,7 +12,7 @@ Part of the [Weave Protocol Security Suite](https://github.com/Tyox-all/Weave_Pr
 | Category | Features |
 |----------|----------|
 | **Vault** | AES-256-GCM encryption, key rotation, secure storage |
-| **Yoxallismus** | Dual-mechanism obfuscation cipher (tumbler + deadbolt) |
+| **Yoxallismus v1** | ⚠️ Deprecated: output can't be decrypted. Use [`@weave_protocol/yoxallismus`](https://github.com/Tyox-all/Weave_Protocol/tree/main/yoxallismus) |
 | **Redaction** | PII/PHI masking, reversible tokenization |
 | **Sandbox** | Isolated code execution, resource limits, timeout enforcement |
 | **Capability** | Token-based access control, delegation chains |
@@ -27,91 +27,36 @@ npm install @weave_protocol/hord
 ## 🚀 Quick Start
 
 ```typescript
-import { VaultManager, YoxallismusCipher } from '@weave_protocol/hord';
+import { VaultManager } from '@weave_protocol/hord';
 
 // Encrypted vault storage
 const vault = new VaultManager({ encryption_key: 'your-secret-key' });
 await vault.store('api-keys', { openai: 'sk-xxx' }, { encrypt: true });
 const secrets = await vault.retrieve('api-keys');
-
-// Yoxallismus obfuscation layer
-const cipher = new YoxallismusCipher({ key: 'master-key', tumblers: 7 });
-const locked = cipher.lock(sensitiveData);
-const unlocked = cipher.unlock(locked);
 ```
 
 ---
 
-## 🔐 Yoxallismus Vault Cipher
+## ⚠️ Yoxallismus Vault Cipher (v1): deprecated
 
-*Named after Leslie Yoxall's WWII Bletchley Park codebreaking technique*
+`YoxallismusCipher` is **deprecated as of 0.1.8**. Its `lock()` output **cannot be decrypted**, by its own `unlock()` or by any other implementation: the XOR mask is derived from a seed that hashes the plaintext, and only part of that seed is stored. See advisory [YOXALL-2026-003](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus/SECURITY_ADVISORIES.md).
 
-A dual-mechanism obfuscation layer combining:
-- **Tumbler**: Revolving permutation (like spinning a vault dial)
-- **Deadbolt**: Position-dependent XOR masking (the manual lock)
-- **Entropy**: Decoy byte injection to obscure patterns
+Hord's vault never used this cipher, so `VaultManager` data is unaffected.
+
+What changed in 0.1.8:
+- Constructing a `YoxallismusCipher` emits a one-time `DeprecationWarning` (code `HORD_YOXALLISMUS_V1`).
+- `unlock()` and `decode()` throw `YoxallismusV1UnrecoverableError` instead of silently returning the wrong bytes.
+- `lock()` and `encode()` still run, so existing imports don't break, but their output is one-way.
+
+**Use [`@weave_protocol/yoxallismus`](https://github.com/Tyox-all/Weave_Protocol/tree/main/yoxallismus) instead.** It's real authenticated, post-quantum hybrid encryption:
 
 ```typescript
-import { YoxallismusCipher } from '@weave_protocol/hord';
+import { generateHybridKeypair, publicKeyOf, seal, open } from '@weave_protocol/yoxallismus';
 
-const vault = new YoxallismusCipher({
-  key: 'your-master-key',
-  tumblers: 7,          // 1-12 dial positions
-  entropy_ratio: 0.2,   // 20% decoy bytes
-  revolving: true       // Pattern changes per block
-});
-
-// Lock data (encode + obfuscate)
-const locked = vault.lock(Buffer.from('sensitive data'));
-
-// Unlock data (decode + reveal)
-const unlocked = vault.unlock(locked);
-
-// String convenience methods
-const encoded = vault.encode('secret message');
-const decoded = vault.decode(encoded);
+const key = generateHybridKeypair();
+const sealed = seal(publicKeyOf(key), Buffer.from('sensitive data'));
+const data = open(key, sealed);
 ```
-
-### How It Works
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    YOXALLISMUS VAULT                        │
-├─────────────────────────────────────────────────────────────┤
-│  PLAINTEXT                                                  │
-│      │                                                      │
-│      ▼                                                      │
-│  ┌─────────────────────────────────────┐                    │
-│  │  1. ENTROPY INJECTION               │                    │
-│  │     Insert decoy bytes              │                    │
-│  └─────────────────────────────────────┘                    │
-│      │                                                      │
-│      ▼                                                      │
-│  ┌─────────────────────────────────────┐                    │
-│  │  2. TUMBLER PERMUTATION             │                    │
-│  │     Revolving shuffle (1-12 dials)  │                    │
-│  └─────────────────────────────────────┘                    │
-│      │                                                      │
-│      ▼                                                      │
-│  ┌─────────────────────────────────────┐                    │
-│  │  3. DEADBOLT XOR MASK               │                    │
-│  │     Position-dependent masking      │                    │
-│  └─────────────────────────────────────┘                    │
-│      │                                                      │
-│      ▼                                                      │
-│  CIPHERTEXT (YXLS header)                                   │
-└─────────────────────────────────────────────────────────────┘
-```
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `key` | required | Master key for derivation |
-| `tumblers` | 7 | Dial positions (1-12) |
-| `entropy_ratio` | 0.2 | Decoy byte ratio (0.1-0.5) |
-| `revolving` | true | Pattern changes per block |
-| `block_size` | 64 | Processing block size |
-
----
 
 ## 🔒 Vault Manager
 
@@ -277,15 +222,15 @@ const valid = await attestation.verify(proof.attestation_id);
 
 ## 📚 API Reference
 
-### YoxallismusCipher
+### YoxallismusCipher (deprecated)
 
 | Method | Description |
 |--------|-------------|
-| `lock(data)` | Lock data through vault (Buffer) |
-| `unlock(data)` | Unlock data from vault (Buffer) |
-| `encode(string)` | Lock and base64 encode |
-| `decode(string)` | Decode and unlock |
+| `lock(data)` / `encode(string)` | One-way: output can't be decrypted. Warns once. |
+| `unlock(data)` / `decode(string)` | Throws `YoxallismusV1UnrecoverableError` |
 | `getInfo()` | Get cipher configuration |
+
+Use `seal()` / `open()` from `@weave_protocol/yoxallismus` for encryption.
 
 ### VaultManager
 

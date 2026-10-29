@@ -14,7 +14,19 @@
  * ships as X25519Kyber768Draft00 in TLS 1.3. The design pattern is
  * well-established; the primitives are NIST-standardized.
  *
- * WIRE FORMAT (v0.1.0-beta.0, subject to change before v0.2):
+ * COMBINERS
+ *   v2 (default, wire format yoxall/2):
+ *     ss = HKDF-SHA-256(ikm = ss_mlkem || ss_x25519 || eph_x25519_pub || recip_x25519_pub,
+ *                       salt = 32 zero bytes, info = "weave-yoxall/2 kem-combine")
+ *     Same shape as X-Wing: binding the X25519 ephemeral and recipient
+ *     public keys means the combined secret is IND-CCA even if only the
+ *     X25519 half is relied on. ML-KEM is already IND-CCA, so its
+ *     ciphertext doesn't need to be hashed in.
+ *   v1 (legacy, v0.1.0-beta.0): HKDF over ss_x25519 || ss_mlkem, salted
+ *     with the recipient public keys, without the ephemeral key. Kept
+ *     only so data from v0.1 can still be decrypted (YOXALL-2026-002).
+ *
+ * WIRE FORMAT (byte sizes, unchanged since v0.1):
  *   Public key:  [X25519 32B][ML-KEM-768 pub 1184B] = 1216 bytes
  *   Private key: [X25519 32B][ML-KEM-768 priv 2400B] = 2432 bytes
  *   Ciphertext:  [X25519 eph pub 32B][ML-KEM-768 ct 1088B] = 1120 bytes
@@ -26,7 +38,26 @@ import { ml_kem768 } from '@noble/post-quantum/ml-kem';
 import type { HybridKeypair, HybridPublicKey, EncapsulationResult, HybridCiphertext } from './types.js';
 import { hkdf } from './kdf.js';
 
-const HYBRID_COMBINE_INFO = 'weave-yoxall v0.1 pq-hybrid-combine';
+const HYBRID_COMBINE_INFO_V1 = 'weave-yoxall v0.1 pq-hybrid-combine';
+const HYBRID_COMBINE_INFO_V2 = 'weave-yoxall/2 kem-combine';
+
+/** KEM combiner version: 2 (default) or 1 (legacy v0.1 data only). */
+export type CombinerVersion = 1 | 2;
+
+function combine(
+  version: CombinerVersion,
+  x25519Shared: Uint8Array,
+  mlkemShared: Uint8Array,
+  ephemeralPub: Uint8Array,
+  recipient: HybridPublicKey,
+): Uint8Array {
+  if (version === 1) {
+    const salt = concatBytes(recipient.x25519PublicKey, recipient.mlkemPublicKey);
+    return hkdf(concatBytes(x25519Shared, mlkemShared), salt, HYBRID_COMBINE_INFO_V1, 32);
+  }
+  const ikm = concatAll(mlkemShared, x25519Shared, ephemeralPub, recipient.x25519PublicKey);
+  return hkdf(ikm, new Uint8Array(32), HYBRID_COMBINE_INFO_V2, 32);
+}
 
 // ─── Key generation ─────────────────────────────────────────────
 
@@ -65,18 +96,30 @@ export function generateHybridKeypair(): HybridKeypair {
  *   - sharedSecret: 32 bytes that both parties will hold
  *   - ciphertext: the hybrid KEM output that recipient decapsulates
  */
-export function encapsulate(recipientPub: HybridPublicKey): EncapsulationResult {
-  // X25519: generate ephemeral, compute shared secret
-  const ephemeral = generateKeyPairSync('x25519', {
-    publicKeyEncoding: { type: 'spki', format: 'der' },
-    privateKeyEncoding: { type: 'pkcs8', format: 'der' },
-  });
-  const ephemeralPubRaw = extractX25519RawFromSpki(ephemeral.publicKey as unknown as Buffer);
+export function encapsulate(recipientPub: HybridPublicKey, version: CombinerVersion = 2): EncapsulationResult {
+  return encapsulateWith(recipientPub, version, randomBytes(32), randomBytes(32));
+}
+
+/**
+ * Deterministic encapsulation from caller-supplied randomness. Used for
+ * known-answer test vectors only — NEVER call with non-random inputs in
+ * real use. Not exported from the package index.
+ */
+export function encapsulateWith(
+  recipientPub: HybridPublicKey,
+  version: CombinerVersion,
+  x25519EphemeralPrivate: Uint8Array,
+  mlkemRandomness: Uint8Array,
+): EncapsulationResult {
+  // X25519: ephemeral keypair from the supplied private scalar
   const ephemeralPrivObj = createPrivateKey({
-    key: ephemeral.privateKey as unknown as Buffer,
+    key: wrapX25519RawAsPkcs8(x25519EphemeralPrivate),
     format: 'der',
     type: 'pkcs8',
   });
+  const ephemeralPubRaw = extractX25519RawFromSpki(
+    createPublicKey(ephemeralPrivObj).export({ type: 'spki', format: 'der' }) as Buffer,
+  );
 
   const recipientX25519PubObj = createPublicKey({
     key: wrapX25519RawAsSpki(recipientPub.x25519PublicKey),
@@ -90,14 +133,11 @@ export function encapsulate(recipientPub: HybridPublicKey): EncapsulationResult 
   }));
 
   // ML-KEM: encapsulate to recipient's ML-KEM public key
-  const mlkemResult = ml_kem768.encapsulate(recipientPub.mlkemPublicKey);
+  const mlkemResult = ml_kem768.encapsulate(recipientPub.mlkemPublicKey, mlkemRandomness);
   const mlkemSharedSecret = mlkemResult.sharedSecret;
   const mlkemCiphertext = mlkemResult.cipherText;
 
-  // Combine via HKDF: salt = both public parts, ikm = concatenated secrets
-  const salt = concatBytes(recipientPub.x25519PublicKey, recipientPub.mlkemPublicKey);
-  const ikm = concatBytes(x25519SharedSecret, mlkemSharedSecret);
-  const sharedSecret = hkdf(ikm, salt, HYBRID_COMBINE_INFO, 32);
+  const sharedSecret = combine(version, x25519SharedSecret, mlkemSharedSecret, ephemeralPubRaw, recipientPub);
 
   return {
     sharedSecret,
@@ -121,7 +161,7 @@ export function encapsulate(recipientPub: HybridPublicKey): EncapsulationResult 
  * shared secret was correct out-of-band (typically via AEAD auth-tag
  * verification on subsequent messages).
  */
-export function decapsulate(recipientPriv: HybridKeypair, ct: HybridCiphertext): Uint8Array {
+export function decapsulate(recipientPriv: HybridKeypair, ct: HybridCiphertext, version: CombinerVersion = 2): Uint8Array {
   // X25519: compute shared secret with ephemeral public + own private
   const recipientPrivObj = createPrivateKey({
     key: wrapX25519RawAsPkcs8(recipientPriv.x25519PrivateKey),
@@ -142,10 +182,7 @@ export function decapsulate(recipientPriv: HybridKeypair, ct: HybridCiphertext):
   // ML-KEM: decapsulate
   const mlkemSharedSecret = ml_kem768.decapsulate(ct.mlkemCiphertext, recipientPriv.mlkemPrivateKey);
 
-  // Combine — same salt/info as encapsulate
-  const salt = concatBytes(recipientPriv.x25519PublicKey, recipientPriv.mlkemPublicKey);
-  const ikm = concatBytes(x25519SharedSecret, mlkemSharedSecret);
-  return hkdf(ikm, salt, HYBRID_COMBINE_INFO, 32);
+  return combine(version, x25519SharedSecret, mlkemSharedSecret, ct.x25519EphemeralPublicKey, recipientPriv);
 }
 
 // ─── Public-key extraction ──────────────────────────────────────
@@ -158,6 +195,44 @@ export function publicKeyOf(kp: HybridKeypair): HybridPublicKey {
 }
 
 // ─── Helpers ────────────────────────────────────────────────────
+
+/** Deterministic keypair from seeds — known-answer test vectors only. */
+export function keypairFromSeeds(x25519Private: Uint8Array, mlkemSeed: Uint8Array): HybridKeypair {
+  const priv = createPrivateKey({ key: wrapX25519RawAsPkcs8(x25519Private), format: 'der', type: 'pkcs8' });
+  const x25519PublicKey = extractX25519RawFromSpki(createPublicKey(priv).export({ type: 'spki', format: 'der' }) as Buffer);
+  const ml = ml_kem768.keygen(mlkemSeed);
+  return { x25519PublicKey, x25519PrivateKey: new Uint8Array(x25519Private), mlkemPublicKey: ml.publicKey, mlkemPrivateKey: ml.secretKey };
+}
+
+/** Raw X25519 Diffie-Hellman on 32-byte keys (used by the double ratchet). */
+export function x25519(privateKey: Uint8Array, publicKey: Uint8Array): Uint8Array {
+  return new Uint8Array(diffieHellman({
+    privateKey: createPrivateKey({ key: wrapX25519RawAsPkcs8(privateKey), format: 'der', type: 'pkcs8' }),
+    publicKey: createPublicKey({ key: wrapX25519RawAsSpki(publicKey), format: 'der', type: 'spki' }),
+  }));
+}
+
+/** Fresh raw X25519 keypair (used by the double ratchet). */
+export function generateX25519(): { publicKey: Uint8Array; privateKey: Uint8Array } {
+  const k = generateKeyPairSync('x25519', {
+    publicKeyEncoding: { type: 'spki', format: 'der' },
+    privateKeyEncoding: { type: 'pkcs8', format: 'der' },
+  });
+  return {
+    publicKey: extractX25519RawFromSpki(k.publicKey as unknown as Buffer),
+    privateKey: extractX25519RawFromPkcs8(k.privateKey as unknown as Buffer),
+  };
+}
+
+function concatAll(...parts: Uint8Array[]): Uint8Array {
+  const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+  let off = 0;
+  for (const p of parts) {
+    out.set(p, off);
+    off += p.length;
+  }
+  return out;
+}
 
 function concatBytes(a: Uint8Array, b: Uint8Array): Uint8Array {
   const out = new Uint8Array(a.length + b.length);
