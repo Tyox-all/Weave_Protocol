@@ -66,6 +66,13 @@ npm install @weave_protocol/full
 
 A big stretch across offense, defense, and how releases ship. Highlights:
 
+#### 🎯 AgentSecBench 0.2.0, with a public results page
+[`@weave_protocol/agentsecbench@0.2.0`](https://www.npmjs.com/package/@weave_protocol/agentsecbench) turns benchmark runs into something you can publish and compare:
+
+- **[Public results page](https://tyox-all.github.io/Weave_Protocol/asb/).** A leaderboard of tier-graded agents on the locked ASB-Browser-v1 suite. Results go up as summaries that strip every piece of attack evidence, so nothing an agent said or did during the run is published.
+- **Report schema v1.1.** Each report carries a hash of the exact suite it ran, so two reports can prove they're comparable. It also records Adversary 0.3's dynamic-mutation results, including how many attacks landed only through a reworded variant.
+- **Suites that can't drift.** Suites are checked against the attack corpus before a run, and the built-in suite is hash-locked, so an accidental edit fails CI instead of quietly changing the benchmark. Suites can also be loaded from JSON files.
+
 #### ⚔️ Adversary v0.3.0, on npm now
 [`@weave_protocol/adversary@0.3.0`](https://www.npmjs.com/package/@weave_protocol/adversary) is published.
 
@@ -93,11 +100,6 @@ A big stretch across offense, defense, and how releases ship. Highlights:
 - **MCP rug-pull detection (OWASP ASI04).** Mund remembers each MCP server's tools when you first approve it and alerts when they change later. If a changed tool now looks malicious or asks to run commands, the verdict is `DO_NOT_USE`.
 - Both features are backed by a **fixture library** with one test case per scenario. OWASP coverage is now **3/20 green for Mund alone and 10/20 across the Weave suite**, with every green cell linked to its source.
 
-#### 🎯 AgentSecBench 0.2 (next release)
-- **Results page** at [`/asb/`](https://tyox-all.github.io/Weave_Protocol/asb/): a leaderboard built from public summaries, with all attack evidence stripped.
-- **Report schema v1.1**: adds a suite hash (two reports can prove they ran the identical suite) and Adversary 0.3's dynamic-mutation results, including how many attacks landed only through a reworded variant.
-- **Suite validation**: suites are checked against the attack corpus before a run, and the built-in suite is hash-locked so it can't silently change. Suites can also be loaded from JSON files.
-
 #### 🔏 How releases ship
 - **npm Trusted Publishing (OIDC).** CI publishes without any long-lived npm token.
 - **CycloneDX SBOM and Sigstore attestations** for every package published by `publish-all`.
@@ -113,7 +115,7 @@ The first agent security platform to publish its own offensive engine. Two new p
 | Package | Role | Version |
 |---|---|---|
 | [`@weave_protocol/adversary`](https://github.com/Tyox-all/Weave_Protocol/blob/main/adversary) | Offensive engine — 68 documented + novel attacks across 5 categories (IPI, tool-coercion, jailbreak, extraction, goal-corruption). Real Playwright browser target with 4 breach signal channels. Real-LLM demo mode via Anthropic API. **New in v0.3:** LLM-driven dynamic mutation retries half-blocked attacks with fresh variants. | ✅ **v0.3.0** ~! |
-| [`@weave_protocol/agentsecbench`](https://github.com/Tyox-all/Weave_Protocol/blob/main/agentsecbench) | Standardized benchmark — locked attack suites, tier grades A–F, paste-ready reports, side-by-side comparison, [public results page](https://tyox-all.github.io/Weave_Protocol/asb/) | ✅ v0.1.0 (0.2 in review) |
+| [`@weave_protocol/agentsecbench`](https://github.com/Tyox-all/Weave_Protocol/blob/main/agentsecbench) | Standardized benchmark — locked attack suites, tier grades A–F, paste-ready reports, side-by-side comparison, [public results page](https://tyox-all.github.io/Weave_Protocol/asb/) | ✅ **v0.2.0** |
 
 **Trophy attacks** — documented in-the-wild incidents reproduced in the corpus:
 
@@ -304,7 +306,7 @@ The red team. We attack what we defend.
 | Package | Version | Description |
 |---|---|---|
 | [⚔️ @weave_protocol/adversary](https://github.com/Tyox-all/Weave_Protocol/blob/main/adversary) | **0.3.0** | **Offensive engine** — 68 attacks · LLM dynamic mutation · real Playwright browser target · real-LLM demo mode · WARD-aware attack selection |
-| [🎯 @weave_protocol/agentsecbench](https://github.com/Tyox-all/Weave_Protocol/blob/main/agentsecbench) | **0.1.0** | **Standardized benchmark** — locked suites (ASB-Browser-v1), tier grading A–F, trophy attacks, WARD delta, paste-ready reports |
+| [🎯 @weave_protocol/agentsecbench](https://github.com/Tyox-all/Weave_Protocol/blob/main/agentsecbench) | **0.2.0** | **Standardized benchmark** — locked suites (ASB-Browser-v1), tier grading A–F, trophy attacks, WARD delta, paste-ready reports |
 
 ### 🔧 Operations & Integrations (5 packages, plus 1 PyPI)
 
@@ -813,6 +815,7 @@ done
 - [x] **Adversarial agents** (`@weave_protocol/adversary` v0.2.1) — 68 documented + novel attacks, real Playwright browser target, real-LLM demo mode
 - [x] **Adversary v0.3** (`@weave_protocol/adversary` v0.3.0): LLM-driven dynamic mutation of half-blocked attacks, verified live on Claude Haiku 5.5; default model moved off the retired Claude 3.5 Haiku; API-failure runs now error out instead of scoring 100/100
 - [x] **AgentSecBench** (`@weave_protocol/agentsecbench` v0.1.0) — standardized benchmark, tier grades A–F
+- [x] **AgentSecBench v0.2** (`@weave_protocol/agentsecbench` v0.2.0): report schema v1.1, hash-locked suites with pre-run validation, suite files, and a [public results page](https://tyox-all.github.io/Weave_Protocol/asb/)
 - [x] **Witan autonomous spending caps** (`@weave_protocol/witan` v1.1.0) — per-window budgets on LLM cost + tokens + tool calls, gated by block / approval / notify
 - [x] **Yoxallismus v2** (`@weave_protocol/yoxallismus@0.1.0-beta.0`) — **open beta shipped**. PQ-hybrid KEM (X25519 + ML-KEM-768 / NIST FIPS 203) + AEAD + ratcheting. Unaudited by design; validated by public use, forks, and responsible disclosure. v0.2+ adds DH double-ratchet, cascade cipher, threshold encryption; v0.3+ adds ZK/VDF/QRNG; v0.4+ adds FHE. See [yoxallismus/README.md](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus).
 - [x] **Mund parity floor**: SARIF output (`mund-mcp scan --format=sarif`), OSV.dev live CVE lookups with offline fallback, 0–100 risk score, CycloneDX SBOM + Sigstore attestations in `publish-all`, OWASP LLM + Agentic coverage tables
