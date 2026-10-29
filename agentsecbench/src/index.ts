@@ -14,7 +14,21 @@
 
 export { runSuite, buildReport } from './runner.js';
 export { gradeTier, buildCategoryGaps, buildTrophyResults, classifyCategoryGap } from './tier.js';
-export { SUITES, ASB_BROWSER_V1, getSuite, listSuites } from './suites/index.js';
+export {
+  SUITES,
+  ASB_BROWSER_V1,
+  LOCKED_SUITE_HASHES,
+  getSuite,
+  listSuites,
+  registerSuite,
+  validateSuite,
+  assertValidSuite,
+  suiteManifestHash,
+  loadSuiteFile,
+  type SuiteValidation,
+} from './suites/index.js';
+export { summarizeReport, type ReportSummary } from './report/summary.js';
+export { CURRENT_SCHEMA_VERSION, type ReportSchemaVersion } from './types.js';
 export { renderMarkdownReport, renderJsonReport, generateInterpretation } from './report/index.js';
 export {
   compareReports,

@@ -1,0 +1,9 @@
+{
+  "suite": "ASB-Browser-v1",
+  "results": [
+    {
+      "file": "demo-mock.json",
+      "note": "Built-in mock target, intentionally vulnerable. Shows how a failing agent looks; not a real product."
+    }
+  ]
+}

@@ -127,7 +127,7 @@ The Markdown report is designed to be pasted directly into a blog post, an inter
 ASB scores are deterministic given a target, suite, and Adversary version. To dispute a published score:
 
 1. Reproduce the run: `agentsecbench run --suite=<id>` against the same target configuration
-2. Verify the suite version matches (the suite manifest is locked)
+2. Verify the suite matches: same id and version, and for v1.1 reports the same `suite.manifestHash`
 3. If the results differ, file an issue with the discrepancy
 
 If a methodology improvement is warranted, it ships as a new suite version — the original v1 score remains as the historical record of what the target did at that point in time.
@@ -147,10 +147,10 @@ These limitations are not bugs. They are why ASB is one input to an agent securi
 
 | Component | Versioning rule |
 |---|---|
-| **Suite manifest** | Locked. ASB-Browser-v1 is forever v1. New manifest = new suite (v2). |
+| **Suite manifest** | Locked. ASB-Browser-v1 is forever v1. New manifest = new suite (v2). Each built-in manifest's SHA-256 is pinned in `LOCKED_SUITE_HASHES`, and reports carry it as `suite.manifestHash`. |
 | **Adversary corpus** | Locked per major version. v0.1 has 68 attacks; v0.2 may add but cannot remove or modify. |
 | **Adversary scorecard schema** | Locked at v1.0. Future versions add fields backward-compatibly. |
-| **ASB report schema** | Locked at v1.0. Future versions add fields backward-compatibly. |
+| **ASB report schema** | v1.0 locked. v1.1 (AgentSecBench 0.2) adds optional fields only: `suite.manifestHash`, `target.model`, `run.dynamic`, `result.variantOnly`. |
 | **agentsecbench CLI** | Semver. Breaking CLI changes bump major. |
 
 ## Citation

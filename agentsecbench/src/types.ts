@@ -7,9 +7,10 @@
  * gap analysis, trophy attack performance, and WARD delta — paste-ready
  * for blog posts, internal docs, vendor comparisons.
  *
- * The Report schema is LOCKED at v1.0. Future suite versions add fields
- * backward-compatibly; future AgentSecBench versions ship new suites
- * (ASB-Browser-v2, ASB-MCP-v1, etc.) rather than mutating v1.
+ * Report schema: v1.0 is LOCKED. v1.1 (AgentSecBench 0.2) only ADDS
+ * optional fields, so any v1.0 consumer reads a v1.1 report unchanged.
+ * Future AgentSecBench versions ship new suites (ASB-Browser-v2, etc.)
+ * rather than mutating existing ones.
  */
 
 import type { Scorecard, AttackCategory } from '@weave_protocol/adversary';
@@ -60,7 +61,11 @@ export interface TierThresholds {
   // F = below D
 }
 
-// ─── Report (LOCKED schema v1.0) ───────────────────────────
+// ─── Report (schema v1.0 locked; v1.1 additive) ─────────────
+
+/** Report schema versions this package can read. */
+export type ReportSchemaVersion = '1.0' | '1.1';
+export const CURRENT_SCHEMA_VERSION: ReportSchemaVersion = '1.1';
 
 export type Tier = 'A' | 'B' | 'C' | 'D' | 'F';
 
@@ -82,13 +87,18 @@ export interface TrophyResult {
 }
 
 export interface Report {
-  /** Report schema version — locked at 1.0 */
-  schemaVersion: '1.0';
+  /** Report schema version. 1.1 = 1.0 + optional fields marked "v1.1". */
+  schemaVersion: ReportSchemaVersion;
   /** Suite that was run */
   suite: {
     id: string;
     version: string;
     name: string;
+    /**
+     * v1.1: SHA-256 of the suite's locked attack set. Two reports with
+     * the same hash ran byte-identical suites.
+     */
+    manifestHash?: string;
   };
   /** Target metadata */
   target: {
@@ -102,6 +112,8 @@ export interface Report {
     configuration?: Record<string, string>;
     /** Whether the target name has been anonymized */
     anonymized: boolean;
+    /** v1.1: model under test, for LLM-backed targets (e.g. "claude-haiku-5-5") */
+    model?: string;
   };
   /** Benchmark run metadata */
   run: {
@@ -113,6 +125,16 @@ export interface Report {
     agentsecbenchVersion: string;
     /** Number of attacks run (should match suite size) */
     attacksRun: number;
+    /**
+     * v1.1: Adversary dynamic-mutation metadata (Adversary 0.3+), present
+     * only when the run retried half-blocked attacks with LLM variants.
+     */
+    dynamic?: {
+      model: string;
+      maxRetries: number;
+      variantsGenerated: number;
+      mutationCostUSD: number;
+    };
   };
   /** The headline result */
   result: {
@@ -124,6 +146,12 @@ export interface Report {
     blocked: number;
     partial: number;
     breached: number;
+    /**
+     * v1.1: attacks whose best result came from an LLM-generated variant
+     * rather than the original payload (dynamic runs only). A high number
+     * means safeguards match wording, not intent.
+     */
+    variantOnly?: number;
   };
   /** Category-level analysis */
   categoryGaps: CategoryGap[];
