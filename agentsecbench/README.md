@@ -167,8 +167,8 @@ console.log(renderMarkdownReport(report));
 
 | Component | Locked? | Notes |
 |---|---|---|
-| Suite manifest (ASB-Browser-v1) | ✅ Forever | Methodology improvements ship as v2 |
-| Report schema | ✅ at v1.0 | Future versions add fields backward-compatibly |
+| Suite manifest (ASB-Browser-v1) | ✅ Forever, hash-pinned | `LOCKED_SUITE_HASHES` pins the manifest hash; an edit fails CI. Improvements ship as v2 |
+| Report schema | ✅ v1.0, v1.1 additive | v1.1 only adds optional fields; v1.0 readers keep working |
 | Tier thresholds | ✅ per suite | Different suite versions may have different thresholds |
 | Adversary corpus | ✅ at v0.1 | Adversary v0.2 may add attacks but not remove or modify |
 | Adversary scorecard schema | ✅ at v1.0 | The schema both packages depend on |
@@ -177,10 +177,44 @@ Locking is the entire point. Without it, a benchmark isn't a benchmark — it's 
 
 ---
 
+## Suites, validation, and the results page (v0.2)
+
+**Suite validation.** Every suite is checked against the installed Adversary corpus *before* a run: unknown attack ids, duplicates, trophies outside the suite, and bad tier thresholds all stop the run, because a partial run isn't comparable.
+
+```bash
+agentsecbench validate                                # built-in suites (+ locked-hash check)
+agentsecbench validate --suite-file=my-suite.json     # a suite you wrote
+agentsecbench run --suite-file=my-suite.json          # run it
+agentsecbench suites                                  # list suites with ✓ valid / 🔒 locked
+```
+
+A suite file is a JSON `SuiteManifest`: `id` (`ASB-<Name>-v<N>`), `version: "1.0"`, `attackIds` drawn from the Adversary corpus, `trophyAttacks`, and `tierThresholds`. Programmatically, use `loadSuiteFile()` and `registerSuite()`. Built-in suite ids can't be replaced.
+
+**Report schema v1.1** adds these fields, all optional:
+
+| Field | Meaning |
+|---|---|
+| `suite.manifestHash` | SHA-256 of the suite's locked attack set. Equal hashes mean identical suites. |
+| `target.model` | Model under test, for LLM-backed targets |
+| `run.dynamic` | Adversary 0.3 dynamic-mutation run: model, retries, variants generated, mutation cost |
+| `result.variantOnly` | Attacks that landed only through an LLM variant. A high value means safeguards match wording, not intent. |
+
+**Results page.** [`tyox-all.github.io/Weave_Protocol/asb/`](https://tyox-all.github.io/Weave_Protocol/asb/) renders a leaderboard from public **summaries**. `agentsecbench summarize` strips every piece of per-attack evidence, keeping scores, category gaps and trophy outcomes:
+
+```bash
+agentsecbench run --name="My Agent" --json=report.json
+agentsecbench summarize report.json --out=../docs/asb/results/my-agent.json
+```
+
+Then list the file in `docs/asb/results/index.json`.
+
+---
+
 ## Roadmap
 
-- **v0.1** *(this release)* — `ASB-Browser-v1` (40 attacks), tier grading, category gaps, trophy performance, WARD delta, compare command
-- **v0.2** — `ASB-MCP-v1` (MCP server target suite), `ASB-Safety-v1` (jailbreak resistance), target adapters for Claude Code / Antigravity / MSAF
+- **v0.1** — `ASB-Browser-v1` (40 attacks), tier grading, category gaps, trophy performance, WARD delta, compare command
+- **v0.2** *(this release)*: report schema v1.1, pre-run suite validation, hash-locked suites, suite files, `validate` / `summarize` commands, results page
+- **next**: `ASB-MCP-v1` (MCP server target suite), `ASB-Safety-v1` (jailbreak resistance), target adapters for Claude Code / Antigravity / MSAF, first public scorecards
 - **v0.3** — Dynamic-mode suites (when Adversary v0.3 ships LLM-driven attacks)
 - **v0.4** — `ASB-Multi-Agent-v1` (multi-turn, stateful, blocked on Adversary v0.4)
 

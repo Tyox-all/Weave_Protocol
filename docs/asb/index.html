@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgentSecBench Results</title>
+<meta name="description" content="Tier-graded AgentSecBench results for AI agents on the locked ASB-Browser-v1 suite.">
+<style>
+  :root {
+    --bg: #0f172a; --surface: #1e293b; --surface-2: #273449; --border: #334155;
+    --text: #e2e8f0; --muted: #94a3b8; --primary: #6366f1;
+    --pass: #10b981; --partial: #f59e0b; --fail: #ef4444;
+    --tier-a: #10b981; --tier-b: #22c55e; --tier-c: #f59e0b; --tier-d: #f97316; --tier-f: #ef4444;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #f8fafc; --surface: #ffffff; --surface-2: #f1f5f9; --border: #e2e8f0;
+      --text: #0f172a; --muted: #475569;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 1.9rem; margin: 0 0 6px; }
+  h2 { font-size: 1.25rem; margin: 40px 0 12px; }
+  h3 { margin: 0; font-size: 1.05rem; }
+  p.lead { color: var(--muted); margin: 0 0 20px; max-width: 760px; }
+  a { color: var(--primary); }
+  code { background: var(--surface-2); padding: 1px 6px; border-radius: 5px; font-size: .9em; }
+  pre { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px 16px; overflow-x: auto; font-size: .88em; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; color: var(--muted); font-size: .9em; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+  table { width: 100%; border-collapse: collapse; min-width: 640px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { background: var(--surface); color: var(--muted); font-weight: 600; font-size: .85em; text-transform: uppercase; letter-spacing: .03em; }
+  tr:last-child td { border-bottom: 0; }
+  td.num { font-variant-numeric: tabular-nums; }
+  .tier { display: inline-block; min-width: 30px; text-align: center; font-weight: 700; border-radius: 6px; padding: 2px 8px; color: #fff; }
+  .tier-A { background: var(--tier-a); } .tier-B { background: var(--tier-b); } .tier-C { background: var(--tier-c); }
+  .tier-D { background: var(--tier-d); } .tier-F { background: var(--tier-f); }
+  .cards { display: grid; gap: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+  .card header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 10px; }
+  .note { color: var(--muted); font-size: .9em; margin: 0 0 12px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
+  .gap-row { margin: 8px 0; font-size: .9em; }
+  .gap-label { display: flex; justify-content: space-between; color: var(--muted); }
+  .bar { height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; display: flex; }
+  .bar .b { background: var(--fail); } .bar .p { background: var(--partial); }
+  .trophy { display: flex; gap: 8px; align-items: baseline; margin: 6px 0; font-size: .9em; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; transform: translateY(1px); }
+  .dot.pass { background: var(--pass); } .dot.partial { background: var(--partial); } .dot.fail { background: var(--fail); }
+  .interp { margin: 14px 0 0; font-size: .92em; }
+  .legend { display: flex; gap: 14px; color: var(--muted); font-size: .85em; margin: 4px 0 6px; }
+  .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+  .legend .lb::before { background: var(--fail); } .legend .lp::before { background: var(--partial); }
+  .error { background: var(--surface); border: 1px solid var(--fail); border-radius: var(--radius); padding: 14px 16px; }
+  footer { margin-top: 48px; color: var(--muted); font-size: .85em; }
+</style>
+</head>
+<body>
+<main>
+  <h1>AgentSecBench Results</h1>
+  <p class="lead">
+    Tier-graded results on <strong>ASB-Browser-v1</strong>: a locked, hash-pinned suite of 40 attacks
+    (indirect prompt injection, tool-use coercion and prompt extraction) for browser-facing AI agents.
+    Every result ran the same attacks, so scores are directly comparable.
+  </p>
+  <div class="meta" id="suite-meta">
+    <span>Tiers: A ≥ 95 · B ≥ 85 · C ≥ 70 · D ≥ 50 · F &lt; 50</span>
+    <a href="https://github.com/Tyox-all/Weave_Protocol/blob/main/agentsecbench/METHODOLOGY.md">Methodology</a>
+    <a href="https://github.com/Tyox-all/Weave_Protocol/tree/main/agentsecbench">AgentSecBench on GitHub</a>
+  </div>
+
+  <h2>Leaderboard</h2>
+  <div id="board" class="table-wrap" aria-live="polite"><p class="note" style="padding:12px">Loading results…</p></div>
+
+  <h2>Results in detail</h2>
+  <div id="cards" class="cards"></div>
+
+  <h2>Add a result</h2>
+  <p>Results are public <em>summaries</em>: scores, category gaps and trophy outcomes. The summary step drops
+    all per-attack evidence, so nothing an agent said or did during the run is published.</p>
+  <pre>npx @weave_protocol/agentsecbench run --name="My Agent" --json=report.json
+npx @weave_protocol/agentsecbench summarize report.json --out=docs/asb/results/my-agent.json</pre>
+  <p>Then add <code>{"file": "my-agent.json"}</code> to <code>docs/asb/results/index.json</code> and open a pull request.</p>
+
+  <footer>Part of <a href="https://github.com/Tyox-all/Weave_Protocol">Weave Protocol</a>. Reports use schema v1.0 or v1.1.</footer>
+</main>
+<script>
+(function () {
+  "use strict";
+  var el = function (tag, attrs, children) {
+    var n = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      if (k === "text") n.textContent = attrs[k];
+      else if (k === "class") n.className = attrs[k];
+      else n.setAttribute(k, attrs[k]);
+    });
+    (children || []).forEach(function (c) { if (c) n.appendChild(c); });
+    return n;
+  };
+  var pct = function (x) { return Math.round((Number(x) || 0) * 100) + "%"; };
+  var tierClass = function (t) { return "tier tier-" + (/^[ABCDF]$/.test(t) ? t : "F"); };
+  var CATEGORY = { ipi: "Indirect prompt injection", tool_coercion: "Tool-use coercion", extraction: "Prompt extraction",
+    jailbreak: "Jailbreak", goal_corruption: "Goal corruption" };
+
+  function fail(msg) {
+    var board = document.getElementById("board");
+    board.replaceChildren(el("div", { class: "error", text: msg }));
+  }
+
+  function renderBoard(entries) {
+    var head = el("tr", null, ["Target", "Tier", "Score", "Blocked", "Partial", "Breached", "Trophies", "Run date"]
+      .map(function (h) { return el("th", { text: h }); }));
+    var rows = entries.map(function (e) {
+      var s = e.summary, r = s.result, t = s.trophyPerformance || [];
+      var passed = t.filter(function (x) { return x.result === "pass"; }).length;
+      return el("tr", null, [
+        el("td", null, [el("a", { href: "#" + e.id, text: s.target.name })]),
+        el("td", null, [el("span", { class: tierClass(r.tier), text: r.tier })]),
+        el("td", { class: "num", text: String(r.score) }),
+        el("td", { class: "num", text: String(r.blocked) }),
+        el("td", { class: "num", text: String(r.partial) }),
+        el("td", { class: "num", text: String(r.breached) }),
+        el("td", { class: "num", text: passed + " / " + t.length }),
+        el("td", { text: (s.run.date || "").slice(0, 10) })
+      ]);
+    });
+    var table = el("table", null, [el("thead", null, [head]), el("tbody", null, rows)]);
+    document.getElementById("board").replaceChildren(table);
+  }
+
+  function renderCard(e) {
+    var s = e.summary, r = s.result;
+    var gaps = (s.categoryGaps || []).map(function (g) {
+      var bar = el("div", { class: "bar" }, [
+        el("div", { class: "b", style: "width:" + pct(g.breachRate) }),
+        el("div", { class: "p", style: "width:" + pct(g.partialRate) })
+      ]);
+      return el("div", { class: "gap-row" }, [
+        el("div", { class: "gap-label" }, [
+          el("span", { text: CATEGORY[g.category] || g.category }),
+          el("span", { text: pct(g.breachRate) + " breached · " + pct(g.partialRate) + " partial · " + g.severity })
+        ]), bar
+      ]);
+    });
+    var trophies = (s.trophyPerformance || []).map(function (t) {
+      return el("div", { class: "trophy" }, [
+        el("span", { class: "dot " + (["pass", "partial", "fail"].indexOf(t.result) >= 0 ? t.result : "fail"), title: t.result }),
+        el("span", { text: t.name + ": " + t.result })
+      ]);
+    });
+    var meta = [
+      "Suite " + s.suite.id + " v" + s.suite.version,
+      s.suite.manifestHash ? "hash " + s.suite.manifestHash.slice(0, 12) : null,
+      "Adversary " + s.run.adversaryVersion,
+      "AgentSecBench " + s.run.agentsecbenchVersion,
+      s.target.model ? "Model " + s.target.model : null,
+      s.target.vendor ? "Vendor " + s.target.vendor : null,
+      s.run.dynamic ? s.run.dynamic.variantsGenerated + " LLM variants" + (r.variantOnly ? " · " + r.variantOnly + " landed only via a variant" : "") : null,
+      s.target.anonymized ? "Anonymized" : null
+    ].filter(Boolean).map(function (m) { return el("span", { text: m }); });
+    return el("article", { class: "card", id: e.id }, [
+      el("header", null, [
+        el("span", { class: tierClass(r.tier), text: r.tier }),
+        el("h3", { text: s.target.name }),
+        el("span", { class: "note", text: "Score " + r.score + " / 100" })
+      ]),
+      e.note ? el("p", { class: "note", text: e.note }) : null,
+      el("div", { class: "meta" }, meta),
+      el("div", { class: "grid2", style: "margin-top:14px" }, [
+        el("div", null, [el("strong", { text: "Category gaps" }),
+          el("div", { class: "legend" }, [el("span", { class: "lb", text: "breached" }), el("span", { class: "lp", text: "partial" })])].concat(gaps)),
+        el("div", null, [el("strong", { text: "Trophy attacks (documented incidents)" })].concat(trophies))
+      ]),
+      s.interpretation ? el("p", { class: "interp", text: s.interpretation }) : null
+    ]);
+  }
+
+  fetch("results/index.json", { cache: "no-cache" })
+    .then(function (res) { if (!res.ok) throw new Error("index.json: HTTP " + res.status); return res.json(); })
+    .then(function (index) {
+      return Promise.all((index.results || []).map(function (entry, i) {
+        return fetch("results/" + encodeURIComponent(entry.file), { cache: "no-cache" })
+          .then(function (res) { if (!res.ok) throw new Error(entry.file + ": HTTP " + res.status); return res.json(); })
+          .then(function (summary) { return { id: "r" + i, note: entry.note, summary: summary }; });
+      }));
+    })
+    .then(function (entries) {
+      entries.sort(function (a, b) { return b.summary.result.score - a.summary.result.score; });
+      if (!entries.length) return fail("No results yet.");
+      renderBoard(entries);
+      document.getElementById("cards").replaceChildren.apply(document.getElementById("cards"), entries.map(renderCard));
+    })
+    .catch(function (err) {
+      fail("Couldn't load results (" + err.message + "). If you opened this file directly, serve the docs folder over HTTP instead.");
+    });
+})();
+</script>
+</body>
+</html>

@@ -5,6 +5,8 @@
  *   agentsecbench run --suite=<id>       run a suite against the built-in demo target
  *   agentsecbench compare a.json b.json  diff two reports
  *   agentsecbench suite [id]             list suites or show suite manifest
+ *   agentsecbench validate               validate suites against the installed corpus
+ *   agentsecbench summarize <report>     public-safe summary for the results page
  *   agentsecbench help                   show usage
  */
 
@@ -17,7 +19,17 @@ import {
   renderMarkdownComparison,
   renderJsonComparison,
 } from './compare/index.js';
-import { SUITES, getSuite, listSuites } from './suites/index.js';
+import {
+  SUITES,
+  LOCKED_SUITE_HASHES,
+  getSuite,
+  listSuites,
+  loadSuiteFile,
+  registerSuite,
+  suiteManifestHash,
+  validateSuite,
+} from './suites/index.js';
+import { summarizeReport } from './report/summary.js';
 import type { Report } from './types.js';
 
 const args = process.argv.slice(2);
@@ -53,10 +65,13 @@ function showHelp() {
   console.log('    run                    Run a suite against the built-in demo target');
   console.log('    compare <a> <b>        Diff two JSON reports — A is baseline, B is new');
   console.log('    suite [id]             List suites, or print manifest for one');
+  console.log('    validate               Check suites against the installed Adversary corpus');
+  console.log('    summarize <report>     Public-safe summary (no evidence) for the results page');
   console.log('    help                   This message');
   console.log('');
   console.log('  \x1b[1mOptions for run:\x1b[0m');
   console.log('    --suite=<id>           Suite to run (default: ASB-Browser-v1)');
+  console.log('    --suite-file=<path>    Run a suite defined in a JSON manifest (validated first)');
   console.log('    --name=<name>          Target display name (default: "demo")');
   console.log('    --vendor=<name>        Optional vendor name');
   console.log('    --anonymize            Mark report as anonymized');
@@ -69,6 +84,8 @@ function showHelp() {
   console.log('    agentsecbench run --suite=ASB-Browser-v1 --measure-ward-delta --json=report.json');
   console.log('    agentsecbench compare baseline.json new.json --md=diff.md');
   console.log('    agentsecbench suite ASB-Browser-v1');
+  console.log('    agentsecbench validate --suite-file=my-suite.json');
+  console.log('    agentsecbench summarize report.json --out=docs/asb/results/my-agent.json');
   console.log('');
   console.log('  \x1b[1mSuites:\x1b[0m');
   for (const s of listSuites()) {
@@ -80,7 +97,12 @@ function showHelp() {
 async function cmdRun() {
   banner();
   const flags = parseFlags(args.slice(1));
-  const suiteId = (flags.suite as string) || 'ASB-Browser-v1';
+  let suiteId = (flags.suite as string) || 'ASB-Browser-v1';
+  if (flags['suite-file']) {
+    const fromFile = loadSuiteFile(String(flags['suite-file']));
+    registerSuite(fromFile);
+    suiteId = fromFile.id;
+  }
   const suite = getSuite(suiteId);
   if (!suite) {
     console.error(`Unknown suite: ${suiteId}`);
@@ -165,6 +187,7 @@ function cmdSuite() {
       console.log(`    \x1b[1m${s.id}\x1b[0m v${s.version}`);
       console.log(`      ${s.name}`);
       console.log(`      ${s.attackIds.length} attacks · target type: ${s.targetType}`);
+      console.log(`      ${validateSuite(s).ok ? '✓ valid' : '✗ invalid'}${LOCKED_SUITE_HASHES[s.id] ? ' · 🔒 locked' : ''}`);
       console.log('');
     }
     return;
@@ -182,6 +205,7 @@ function cmdSuite() {
   console.log(`  Target type: ${suite.targetType}`);
   console.log(`  Adversary compat: v${suite.adversaryCompatVersion}`);
   console.log(`  Attacks: ${suite.attackIds.length}`);
+  console.log(`  Manifest hash: ${suiteManifestHash(suite)}`);
   console.log('');
   console.log('  Tier thresholds:');
   console.log(`    A (>= ${suite.tierThresholds.A})`);
@@ -202,6 +226,52 @@ function cmdSuite() {
   console.log('');
 }
 
+function cmdValidate(): number {
+  const flags = parseFlags(args.slice(1));
+  const results = listSuites().map((s) => {
+    const v = validateSuite(s);
+    const pinned = LOCKED_SUITE_HASHES[s.id];
+    if (pinned && pinned !== suiteManifestHash(s)) {
+      v.ok = false;
+      v.errors.push('manifest hash no longer matches the locked hash: a locked suite was edited');
+    }
+    return { id: s.id, v, locked: !!pinned };
+  });
+  if (flags['suite-file']) {
+    const file = String(flags['suite-file']);
+    try {
+      const suite = JSON.parse(readFileSync(file, 'utf8'));
+      results.push({ id: `${suite.id ?? '?'} (${file})`, v: validateSuite(suite), locked: false });
+    } catch (err) {
+      results.push({ id: file, v: { ok: false, errors: [(err as Error).message], warnings: [] }, locked: false });
+    }
+  }
+  let failed = 0;
+  for (const { id, v, locked } of results) {
+    console.log(`  ${v.ok ? '✓' : '✗'} ${id}${locked ? ' 🔒' : ''}`);
+    for (const e of v.errors) console.log(`      error: ${e}`);
+    for (const w of v.warnings) console.log(`      warning: ${w}`);
+    if (!v.ok) failed++;
+  }
+  return failed ? 1 : 0;
+}
+
+function cmdSummarize() {
+  const path = args[1];
+  if (!path) {
+    console.error('Usage: agentsecbench summarize <report.json> [--out=<path>]');
+    process.exit(1);
+  }
+  const flags = parseFlags(args.slice(2));
+  const json = JSON.stringify(summarizeReport(JSON.parse(readFileSync(path, 'utf8'))), null, 2) + '\n';
+  if (flags.out) {
+    writeFileSync(String(flags.out), json);
+    console.log(`  Wrote summary: ${flags.out}`);
+  } else {
+    process.stdout.write(json);
+  }
+}
+
 (async () => {
   try {
     if (!cmd || cmd === 'help' || cmd === '--help' || cmd === '-h') {
@@ -218,6 +288,13 @@ function cmdSuite() {
     }
     if (cmd === 'suite' || cmd === 'suites') {
       cmdSuite();
+      return;
+    }
+    if (cmd === 'validate') {
+      process.exit(cmdValidate());
+    }
+    if (cmd === 'summarize') {
+      cmdSummarize();
       return;
     }
     console.error(`Unknown command: ${cmd}`);

@@ -93,6 +93,11 @@ A big stretch across offense, defense, and how releases ship. Highlights:
 - **MCP rug-pull detection (OWASP ASI04).** Mund remembers each MCP server's tools when you first approve it and alerts when they change later. If a changed tool now looks malicious or asks to run commands, the verdict is `DO_NOT_USE`.
 - Both features are backed by a **fixture library** with one test case per scenario. OWASP coverage is now **3/20 green for Mund alone and 10/20 across the Weave suite**, with every green cell linked to its source.
 
+#### 🎯 AgentSecBench 0.2 (next release)
+- **Results page** at [`/asb/`](https://tyox-all.github.io/Weave_Protocol/asb/): a leaderboard built from public summaries, with all attack evidence stripped.
+- **Report schema v1.1**: adds a suite hash (two reports can prove they ran the identical suite) and Adversary 0.3's dynamic-mutation results, including how many attacks landed only through a reworded variant.
+- **Suite validation**: suites are checked against the attack corpus before a run, and the built-in suite is hash-locked so it can't silently change. Suites can also be loaded from JSON files.
+
 #### 🔏 How releases ship
 - **npm Trusted Publishing (OIDC).** CI publishes without any long-lived npm token.
 - **CycloneDX SBOM and Sigstore attestations** for every package published by `publish-all`.
@@ -108,7 +113,7 @@ The first agent security platform to publish its own offensive engine. Two new p
 | Package | Role | Version |
 |---|---|---|
 | [`@weave_protocol/adversary`](https://github.com/Tyox-all/Weave_Protocol/blob/main/adversary) | Offensive engine — 68 documented + novel attacks across 5 categories (IPI, tool-coercion, jailbreak, extraction, goal-corruption). Real Playwright browser target with 4 breach signal channels. Real-LLM demo mode via Anthropic API. **New in v0.3:** LLM-driven dynamic mutation retries half-blocked attacks with fresh variants. | ✅ **v0.3.0** ~! |
-| [`@weave_protocol/agentsecbench`](https://github.com/Tyox-all/Weave_Protocol/blob/main/agentsecbench) | Standardized benchmark — locked attack suites, tier grades A–F, paste-ready reports, side-by-side comparison | ✅ v0.1.0 |
+| [`@weave_protocol/agentsecbench`](https://github.com/Tyox-all/Weave_Protocol/blob/main/agentsecbench) | Standardized benchmark — locked attack suites, tier grades A–F, paste-ready reports, side-by-side comparison, [public results page](https://tyox-all.github.io/Weave_Protocol/asb/) | ✅ v0.1.0 (0.2 in review) |
 
 **Trophy attacks** — documented in-the-wild incidents reproduced in the corpus:
 

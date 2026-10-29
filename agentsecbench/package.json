@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/agentsecbench",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Standardized, versioned, citable AI agent security benchmark. Curated attack suites built on @weave_protocol/adversary. Produces paste-ready reports and side-by-side comparisons.",
   "type": "module",
   "main": "./dist/index.js",
@@ -26,7 +26,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "test": "npm run build && node --test test/*.test.mjs"
   },
   "repository": {
     "type": "git",
@@ -51,7 +52,7 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@weave_protocol/adversary": "^0.1.0"
+    "@weave_protocol/adversary": "^0.3.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
