@@ -43,13 +43,15 @@ The design principle: **novel architecture, standardized primitives.** The primi
 
 - **Not a replacement for liboqs, PQClean, or BoringSSL.** Those libraries are the primitive layer. This library composes them for agent use cases.
 - **Not audited.** Signal, Cloudflare, Google, and every serious PQ-crypto deployment has been externally audited. This library has not.
-- **Not production-ready.** v0.1.0-beta.0 explicitly.
+- **Not production-ready.** 0.2.0-beta.0 explicitly.
 
 ## Installation
 
 ```bash
-npm install @weave_protocol/yoxallismus
+npm install @weave_protocol/yoxallismus@beta
 ```
+
+The `@beta` tag is required: `latest` intentionally points at a stub until the library is audited.
 
 To silence the runtime beta banner:
 
@@ -57,22 +59,52 @@ To silence the runtime beta banner:
 export YOXALL_SILENCE_BETA_WARNING=1
 ```
 
+## 🔒 Wire format `yoxall/2` is locked
+
+As of **0.2.0-beta.0**, everything 0.2 writes stays readable by every release through **1.0**. The format is specified byte by byte in [WIRE_FORMAT.md](WIRE_FORMAT.md), and known-answer test vectors in CI fail the build if any byte changes. Later releases may only *add* optional fields; anything else becomes `yoxall/3`. Data written by v0.1 stays readable too.
+
 ## Quick start (programmatic)
 
+**One-shot encryption to a public key (sealed box):**
+
 ```typescript
-import { PQCipher } from '@weave_protocol/yoxallismus';
+import { generateHybridKeypair, publicKeyOf, seal, open, serializeSealed, deserializeSealed } from '@weave_protocol/yoxallismus';
 
-// Alice generates a keypair, shares her public key
-const alice = PQCipher.generateKeypair();
-const alicePub = PQCipher.publicKeyOf(alice);
+const alice = generateHybridKeypair();
 
-// Bob encrypts a message to Alice
-const bundle = PQCipher.encryptTo(alicePub, new TextEncoder().encode('secret'));
+// Anyone with Alice's public key can seal a message to her
+const msg = seal(publicKeyOf(alice), new TextEncoder().encode('secret'), {
+  aad: new TextEncoder().encode('inbox:alice'), // context binding, checked on open
+  mode: 'cascade',                             // optional: AES-256-GCM inside ChaCha20-Poly1305
+});
+const wire = serializeSealed(msg); // yoxall/2 JSON envelope
 
-// Alice decrypts
-const message = PQCipher.decryptFrom(alice, bundle.ciphertext, bundle.payload);
-console.log(new TextDecoder().decode(message)); // "secret"
+// Alice opens it, supplying the context she expects
+const pt = open(alice, deserializeSealed(wire), { aad: new TextEncoder().encode('inbox:alice') });
 ```
+
+**A conversation with post-compromise security (Double Ratchet):**
+
+```typescript
+import { initiateSession, acceptSession, drEncrypt, drDecrypt } from '@weave_protocol/yoxallismus';
+
+const bob = generateHybridKeypair();
+
+// Alice starts a session from Bob's public key and sends first
+const alice = initiateSession(publicKeyOf(bob));
+const m1 = drEncrypt(alice, new TextEncoder().encode('hi bob'));
+
+// Bob creates his session from that first message: no other setup needed
+const { session: bobSession, plaintext } = acceptSession(bob, m1);
+
+// From here, either side sends; keys ratchet forward every message
+const reply = drEncrypt(bobSession, new TextEncoder().encode('hi alice'));
+drDecrypt(alice, reply);
+```
+
+Persist sessions with `serializeSession()` / `deserializeSession()`. Those envelopes contain secret keys, so store them encrypted.
+
+`PQCipher` (the v0.1 API) still works and still reads v0.1 data; use `seal()` / `open()` for new code.
 
 ## Quick start (CLI)
 
@@ -99,19 +131,21 @@ weave-yoxall audit-self
 weave-yoxall benchmark
 ```
 
-## What's inside (v0.1.0-beta.0)
+## What's inside (v0.2.0-beta.0)
 
 | Component | Primitive | Size / Cost |
 |---|---|---|
 | Classical KEM | X25519 (Node crypto) | 32B pub / 32B priv |
 | Post-quantum KEM | ML-KEM-768 via `@noble/post-quantum` (NIST FIPS 203) | 1184B pub / 2400B priv |
-| Hybrid combination | HKDF-SHA-256 over concatenated shared secrets | 32B output |
+| Hybrid combination | **v2:** X-Wing-style HKDF over both secrets + X25519 ephemeral and recipient keys | 32B output |
 | AEAD | AES-256-GCM (Node crypto) | 12B nonce, 16B tag |
-| KDF | HKDF-SHA-256 (Node crypto) | 32B default |
-| Ratchet | Symmetric ratchet (chain-key advance via HKDF) | Forward secrecy within session |
-| Wire format | JSON envelopes with `_type` + `_version` discriminator | Base64url values |
+| Cascade AEAD *(new)* | AES-256-GCM inside ChaCha20-Poly1305, independent keys | +44B |
+| Sealed boxes *(new)* | Hybrid KEM → HKDF → AEAD or cascade | 1120B KEM ciphertext |
+| Double Ratchet *(new)* | Signal Double Ratchet over X25519, seeded by the hybrid KEM | Forward secrecy + post-compromise security |
+| Wire format | `yoxall/2` JSON envelopes, **locked through 1.0** | Base64url values |
+| v1 detection *(new)* | Recognizes Hord `YoxallismusCipher` payloads (unrecoverable; YOXALL-2026-003) | — |
 
-## Performance (v0.1.0-beta.0)
+## Performance (measured on v0.1.0-beta.0; v0.2 adds no cost to these paths)
 
 Measured on Node.js 22, x86_64, single-threaded, warm cache:
 
@@ -133,14 +167,15 @@ weave-yoxall test
 ```
 
 This runs assertions on:
-- AEAD encrypt/decrypt roundtrip
-- Ciphertext bit-flip rejection
-- AAD binding
+- AEAD encrypt/decrypt roundtrip, bit-flip rejection, AAD binding
 - PQ-hybrid keypair sizes match NIST FIPS 203
 - Encapsulate/decapsulate produce matching shared secrets
 - Wrong recipient cannot decrypt
-- Ratchet forward-motion and message counter
+- Sealed boxes in both modes, including wrong-AAD rejection
+- Double Ratchet: session start from the handshake alone, and **a stolen session copy that stops decrypting after one DH round trip** (post-compromise security)
 - Serialization roundtrip preserves bytes
+
+The full suite (`npm test`, 26 tests) also covers the `yoxall/2` known-answer vectors, out-of-order delivery across ratchet steps, replay and forgery rejection that leaves the session untouched, the skipped-message limit, and v1 payload detection.
 
 To verify known-attack vectors are rejected:
 
@@ -151,15 +186,13 @@ weave-yoxall audit-self
 ## Known limitations
 
 - **No formal external audit** performed
-- **No threshold encryption** (multi-agent m-of-n) yet — planned v0.2+
-- **No DH double-ratchet** — v0.1 only has symmetric ratcheting; no post-compromise recovery. Planned v0.2.
-- **No zero-knowledge proofs** yet — planned v0.3+
-- **No verifiable delay functions** yet — planned v0.3+
-- **No FHE integration** yet — planned v0.4+
-- **No Yoxallismus v1 backward-compat shim** yet — planned v0.2
-- **No cascade cipher** (classical ⊕ PQ) mode — planned v0.2
-- **No quantum-RNG integration** — planned v0.3+
-- **Wire format not stabilized** — may change between v0.1 and v0.2 (migration tooling will accompany the break)
+- **Ratchet steps are classical.** Sessions *start* post-quantum (hybrid KEM), but ongoing Double Ratchet DH steps use X25519, as in Signal's original design. A PQ ratchet is planned after v0.3.
+- **No sender authentication**: sealed boxes and sessions are sender-anonymous. Authenticate peers at a higher layer.
+- **Yoxallismus v1 (Hord) payloads can't be decrypted** by any implementation; v0.2 detects them and explains why (YOXALL-2026-003).
+- **No threshold encryption** (multi-agent m-of-n) yet, planned v0.3
+- **No zero-knowledge proofs or verifiable delay functions** yet, planned v0.3+
+- **No FHE integration** yet, planned v0.4+
+- **No quantum-RNG integration**, planned v0.3+
 
 See `weave-yoxall status` for the machine-readable version of this list.
 
@@ -174,10 +207,13 @@ Full threat model in [THREAT_MODEL.md](THREAT_MODEL.md).
 - Chosen-ciphertext attacks on the KEM (via ML-KEM's IND-CCA2 security + X25519 ephemeral keys)
 - Post-quantum harvest-now-decrypt-later on ciphertexts (via hybrid KEM PQ half)
 - Forward secrecy of past messages within a session (via ratcheting)
+- Post-compromise recovery: a stolen session stops working after one DH round trip (Double Ratchet)
+- Out-of-order and lost messages within a session
 
-**What v0.1 does NOT defend against:**
-- Post-compromise recovery (need DH ratcheting; planned v0.2)
-- Multi-agent state isolation (need threshold encryption; planned v0.2+)
+**What v0.2 does NOT defend against:**
+- Quantum attacks on the ongoing ratchet: only the session start is post-quantum
+- Sender impersonation: messages are sender-anonymous
+- Multi-agent state isolation (need threshold encryption; planned v0.3)
 - Side-channel attacks (timing, cache, power)
 - Compromised RNG
 - Malicious dependency updates

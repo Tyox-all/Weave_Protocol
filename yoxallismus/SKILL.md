@@ -42,8 +42,10 @@ Lower-level primitives also exported:
 ### Critical caveats
 
 - **NOT AUDITED.** Do not use for regulated, medical, financial, or legal data.
-- Wire format may break between v0.1 and v0.2.
-- No post-compromise recovery yet (planned v0.2 via DH double-ratchet).
+- Wire format `yoxall/2` is locked through 1.0 (see `WIRE_FORMAT.md`); use `seal()`/`open()` and `initiateSession()`/`acceptSession()` for new code.
+- Double Ratchet sessions heal after compromise, but only the session start is post-quantum; ongoing ratchet steps are classical X25519.
+- Messages are sender-anonymous: authenticate peers at a higher layer.
+- Yoxallismus v1 (Hord `YoxallismusCipher`) payloads cannot be decrypted (YOXALL-2026-003).
 - No threshold encryption yet (planned v0.3).
 - Silence the runtime beta banner with `YOXALL_SILENCE_BETA_WARNING=1`.
 

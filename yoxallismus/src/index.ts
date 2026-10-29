@@ -43,7 +43,7 @@ export {
   HKDF_HASH,
 } from './kdf.js';
 
-// Ratchet
+// Ratchet (v0.1 symmetric ratchet — deprecated; use initiateSession/acceptSession)
 export {
   initRatchet,
   ratchetEncrypt,
@@ -62,8 +62,34 @@ export {
   deserializePayload,
 } from './serialize.js';
 
-// v1 compat (throws — not implemented in v0.1.0-beta.0)
-export { readV1 } from './v1-compat.js';
+// v0.2: sealed boxes, cascade AEAD, double ratchet, locked yoxall/2 wire format
+export { seal, open, type SealedMessage, type SealMode, type SealOptions } from './sealed.js';
+export { cascadeEncrypt, cascadeDecrypt, CASCADE_OVERHEAD, type CascadePayload } from './cascade.js';
+export {
+  initiateSession,
+  acceptSession,
+  ratchetEncrypt as drEncrypt,
+  ratchetDecrypt as drDecrypt,
+  encodeHeader,
+  MAX_SKIP,
+  MAX_SKIPPED_TOTAL,
+  type DoubleRatchetSession,
+  type RatchetMessage,
+  type RatchetHeader,
+} from './double-ratchet.js';
+export {
+  WIRE_VERSION_2,
+  serializeSealed,
+  deserializeSealed,
+  serializeRatchetMessage,
+  deserializeRatchetMessage,
+  serializeSession,
+  deserializeSession,
+} from './wire.js';
+export type { CombinerVersion } from './kem.js';
+
+// v1 (Hord YoxallismusCipher): detection only, v1 payloads are unrecoverable
+export { readV1, inspectV1, V1PayloadUnrecoverableError, type V1HeaderInfo } from './v1-compat.js';
 
 // Types
 export type {
@@ -118,7 +144,9 @@ export class PQCipher {
     plaintext: Uint8Array,
     associatedData?: Uint8Array,
   ): { ciphertext: HybridCiphertext; payload: EncryptedPayload } {
-    const kem = encapsulate(recipientPub);
+    // PQCipher is the v0.1 API and keeps the v0.1 combiner so existing
+    // data still decrypts. New code should use seal()/open().
+    const kem = encapsulate(recipientPub, 1);
     const aeadKey = deriveAeadKey(kem.sharedSecret, 'weave-yoxall v0.1 pqcipher-encrypt');
     const payload = aeadEncrypt(aeadKey, plaintext, associatedData);
     return { ciphertext: kem.ciphertext, payload };
@@ -130,7 +158,7 @@ export class PQCipher {
     ciphertext: HybridCiphertext,
     payload: EncryptedPayload,
   ): Uint8Array {
-    const sharedSecret = decapsulate(recipientPriv, ciphertext);
+    const sharedSecret = decapsulate(recipientPriv, ciphertext, 1);
     const aeadKey = deriveAeadKey(sharedSecret, 'weave-yoxall v0.1 pqcipher-encrypt');
     return aeadDecrypt(aeadKey, payload);
   }

@@ -1,0 +1,7 @@
+{
+  "description": "Payload produced by Hord YoxallismusCipher.lock(\"hello from hord v1\") with key fixture-key, tumblers 7 (defaults otherwise). Hord unlock() cannot recover it; see YOXALL-2026-003.",
+  "base64": "WVhMUwEHFAFsYH36+f9IL2yBpF1yTLsE7kSGibzfiFPWUH+7/Tk9dRj0OO4=",
+  "tumblers": 7,
+  "entropyRatio": 0.2,
+  "revolving": true
+}
