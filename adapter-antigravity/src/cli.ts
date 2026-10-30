@@ -17,11 +17,14 @@ import {
   removeHook,
   readSettings,
   isHookInstalled,
+  isLegacyHookInstalled,
+  WARD_HOOK_NAME,
   antigravitySettingsPath,
   antigravityConfigDir,
   userWardPath,
 } from './config.js';
 import { resolveWardForCwd, evaluateCall, runPreToolUseHook } from './hook.js';
+import { installMundHooks, removeMundHooks, hooksJsonPath, runMundHook, mundCommand, HOOK_NAME } from './mund.js';
 
 // ─── ANSI colors ───────────────────────────────────────────────
 const tty = process.stdout.isTTY && !process.env.NO_COLOR;
@@ -49,16 +52,19 @@ function help(): void {
   banner();
   console.error(`${c.bold}Usage:${c.reset} weave-antigravity <command> [options]\n`);
   console.error(`${c.bold}Commands:${c.reset}`);
-  console.error(`  ${c.cyan}init${c.reset} ${c.gray}[--matcher=X] [--fail-closed]${c.reset}    Install the WARD pre-tool-use hook`);
-  console.error(`  ${c.cyan}disable${c.reset}                            Remove the WARD hook`);
+  console.error(`  ${c.cyan}init${c.reset} ${c.gray}[--matcher=X] [--fail-closed] [--workspace=DIR]${c.reset}  Install the WARD hook (~/.gemini/config/hooks.json)`);
+  console.error(`  ${c.cyan}disable${c.reset} ${c.gray}[--workspace=DIR]${c.reset}          Remove the WARD hook`);
   console.error(`  ${c.cyan}status${c.reset}                             Show hook installation + active WARD policy`);
   console.error(`  ${c.cyan}test${c.reset} ${c.gray}<tool> [--input=JSON]${c.reset}         Dry-run a tool call against your WARD.md`);
+  console.error(`  ${c.cyan}mund install${c.reset} ${c.gray}[--workspace=DIR]${c.reset}    Install Mund pre-install hooks (~/.gemini/config/hooks.json)`);
+  console.error(`  ${c.cyan}mund uninstall${c.reset} ${c.gray}[--workspace=DIR]${c.reset}  Remove the Mund hooks`);
+  console.error(`  ${c.cyan}mund status${c.reset}                        Show where Mund hooks live and how Mund is resolved`);
   console.error(`  ${c.cyan}hook${c.reset} ${c.gray}<event>${c.reset}                       Internal: called by Antigravity as a hook`);
   console.error(`  ${c.cyan}help${c.reset}                               Show this message\n`);
   console.error(`${c.bold}Examples:${c.reset}`);
   console.error(`  ${c.gray}$${c.reset} weave-antigravity init`);
   console.error(`  ${c.gray}$${c.reset} weave-antigravity status`);
-  console.error(`  ${c.gray}$${c.reset} weave-antigravity test Bash --input='{"command":"rm -rf ~/.gcloud"}'`);
+  console.error(`  ${c.gray}$${c.reset} weave-antigravity test run_command --input='{"CommandLine":"rm -rf ~/.gcloud"}'`);
   console.error(`  ${c.gray}$${c.reset} weave-antigravity disable\n`);
   console.error(`${c.gray}Docs: https://github.com/Tyox-all/Weave_Protocol/tree/main/adapter-antigravity${c.reset}\n`);
 }
@@ -82,17 +88,19 @@ function runInit(args: string[]): number {
   const matcher = parseFlag(args, 'matcher') || undefined;
   const failClosed = hasFlag(args, 'fail-closed');
 
-  const settings = readSettings();
-  const wasInstalled = isHookInstalled(settings);
+  const workspace = parseFlag(args, 'workspace') || undefined;
+  const wasInstalled = isHookInstalled({ workspace });
 
-  installHook({
+  const { path, migrated } = installHook({
     toolMatcher: matcher,
     failClosed,
     timeoutSeconds: 5,
+    workspace,
   });
 
   const verb = wasInstalled ? 'Updated' : 'Installed';
-  console.error(`${c.green}✓${c.reset} ${verb} WARD hook in ${c.cyan}${antigravitySettingsPath()}${c.reset}`);
+  console.error(`${c.green}✓${c.reset} ${verb} WARD hook "${WARD_HOOK_NAME}" in ${c.cyan}${path}${c.reset}`);
+  if (migrated) console.error(`  ${c.yellow}Migrated:${c.reset} removed ${migrated} old entry from ${antigravitySettingsPath()} (Antigravity never read hooks from there)`);
   console.error(`  ${c.gray}matcher:${c.reset} ${matcher || '*'}`);
   console.error(`  ${c.gray}fail mode:${c.reset} ${failClosed ? c.red + 'closed' + c.reset : c.green + 'open' + c.reset}`);
   console.error('');
@@ -105,14 +113,14 @@ function runInit(args: string[]): number {
 }
 
 // ─── disable ───────────────────────────────────────────────────
-function runDisable(): number {
+function runDisable(args: string[] = []): number {
   banner();
-  const result = removeHook();
+  const result = removeHook({ workspace: parseFlag(args, 'workspace') || undefined });
   if (result.removed === 0) {
-    console.error(`${c.yellow}⚠${c.reset}  No WARD hooks found in ${antigravitySettingsPath()}.`);
+    console.error(`${c.yellow}⚠${c.reset}  No WARD hooks found in ${result.path}.`);
     return 0;
   }
-  console.error(`${c.green}✓${c.reset} Removed ${result.removed} WARD hook entry from ${c.cyan}${antigravitySettingsPath()}${c.reset}`);
+  console.error(`${c.green}✓${c.reset} Removed ${result.removed} WARD hook entr${result.removed === 1 ? 'y' : 'ies'} (${c.cyan}${result.path}${c.reset})`);
   console.error(`${c.gray}  (your other hooks were not touched)${c.reset}`);
   return 0;
 }
@@ -120,18 +128,15 @@ function runDisable(): number {
 // ─── status ────────────────────────────────────────────────────
 function runStatus(): number {
   banner();
-  const settingsPath = antigravitySettingsPath();
-  const exists = existsSync(settingsPath);
+  const globalPath = hooksJsonPath();
+  const workspacePath = hooksJsonPath({ workspace: process.cwd() });
 
-  console.error(`${c.bold}Antigravity CLI config${c.reset}`);
+  console.error(`${c.bold}Antigravity hooks${c.reset}`);
   console.error(`${c.gray}─${c.reset}`.repeat(60));
-  console.error(`  ${c.gray}Config dir:${c.reset}     ${c.cyan}${antigravityConfigDir()}${c.reset}`);
-  console.error(`  ${c.gray}settings.json:${c.reset}  ${exists ? c.green + 'present' + c.reset : c.red + 'missing' + c.reset}`);
-
-  if (exists) {
-    const settings = readSettings();
-    const installed = isHookInstalled(settings);
-    console.error(`  ${c.gray}WARD hook:${c.reset}      ${installed ? c.green + 'installed' + c.reset : c.yellow + 'not installed' + c.reset}`);
+  console.error(`  ${c.gray}Global:${c.reset}     ${c.cyan}${globalPath}${c.reset}  ${isHookInstalled() ? c.green + 'WARD hook installed' + c.reset : c.yellow + 'WARD hook not installed' + c.reset}`);
+  console.error(`  ${c.gray}Workspace:${c.reset}  ${c.cyan}${workspacePath}${c.reset}  ${isHookInstalled({ workspace: process.cwd() }) ? c.green + 'WARD hook installed' + c.reset : c.gray + '-' + c.reset}`);
+  if (isLegacyHookInstalled()) {
+    console.error(`  ${c.yellow}⚠ A pre-0.2 WARD entry is still in ${antigravitySettingsPath()}; Antigravity doesn't read it. Run ${c.cyan}weave-antigravity init${c.yellow} to migrate.${c.reset}`);
   }
 
   console.error('');
@@ -165,7 +170,7 @@ function runStatus(): number {
 function runTest(args: string[]): number {
   const tool = args[0];
   if (!tool) {
-    console.error(`${c.red}✗${c.reset} Usage: weave-antigravity test <tool> [--input='{"file_path":"..."}']`);
+    console.error(`${c.red}✗${c.reset} Usage: weave-antigravity test <tool> [--input='{"TargetFile":"..."}']`);
     return 2;
   }
 
@@ -219,7 +224,7 @@ async function main(): Promise<void> {
         break;
       case 'disable':
       case 'uninstall':
-        code = runDisable();
+        code = runDisable(rest);
         break;
       case 'status':
         code = runStatus();
@@ -236,6 +241,38 @@ async function main(): Promise<void> {
         }
         process.stdout.write('{}');
         process.exit(0);
+      }
+      case 'mund': {
+        const sub = rest[0];
+        const ws = rest.find((a) => a.startsWith('--workspace='))?.slice('--workspace='.length);
+        if (sub === 'install') {
+          const path = installMundHooks({ workspace: ws });
+          const m = mundCommand();
+          console.error(`${c.green}✓${c.reset} Installed hook "${HOOK_NAME}" (SessionStart + PreToolUse) in ${c.cyan}${path}${c.reset}`);
+          console.error(`  Mund runs via: ${c.gray}${[m.cmd, ...m.args].join(' ')}${c.reset}`);
+          console.error(`  Live MCP checks start only global servers you configured. Disable with ${c.gray}WEAVE_MUND_LIVE=0${c.reset}.`);
+          break;
+        }
+        if (sub === 'uninstall') {
+          console.error(removeMundHooks({ workspace: ws }) ? `${c.green}✓${c.reset} Removed "${HOOK_NAME}" from ${hooksJsonPath({ workspace: ws })}` : `${c.yellow}⚠${c.reset}  No Mund hook found`);
+          break;
+        }
+        if (sub === 'status') {
+          const path = hooksJsonPath({ workspace: ws });
+          let installed = false;
+          try { installed = HOOK_NAME in JSON.parse(readFileSync(path, 'utf8')); } catch { /* none */ }
+          const m = mundCommand();
+          console.error(`Mund hooks: ${installed ? `${c.green}installed${c.reset}` : `${c.gray}not installed${c.reset}`} (${path})`);
+          console.error(`Mund runs via: ${[m.cmd, ...m.args].join(' ')}`);
+          break;
+        }
+        if (sub === 'session-start' || sub === 'pre-tool-use') {
+          await runMundHook(sub);
+          return;
+        }
+        console.error(`${c.red}Unknown mund subcommand: ${sub ?? '(none)'}${c.reset} (install | uninstall | status)`);
+        code = 2;
+        break;
       }
       case 'help':
       case '--help':

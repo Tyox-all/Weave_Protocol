@@ -333,6 +333,27 @@ A rug pull is an MCP server that passes review at install time and then changes 
 
 Re-check servers on startup or on a schedule. After a human reviews a change, pass `accept_changes: true` to update the baseline. Baselines are stored in `~/.config/mund/mcp-baselines.json` (override with `MUND_BASELINE_PATH`).
 
+## 🚪 Pre-Install Checks for Skills and MCP Servers
+
+Mund checks agent skills and MCP servers **before they get to act**. Every check is backed by a fixture; see [DETECTION_CLAIMS.md](DETECTION_CLAIMS.md).
+
+```bash
+npx @weave_protocol/mund agent-audit --live            # audit installed skills + configured MCP servers
+npx @weave_protocol/mund check-skill ./my-skill/       # check one skill before you install it
+```
+
+- **Skills:** hidden Unicode (invisible tag characters, bidi overrides), prompt injection, exfiltration instructions, dangerous commands, and embedded secrets, across `SKILL.md` and every file the skill ships.
+- **MCP servers, static:** package typosquats (including scopes imitating `@modelcontextprotocol`), unpinned packages, plain-HTTP or data-collection URLs, inline secrets, and shell-pipeline launchers.
+- **MCP servers, live (`--live`):** connects, lists the tools, scans their descriptions, and compares them with the rug-pull baseline.
+
+Verdicts are **block**, **warn** or **allow**. Configs are read from Claude Code (`.mcp.json`, `~/.claude.json`, Claude Desktop) or, with `--harness=antigravity`, from Antigravity (`.agents/`, `~/.gemini/config/`).
+
+**Safety:** the live check never starts a project or workspace server you haven't approved, or a server whose package or URL it already distrusts. Those get static checks only.
+
+**Enforcement** comes from the harness adapters, which run these checks as hooks:
+- [`@weave_protocol/adapter-claudecode`](../adapter-claudecode#mund-pre-install-hooks): `weave-claude-code mund install`
+- [`@weave_protocol/adapter-antigravity`](../adapter-antigravity#mund-pre-install-hooks): `weave-antigravity mund install`
+
 ## 🐤 Canary Tokens (System Prompt Leakage)
 
 Put a canary in your system prompt. If a model is ever talked into revealing its instructions, the canary comes out with them, and Mund flags it in any scanned output. That includes copies with changed case, spacing or zero-width characters inserted, base64 encoding, or reversal.

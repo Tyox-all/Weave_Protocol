@@ -19,7 +19,7 @@
  */
 
 import { createHash } from 'crypto';
-import { readFile, writeFile, mkdir } from 'fs/promises';
+import { readFile, writeFile, mkdir, rename } from 'fs/promises';
 import { homedir } from 'os';
 import { dirname, join } from 'path';
 import type { IAnalyzer, SecurityIssue, Severity } from './types.js';
@@ -179,12 +179,26 @@ export class BaselineStore {
     return (await this.load())[serverId];
   }
 
+  /**
+   * Read-modify-write, serialized per file within the process (parallel
+   * audits of several servers used to overwrite each other's baselines),
+   * and written atomically via rename so a crash can't truncate the file.
+   */
   async put(baseline: ManifestBaseline): Promise<void> {
-    const all = await this.load();
-    all[baseline.serverId] = baseline;
-    await mkdir(dirname(this.path), { recursive: true });
-    await writeFile(this.path, JSON.stringify({ version: 1, baselines: all }, null, 2));
+    const prev = BaselineStore.queues.get(this.path) ?? Promise.resolve();
+    const next = prev.catch(() => {}).then(async () => {
+      const all = await this.load();
+      all[baseline.serverId] = baseline;
+      await mkdir(dirname(this.path), { recursive: true });
+      const tmp = `${this.path}.${process.pid}.${Date.now()}.tmp`;
+      await writeFile(tmp, JSON.stringify({ version: 1, baselines: all }, null, 2));
+      await rename(tmp, this.path);
+    });
+    BaselineStore.queues.set(this.path, next);
+    return next;
   }
+
+  private static queues = new Map<string, Promise<void>>();
 }
 
 /**

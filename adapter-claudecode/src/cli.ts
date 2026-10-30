@@ -23,6 +23,8 @@ import {
   userWardPath,
 } from './config.js';
 import { resolveWardForCwd, evaluateCall, runPreToolUseHook } from './hook.js';
+import { installMundHooks, removeMundHooks, isMundInstalled, MUND_HOOKS } from './config.js';
+import { runMundHook, mundCommand } from './mund.js';
 
 // ─── ANSI colors ───────────────────────────────────────────────
 const tty = process.stdout.isTTY && !process.env.NO_COLOR;
@@ -54,6 +56,9 @@ function help(): void {
   console.error(`  ${c.cyan}disable${c.reset}                            Remove the WARD hook`);
   console.error(`  ${c.cyan}status${c.reset}                             Show hook installation + active WARD policy`);
   console.error(`  ${c.cyan}test${c.reset} ${c.gray}<tool> [--input=JSON]${c.reset}         Dry-run a tool call against your WARD.md`);
+  console.error(`  ${c.cyan}mund install${c.reset}                       Install Mund pre-install hooks (skills + MCP servers)`);
+  console.error(`  ${c.cyan}mund uninstall${c.reset}                     Remove the Mund hooks`);
+  console.error(`  ${c.cyan}mund status${c.reset}                        Show Mund hook status and how Mund is resolved`);
   console.error(`  ${c.cyan}hook${c.reset} ${c.gray}<event>${c.reset}                       Internal: called by Claude Code as a hook`);
   console.error(`  ${c.cyan}help${c.reset}                               Show this message\n`);
   console.error(`${c.bold}Examples:${c.reset}`);
@@ -237,6 +242,37 @@ async function main(): Promise<void> {
         // Other hook events: silently allow for now (forward compat)
         process.stdout.write('{}');
         process.exit(0);
+      }
+      case 'mund': {
+        const sub = rest[0];
+        if (sub === 'install') {
+          installMundHooks();
+          const m = mundCommand();
+          console.error(`${c.green}✓${c.reset} Installed ${MUND_HOOKS.length} Mund hooks in ${c.cyan}${claudeSettingsPath()}${c.reset}`);
+          for (const [event, matcher, name] of MUND_HOOKS) console.error(`    ${event.padEnd(13)} ${(matcher ?? '').padEnd(26)} ${name}`);
+          console.error(`  Mund runs via: ${c.gray}${[m.cmd, ...m.args].join(' ')}${c.reset}`);
+          if (m.cmd === 'npx') console.error(`  ${c.yellow}Tip:${c.reset} ${c.gray}npm i -g @weave_protocol/mund${c.reset} makes the hooks faster than npx.`);
+          console.error(`  Live MCP checks start only servers you configured or approved. Disable with ${c.gray}WEAVE_MUND_LIVE=0${c.reset}.`);
+          break;
+        }
+        if (sub === 'uninstall') {
+          const n = removeMundHooks();
+          console.error(n ? `${c.green}✓${c.reset} Removed ${n} Mund hook entries` : `${c.yellow}⚠${c.reset}  No Mund hooks installed`);
+          break;
+        }
+        if (sub === 'status') {
+          const m = mundCommand();
+          console.error(`Mund hooks: ${isMundInstalled(readSettings()) ? `${c.green}installed${c.reset}` : `${c.gray}not installed${c.reset}`}`);
+          console.error(`Mund runs via: ${[m.cmd, ...m.args].join(' ')}`);
+          break;
+        }
+        if (['session-start', 'mcp-gate', 'skill-guard', 'skill-change'].includes(sub)) {
+          await runMundHook(sub);
+          return;
+        }
+        console.error(`${c.red}Unknown mund subcommand: ${sub ?? '(none)'}${c.reset} (install | uninstall | status)`);
+        code = 2;
+        break;
       }
       case 'help':
       case '--help':

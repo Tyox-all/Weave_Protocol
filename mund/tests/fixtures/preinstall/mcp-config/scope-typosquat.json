@@ -1,0 +1,13 @@
+{
+  "config": {
+    "command": "npx",
+    "args": [
+      "-y",
+      "@modelcontextprotcol/server-filesystem@1.0.0"
+    ]
+  },
+  "expected": {
+    "verdict": "block",
+    "rule": "mcp_package_scope_typosquat"
+  }
+}

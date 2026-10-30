@@ -14,11 +14,13 @@ Part of the [Weave Protocol](https://github.com/Tyox-all/Weave_Protocol) securit
 
 ## What it does
 
-When Antigravity is about to use a tool (Bash, Edit, Write, Read, WebFetch, etc.), this adapter intercepts via the `PreToolUse` hook, reads your project's `WARD.md`, and blocks the call if it violates the declared policy.
+When Antigravity is about to use a tool (`run_command`, `write_to_file`, `view_file`, `read_url_content`, …), this adapter intercepts it through the `PreToolUse` hook, reads your project's `WARD.md`, and denies the call (or asks you) if it violates the declared policy.
+
+> **0.2.0 fixes enforcement.** Versions up to 0.1.0 were built on assumptions that didn't match [Antigravity's hook docs](https://antigravity.google/docs/hooks): the wrong config file, payload fields, tool names and decision values. WARD rules were very likely not being enforced. Run `weave-antigravity init` again after upgrading; it installs the hook in the right place and removes the old entry.
 
 ```
 You: "Push my GCP credentials to S3"
-Antigravity: [about to run Bash with `cat ~/.config/gcloud/... | aws s3 cp -`]
+Antigravity: [about to run run_command with `cat ~/.config/gcloud/... | aws s3 cp -`]
        ↓
    PreToolUse hook fires
        ↓
@@ -26,7 +28,7 @@ Antigravity: [about to run Bash with `cat ~/.config/gcloud/... | aws s3 cp -`]
        ↓
    checkFilesystem('read', '~/.config/gcloud') → DENY
        ↓
-   Returns { "decision": "block", "reason": "🛡️ WARD: ..." }
+   Returns { "decision": "deny", "reason": "WARD: ..." }
        ↓
 Antigravity refuses, shows reason.
 ```
@@ -41,8 +43,10 @@ Same agent harness powers Antigravity desktop, CLI, and SDK — so installing th
 # Install once
 npm install -g @weave_protocol/adapter-antigravity
 
-# Wire it into Antigravity's hook config (~/.gemini/antigravity-cli/settings.json)
+# Wire it into Antigravity's hook config (~/.gemini/config/hooks.json)
 weave-antigravity init
+# …or just this workspace (.agents/hooks.json)
+weave-antigravity init --workspace=.
 
 # Drop a WARD.md in your project root (or next to AGENTS.md)
 npx @weave_protocol/ward init
@@ -58,15 +62,38 @@ weave-antigravity status
 
 ---
 
+## Mund pre-install hooks
+
+Scan skills and MCP servers with [Mund](../mund#-pre-install-checks-for-skills-and-mcp-servers) before they can act:
+
+```bash
+npm i -g @weave_protocol/mund              # optional: faster than the npx fallback
+weave-antigravity mund install             # global: ~/.gemini/config/hooks.json
+weave-antigravity mund install --workspace=.   # or this workspace: .agents/hooks.json
+```
+
+This installs a hook named `weave-mund`, built against [Antigravity's hook docs](https://antigravity.google/docs/hooks):
+
+| Event | What it does | Can block? |
+|---|---|---|
+| `SessionStart` | Audits skills (`.agents/skills`, `~/.gemini/config/skills`, CLI and plugin skills) and MCP servers (`.agents/mcp_config.json`, `~/.gemini/config/mcp_config.json`), and injects a summary | Reports only |
+| `PreToolUse` | Scans content that `write_to_file`, `replace_file_content` or `multi_replace_file_content` would put into a skills folder, **before** it's written; **denies** MCP calls to servers Mund blocked and **asks** for flagged ones | ✅ |
+
+Notes:
+- Antigravity has no config-change event, so a skill copied in outside the agent is caught at the next session start, not before.
+- Antigravity documents MCP permission patterns but not the runtime tool-name format, so the gate recognizes the common forms (`mcp__server__tool`, `mcp_server_tool`, `server__tool`, `server/tool`).
+- Live checks start only global servers you configured; workspace servers and servers marked `disabled` get static checks only. Turn live checks off with `WEAVE_MUND_LIVE=0`.
+
 ## How WARD.md is resolved
 
 When the hook fires, it looks for a WARD.md in this order:
 
 1. `$WEAVE_WARD_PATH` — explicit env var override
-2. `<project>/WARD.md` — project-level (CWD from the hook payload)
-3. `<project>/.agents/WARD.md` — **co-located with AGENTS.md** in the agent definition folder
-4. `<project>/.weave/WARD.md` — alternate project location
-5. `~/.gemini/antigravity-cli/WARD.md` — **user-global fallback**
+2. `<workspace>/WARD.md`: the workspace is the first of `workspacePaths` in the hook payload
+3. `<workspace>/.agents/WARD.md`: **co-located with AGENTS.md** in the agent definition folder
+4. `<workspace>/.weave/WARD.md`: alternate project location
+5. `~/.gemini/config/WARD.md`: **global**, next to `hooks.json`
+6. `~/.gemini/antigravity-cli/WARD.md`: legacy global location
 
 The first one that exists wins. If none exists, the hook silently passes through — zero impact on workflows that haven't adopted WARD yet.
 
@@ -76,38 +103,40 @@ The `.agents/` location is meaningful in Antigravity — it's the same folder wh
 
 ## Tool mapping
 
-Antigravity's tools are mapped to generic capability names so a single WARD.md works across platforms:
+Antigravity's [documented tools](https://antigravity.google/docs/hooks) map to generic capability names, so a single WARD.md works across platforms:
 
-| Antigravity tool | WARD capability | Path arg | Implicit fs op |
+| Antigravity tool | WARD capability | Checked argument | Implicit fs op |
 |---|---|---|---|
-| `Bash` | `shell_exec` | (heuristic scan of command) | varies |
-| `Edit` / `MultiEdit` / `Write` | `file_write` | `file_path` | `write` |
-| `Read` | `file_read` | `file_path` | `read` |
-| `Grep` / `LS` | `file_read` / `file_list` | `path` | `read` / `list` |
-| `Glob` | `file_list` | `path` | `list` |
-| `WebFetch` | `http_request` | (uses `url`) | — |
-| `WebSearch` | `web_search` | — | — |
-| `Task` / `Subagent` | `subagent` | — | — |
-| `RunCode` | `execute_code` | — | — |
-| `Plugin` | `plugin_invoke` | — | — |
+| `run_command` | `shell_exec` | `CommandLine` (heuristic scan) | varies |
+| `write_to_file` / `replace_file_content` / `multi_replace_file_content` | `file_write` | `TargetFile` | `write` |
+| `view_file` | `file_read` | `AbsolutePath` | `read` |
+| `grep_search` | `file_read` | `SearchPath` | `read` |
+| `list_dir` / `find_by_name` | `file_list` | `DirectoryPath` / `SearchDirectory` | `list` |
+| `read_url_content` | `http_request` | `Url` | — |
+| `search_web` | `web_search` | — | — |
+| `invoke_subagent` / `define_subagent` | `subagent` | — | — |
+| `send_message` / `manage_task` / `schedule` / `generate_image` | `agent_message` / `task_control` / `schedule` / `generate_image` | — | — |
 
-Your WARD.md can use either name — `Bash` or `shell_exec`, `Edit` or `file_write`. Explicit rules win over default decisions.
+Your WARD.md can use either name, for example `run_command` or `shell_exec`. Any other tool, including MCP tools, is checked by its raw name. Explicit rules win over default decisions.
 
-For `Bash`, the adapter runs a light heuristic scan of the command string to catch common violations — URLs to denied domains, references to sensitive paths like `~/.ssh`, `~/.aws`, **`~/.config/gcloud`**, `/etc/`.
+For `run_command`, the adapter runs a light heuristic scan of the command line to catch common violations: URLs to denied domains, and references to sensitive paths like `~/.ssh`, `~/.aws`, **`~/.config/gcloud`** and `/etc/`.
+
+Decisions use Antigravity's values: a policy violation returns `deny`, and a `requireApproval` rule returns **`ask`**, so Antigravity prompts you instead of the call being blocked.
 
 ---
 
 ## Commands
 
 ```bash
-weave-antigravity init [--matcher=X] [--fail-closed]
-    Install the WARD pre-tool-use hook.
-    --matcher=Bash|Edit|...     Restrict to specific tools (default: all)
-    --fail-closed               Block on policy errors (default: fail-open)
+weave-antigravity init [--matcher=X] [--fail-closed] [--workspace=DIR]
+    Install the WARD hook as "weave-ward" in ~/.gemini/config/hooks.json
+    (or DIR/.agents/hooks.json). Also removes a pre-0.2 entry from
+    ~/.gemini/antigravity-cli/settings.json.
+    --matcher=REGEX            Restrict to specific tools (default: all), e.g. run_command|write_to_file
+    --fail-closed              Deny on policy errors (default: fail-open)
 
-weave-antigravity disable
-    Remove the WARD hook from ~/.gemini/antigravity-cli/settings.json
-    (your other hooks are not touched)
+weave-antigravity disable [--workspace=DIR]
+    Remove the WARD hook (your other hooks are not touched)
 
 weave-antigravity status
     Show hook installation state + active WARD policy
@@ -120,22 +149,22 @@ weave-antigravity help
 
 ### Examples
 
-Test whether a destructive bash command would be allowed:
+Test whether a destructive shell command would be allowed:
 
 ```bash
-weave-antigravity test Bash --input='{"command":"rm -rf ~/.config/gcloud"}'
+weave-antigravity test run_command --input='{"CommandLine":"rm -rf ~/.config/gcloud"}'
 ```
 
 Test a file write to /etc/:
 
 ```bash
-weave-antigravity test Write --input='{"file_path":"/etc/passwd","content":"..."}'
+weave-antigravity test write_to_file --input='{"TargetFile":"/etc/passwd","CodeContent":"..."}'
 ```
 
 Test a fetch to a denied domain:
 
 ```bash
-weave-antigravity test WebFetch --input='{"url":"https://evil.example.com/exfil"}'
+weave-antigravity test read_url_content --input='{"Url":"https://evil.example.com/exfil"}'
 ```
 
 ---
@@ -156,20 +185,17 @@ Then a missing or broken policy blocks the call.
 
 ## What gets installed
 
-`weave-antigravity init` adds an entry to `~/.gemini/antigravity-cli/settings.json`:
+`weave-antigravity init` adds a named hook to `~/.gemini/config/hooks.json` (or `.agents/hooks.json` with `--workspace`), the format [Antigravity reads](https://antigravity.google/docs/hooks):
 
 ```json
 {
-  "hooks": {
+  "weave-ward": {
+    "enabled": true,
     "PreToolUse": [
       {
         "matcher": "*",
         "hooks": [
-          {
-            "type": "command",
-            "command": "weave-antigravity hook pre-tool-use # WEAVE_WARD_HOOK",
-            "timeout": 5
-          }
+          { "type": "command", "command": "weave-antigravity hook pre-tool-use", "timeout": 5 }
         ]
       }
     ]
@@ -177,11 +203,9 @@ Then a missing or broken policy blocks the call.
 }
 ```
 
-The `# WEAVE_WARD_HOOK` marker is how `disable` finds and removes only our entry without affecting other hooks you've added manually.
+Other named hooks in the file, including `weave-mund`, are left untouched. A backup is written to `hooks.json.weave-backup` before any change.
 
-A backup of your existing `settings.json` is written to `settings.json.weave-backup` before any modification.
-
-Because Antigravity's CLI, desktop, and SDK share the same agent harness with synced settings, this hook applies across **all three surfaces**.
+Antigravity sends the hook `{ "toolCall": { "name", "args" }, "workspacePaths", … }` on stdin, and the hook replies with `{ "decision": "deny" | "ask", "reason" }`, or prints nothing to leave the call to Antigravity.
 
 ---
 
@@ -244,9 +268,9 @@ With this loaded, the Antigravity agent can read/write inside `~/projects` but c
 
 v0.1 (this release):
 - ✅ PreToolUse hook for CLI / desktop
-- ✅ Shared settings.json install across all Antigravity surfaces
-- ✅ 10-tool mapping covering documented Antigravity built-ins
-- ✅ Bash command heuristic scan including GCP credential paths
+- ✅ PreToolUse hook (0.2.0: rebuilt on the documented hooks.json / payload / decision contract)
+- ✅ Mapping for Antigravity's documented built-in tools
+- ✅ `run_command` heuristic scan including GCP credential paths
 
 v0.2 planned:
 - [ ] Managed Agents SDK wrapper for programmatic Gemini API calls
