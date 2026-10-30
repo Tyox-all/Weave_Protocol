@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Weave API - Universal REST Interface
- * @weave_protocol/api v1.0.11
+ * @weave_protocol/api v1.2.0
  * 
  * Platform-agnostic security for AI agents
  * Works with: OpenAI, Gemini, LangChain, Grok, Copilot, Siri, or ANY HTTP client
@@ -33,7 +33,28 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.WEAVE_PORT || 3000;
+const PORT = Number(process.env.WEAVE_PORT || 3000);
+
+// =============================================================================
+// Security configuration (fail closed)
+// =============================================================================
+//   WEAVE_HOST                     bind address; default 127.0.0.1 (local only)
+//   WEAVE_API_KEY                  required for every route except /health and the dashboard page
+//   WEAVE_ALLOW_UNAUTHENTICATED=1  explicitly allow a non-loopback bind without a key
+//   WEAVE_CORS_ORIGINS             comma-separated allowed origins (WEAVE_CORS_ORIGIN also read); default: no cross-origin access
+//   WEAVE_RATE_LIMIT               /api requests per minute per client; default 100
+//   WEAVE_DEMO=1                   enable /reset and /test/* (fake dashboard events)
+
+const HOST = process.env.WEAVE_HOST || '127.0.0.1';
+const API_KEY = process.env.WEAVE_API_KEY || '';
+const DEMO = process.env.WEAVE_DEMO === '1';
+const CORS_ORIGINS = (process.env.WEAVE_CORS_ORIGINS || process.env.WEAVE_CORS_ORIGIN || '').split(',').map((o) => o.trim()).filter(Boolean);
+const LOOPBACK = HOST === '127.0.0.1' || HOST === '::1' || HOST === 'localhost';
+
+if (!API_KEY && !LOOPBACK && process.env.WEAVE_ALLOW_UNAUTHENTICATED !== '1') {
+  console.error(`Refusing to listen on ${HOST} without WEAVE_API_KEY. Set a key, bind to 127.0.0.1, or set WEAVE_ALLOW_UNAUTHENTICATED=1 if this is intentional.`);
+  process.exit(1);
+}
 
 // =============================================================================
 // Initialize Services
@@ -135,7 +156,7 @@ export const trackVaultOp = (operation: string) => {
 app.use(helmet({ contentSecurityPolicy: false }));
 
 app.use(cors({
-  origin: '*',
+  origin: CORS_ORIGINS.length ? CORS_ORIGINS : false,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
 }));
@@ -143,13 +164,21 @@ app.use(cors({
 // Rate limiting only for /api routes
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 100,
+  max: Number(process.env.WEAVE_RATE_LIMIT) || 100,
   message: { error: 'Too many requests' },
 });
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
+
+// Every route needs the key (when one is set) except health checks and the dashboard page itself;
+// the dashboard asks for the key and sends it on its API calls.
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (!API_KEY) return next();
+  const open = req.path === '/health' || req.path.startsWith('/health/') || (req.method === 'GET' && req.path === '/dashboard');
+  return open ? next() : apiKeyAuth(req, res, next);
+});
 
 // =============================================================================
 // Dashboard Routes (No Rate Limit)
@@ -210,6 +239,7 @@ app.get('/hundredmen/servers', (_req: Request, res: Response) => {
   }
 });
 
+if (DEMO) {
 app.post('/reset', (_req: Request, res: Response) => {
   dashboardStats = { scans: 0, threats: 0, intercepts: 0, blocked: 0, checkpoints: 0, vaultOps: 0 };
   activityFeed = [];
@@ -245,6 +275,7 @@ app.post('/test/mixed', (_req: Request, res: Response) => {
   trackVaultOp('Vault opened: production-secrets');
   res.json({ success: true, message: 'Mixed events triggered' });
 });
+} // DEMO
 
 // =============================================================================
 // Health & API Routes
@@ -252,9 +283,6 @@ app.post('/test/mixed', (_req: Request, res: Response) => {
 
 app.use('/health', healthRoutes);
 
-if (process.env.WEAVE_API_KEY) {
-  app.use('/api', apiKeyAuth);
-}
 app.use('/api', apiLimiter);
 
 app.use('/api/v1/mund', mundRoutes);
@@ -291,10 +319,10 @@ app.get('/api/v1/functions', (_req: Request, res: Response) => {
 app.get('/api', (_req: Request, res: Response) => {
   res.json({
     name: 'Weave Protocol API',
-    version: '1.0.11',
+    version: '1.2.0',
     dashboard: '/dashboard',
     health: '/health',
-    test: { threat: 'POST /test/threat', activity: 'POST /test/activity', mixed: 'POST /test/mixed' },
+    ...(DEMO ? { test: { threat: 'POST /test/threat', activity: 'POST /test/activity', mixed: 'POST /test/mixed' } } : {}),
   });
 });
 
@@ -304,16 +332,9 @@ app.use((_req: Request, res: Response) => {
 
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`
-╔═══════════════════════════════════════════════════════════════════╗
-║   🕸️  Weave Protocol API v1.1.0                                  ║
-║   Dashboard:  http://localhost:${PORT}/dashboard                    ║
-║                                                                   ║
-║   Test:  curl -X POST http://localhost:${PORT}/test/threat          ║
-║          curl -X POST http://localhost:${PORT}/test/mixed           ║
-╚═══════════════════════════════════════════════════════════════════╝
-  `);
+app.listen(PORT, HOST, () => {
+  console.log(`🕸️  Weave Protocol API v1.2.0 on http://${HOST}:${PORT}  (dashboard: /dashboard)`);
+  console.log(`   auth: ${API_KEY ? 'API key required' : 'OFF (local only)'} · CORS: ${CORS_ORIGINS.length ? CORS_ORIGINS.join(', ') : 'same-origin only'} · demo endpoints: ${DEMO ? 'ON' : 'off'}`);
 });
 
 export default app;

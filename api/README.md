@@ -36,19 +36,14 @@ npm install @weave_protocol/api
 ## 🚀 Quick Start
 
 ```bash
-# Start the server
+# Local only (binds 127.0.0.1, no key needed)
 npx @weave_protocol/api
 
-# Or with configuration
-WEAVE_PORT=3000 WEAVE_API_KEY=your-key npx @weave_protocol/api
+# Reachable from other machines: a key is required
+WEAVE_HOST=0.0.0.0 WEAVE_API_KEY=your-key npx @weave_protocol/api
 ```
 
-```typescript
-// Or programmatically
-import { startServer } from '@weave_protocol/api';
-
-startServer({ port: 3000, apiKey: 'your-key' });
-```
+Clients send the key as `X-API-Key: your-key` or `Authorization: Bearer your-key`. The dashboard asks for it once per tab.
 
 **Open the dashboard:** http://localhost:3000/dashboard
 
@@ -81,9 +76,10 @@ POST /reset                   # Reset stats
 
 ### Test Endpoints
 
-Trigger fake events to see the dashboard in action:
+Fake events for demos. These endpoints exist only when `WEAVE_DEMO=1`:
 
 ```bash
+WEAVE_DEMO=1 npx @weave_protocol/api
 curl -X POST http://localhost:3000/test/threat    # Simulate critical threat
 curl -X POST http://localhost:3000/test/activity  # Simulate normal activity
 curl -X POST http://localhost:3000/test/mixed     # Simulate mixed events
@@ -302,9 +298,14 @@ POST /api/v1/functions/call  # Call a function
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `WEAVE_PORT` | `3000` | Server port |
-| `WEAVE_API_KEY` | - | API key for authentication |
-| `WEAVE_CORS_ORIGIN` | `*` | CORS allowed origins |
-| `WEAVE_RATE_LIMIT` | `100` | Requests per minute |
+| `WEAVE_HOST` | `127.0.0.1` | Bind address. Anything other than loopback requires `WEAVE_API_KEY` |
+| `WEAVE_API_KEY` | - | Required on every route except `/health` and the dashboard page |
+| `WEAVE_ALLOW_UNAUTHENTICATED` | - | Set to `1` to bind publicly without a key (not recommended) |
+| `WEAVE_CORS_ORIGINS` | none | Comma-separated allowed origins (`WEAVE_CORS_ORIGIN` also works). Default: no cross-origin access |
+| `WEAVE_RATE_LIMIT` | `100` | `/api` requests per minute per client |
+| `WEAVE_DEMO` | - | Set to `1` to enable `/reset` and `/test/*` |
+
+**Upgrading from 1.1.x:** the server now listens on `127.0.0.1` by default, sends no CORS headers unless you list origins, protects every route (not just `/api`) when a key is set, and hides the demo endpoints. To keep a public bind, set `WEAVE_HOST=0.0.0.0` and a `WEAVE_API_KEY`.
 
 ---
 

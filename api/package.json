@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/api",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Universal REST API for Weave Protocol Security Suite - works with OpenAI, Gemini, LangChain, and any HTTP client",
   "type": "module",
   "main": "dist/index.js",
@@ -11,7 +11,8 @@
   "scripts": {
     "build": "tsc && cp src/dashboard.html dist/",
     "start": "node dist/index.js",
-    "dev": "tsx src/index.ts"
+    "dev": "tsx src/index.ts",
+    "test": "node --test \"tests/*.test.mjs\""
   },
   "keywords": [
     "weave",

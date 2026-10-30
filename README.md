@@ -345,7 +345,7 @@ The front door, the dashboard, the bridges to other frameworks.
 |---|---|---|
 | [🕸️ @weave_protocol/cli](https://github.com/Tyox-all/Weave_Protocol/blob/main/cli) | 0.1.0 | **The `weave` CLI** — `init`, `audit`, `dashboard`, `doctor` |
 | [📦 @weave_protocol/full](https://github.com/Tyox-all/Weave_Protocol/blob/main/full) | 0.1.0 | **Bundle** — installs all packages in one command |
-| [🔌 @weave_protocol/api](https://github.com/Tyox-all/Weave_Protocol/blob/main/api) | 1.1.1 | **REST API + Operator Dashboard** — `npx @weave_protocol/api` → http://localhost:3000/dashboard |
+| [🔌 @weave_protocol/api](https://github.com/Tyox-all/Weave_Protocol/blob/main/api) | 1.2.0 | **REST API + Operator Dashboard** — `npx @weave_protocol/api` → http://localhost:3000/dashboard |
 | [🔗 @weave_protocol/langchain](https://github.com/Tyox-all/Weave_Protocol/blob/main/langchain) | **1.0.2** | **LangChain.js** security callbacks & tool wrappers (0 audit vulnerabilities via npm overrides) |
 | [🐍 weave-protocol-llamaindex](https://github.com/Tyox-all/Weave_Protocol/blob/main/llamaindex-py) | 0.1.0 | **Python/LlamaIndex** security callbacks & tools (on PyPI) |
 
