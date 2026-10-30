@@ -328,14 +328,23 @@ export class KeyStore {
    * Initialize with master key
    */
   initialize(masterKey: string | Buffer): void {
-    this.masterKey = typeof masterKey === 'string' 
-      ? Buffer.from(masterKey, 'hex')
+    // A string is raw key material only when it is exactly KEY_LENGTH bytes of hex.
+    // Anything else is a passphrase. (Hex-decoding arbitrary strings stops at the
+    // first non-hex character, so before 0.2.0 every non-hex key, including the
+    // default, collapsed to the same empty input and the same master key.)
+    const hexKey = typeof masterKey === 'string' && new RegExp(`^[0-9a-fA-F]{${ENCRYPTION.KEY_LENGTH * 2}}$`).test(masterKey);
+    const raw = typeof masterKey === 'string'
+      ? Buffer.from(masterKey, hexKey ? 'hex' : 'utf-8')
       : masterKey;
-      
-    if (this.masterKey.length !== ENCRYPTION.KEY_LENGTH) {
-      // Derive a proper key from the provided master key
+    if (raw.length === 0) {
+      throw new Error('Hord master key is empty');
+    }
+
+    if (hexKey || (Buffer.isBuffer(masterKey) && raw.length === ENCRYPTION.KEY_LENGTH)) {
+      this.masterKey = raw;
+    } else {
       const salt = Buffer.alloc(ENCRYPTION.SALT_LENGTH, 'hord-master-key-salt');
-      this.masterKey = deriveKey(this.masterKey, salt);
+      this.masterKey = deriveKey(raw, salt);
     }
   }
   

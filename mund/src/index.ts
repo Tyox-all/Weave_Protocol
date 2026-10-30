@@ -7,6 +7,18 @@ export { ThreatIntelManager, threatIntel } from './threat-intel-manager.js';
 export { threatIntelTools, createThreatIntelToolHandlers } from './threat-intel-tools.js';
 export * from './threat-intel-types.js';
 
+// Scanning
+export { scan, SCAN_TYPES } from './scan.js';
+export type { ScanType, ScanOptions, ScanResult } from './scan.js';
+export {
+  AnalyzerEngine, getAnalyzers,
+  SecretScanner, PIIDetector, CodeAnalyzer, InjectionDetector, ExfiltrationDetector, McpServerAnalyzer,
+} from './analyzers/index.js';
+export { DEFAULT_RULES } from './constants.js';
+export { computeRiskScore, labelForScore } from './scoring.js';
+export type { RiskScore } from './scoring.js';
+export type { Severity, SecurityIssue, DetectionRule, IAnalyzer } from './types.js';
+
 // Importing this module has no side effects. Run directly (`node dist/index.js`,
 // as older MCP configs do), it still starts the server; the bin points at server.js.
 import { realpathSync } from 'node:fs';

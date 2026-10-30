@@ -58,6 +58,19 @@ const sealed = seal(publicKeyOf(key), Buffer.from('sensitive data'));
 const data = open(key, sealed);
 ```
 
+## 🔑 Master key
+
+Vault keys are wrapped with a master key. Set one of:
+
+| Variable | Value |
+|---|---|
+| `HORD_MASTER_KEY` | 64 hex characters (`openssl rand -hex 32`), or a passphrase (run through PBKDF2) |
+| `HORD_MASTER_KEY_FILE` | path to a file containing the key |
+
+With neither set, Hord generates a random key for the process, so vault contents can't be read after it exits.
+
+> **Advisory [HORD-2026-001](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord/SECURITY_ADVISORIES.md):** before 0.2.0, any master key that wasn't pure hex, including the built-in default, produced the same master key on every install. Upgrade, or set a 64-hex-character key.
+
 ## 🔒 Vault Manager
 
 Encrypted storage with key rotation.
