@@ -30,7 +30,8 @@
 
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
+import { hooksJsonPath, readHooksJson, writeHooksJson } from './config.js';
 import { createRequire } from 'node:module';
 import { homedir } from 'node:os';
 import { dirname, join, resolve, sep } from 'node:path';
@@ -156,37 +157,27 @@ export function sessionSummary(report: AuditReport): string | null {
 
 // ─── hooks.json install ─────────────────────────────────────────
 
-export function hooksJsonPath(opts: { workspace?: string } = {}): string {
-  return opts.workspace ? join(resolve(opts.workspace), '.agents', 'hooks.json') : join(homedir(), '.gemini', 'config', 'hooks.json');
-}
+export { hooksJsonPath };
 
 export function installMundHooks(opts: { workspace?: string; binary?: string } = {}): string {
   const path = hooksJsonPath(opts);
   const bin = opts.binary || 'weave-antigravity';
-  let config: Record<string, unknown> = {};
-  if (existsSync(path)) {
-    config = JSON.parse(readFileSync(path, 'utf8'));
-    copyFileSync(path, `${path}.weave-backup`);
-  }
+  const config = readHooksJson(path);
   config[HOOK_NAME] = {
     enabled: true,
     SessionStart: [{ type: 'command', command: `${bin} mund session-start` }],
     PreToolUse: [{ matcher: '*', hooks: [{ type: 'command', command: `${bin} mund pre-tool-use`, timeout: 30 }] }],
   };
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(`${path}.tmp`, JSON.stringify(config, null, 2) + '\n');
-  renameSync(`${path}.tmp`, path);
+  writeHooksJson(path, config);
   return path;
 }
 
 export function removeMundHooks(opts: { workspace?: string } = {}): boolean {
   const path = hooksJsonPath(opts);
-  if (!existsSync(path)) return false;
-  const config = JSON.parse(readFileSync(path, 'utf8'));
+  const config = readHooksJson(path);
   if (!(HOOK_NAME in config)) return false;
   delete config[HOOK_NAME];
-  writeFileSync(`${path}.tmp`, JSON.stringify(config, null, 2) + '\n');
-  renameSync(`${path}.tmp`, path);
+  writeHooksJson(path, config);
   return true;
 }
 

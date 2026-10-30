@@ -3,35 +3,34 @@
  */
 
 /**
- * Shape of the JSON payload Antigravity sends to a hook on stdin.
- * Based on the JSON hook format introduced in Antigravity 2.0, which
- * mirrors the Claude Code hook payload shape closely.
+ * JSON Antigravity sends to a hook on stdin (camelCase), per
+ * https://antigravity.google/docs/hooks:
+ *   { toolCall: { name, args }, stepIdx, conversationId, workspacePaths,
+ *     transcriptPath, artifactDirectoryPath, modelName }
+ * The legacy snake_case fields are still read as a fallback.
  */
 export interface AntigravityHookInput {
-  session_id?: string;
-  transcript_path?: string;
-  cwd?: string;
-  hook_event_name?: string;
+  toolCall?: { name?: string; args?: Record<string, unknown> };
+  workspacePaths?: string[];
+  conversationId?: string;
+  stepIdx?: number;
+  transcriptPath?: string;
+  modelName?: string;
+  /** @deprecated pre-0.2 assumption; Antigravity sends toolCall.name */
   tool_name?: string;
+  /** @deprecated pre-0.2 assumption; Antigravity sends toolCall.args */
   tool_input?: Record<string, unknown>;
-  tool_response?: unknown;
+  /** @deprecated pre-0.2 assumption; Antigravity sends workspacePaths */
+  cwd?: string;
 }
 
 /**
- * JSON returned on stdout to control Antigravity's behavior.
- *
- * For PreToolUse hooks:
- *   - { "decision": "approve" }                → auto-approve
- *   - { "decision": "block", "reason": "..." } → block the call with reason
- *   - {} (or no output)                        → default behavior
+ * JSON a PreToolUse hook returns on stdout. `decision` is required when a
+ * hook returns output; printing nothing leaves the call to Antigravity.
  */
 export interface AntigravityHookOutput {
-  decision?: 'approve' | 'block';
+  decision: 'allow' | 'auto_approve' | 'deny' | 'ask' | 'force_ask' | 'deny_unless_prior_grant';
   reason?: string;
-  continue?: boolean;
-  stopReason?: string;
-  systemMessage?: string;
-  suppressOutput?: boolean;
 }
 
 /**
@@ -43,9 +42,8 @@ export type HookType = 'pre-tool-use' | 'post-tool-use' | 'stop' | 'session-star
 /**
  * Mapping from Antigravity tool names to their nature.
  *
- * NOTE: Antigravity inherits much of its built-in tool naming from the
- * Gemini CLI lineage. The list below covers the documented common tools.
- * Unknown tools fall through with the tool name itself as the capability.
+ * Unknown tools (including MCP tools) fall through with the tool name
+ * itself as the capability, so WARD.md can name them directly.
  */
 export interface ToolMapping {
   /** Generic capability name for WARD `## Capabilities`. */
@@ -61,33 +59,27 @@ export interface ToolMapping {
 }
 
 /**
- * Built-in mappings for Antigravity's standard tools.
- *
- * Documented tools (Bash/Edit/Write/Read) confirmed from public hook
- * documentation. Others inferred from the shared Gemini CLI / Antigravity
- * harness lineage. Users can also reference these by their raw names
- * in WARD.md directly.
+ * Built-in mappings for Antigravity's documented tools and their argument
+ * names. WARD.md can also reference any tool by its raw name.
  */
 export const TOOL_MAPPINGS: Record<string, ToolMapping> = {
-  // Confirmed from public Antigravity hook docs
-  Bash: { capability: 'shell_exec', commandField: 'command' },
-  Edit: { capability: 'file_write', pathField: 'file_path', fsOp: 'write' },
-  Write: { capability: 'file_write', pathField: 'file_path', fsOp: 'write' },
-  Read: { capability: 'file_read', pathField: 'file_path', fsOp: 'read' },
-
-  // Inherited from Gemini CLI / shared agent harness
-  MultiEdit: { capability: 'file_write', pathField: 'file_path', fsOp: 'write' },
-  Glob: { capability: 'file_list', pathField: 'path', fsOp: 'list' },
-  Grep: { capability: 'file_read', pathField: 'path', fsOp: 'read' },
-  LS: { capability: 'file_list', pathField: 'path', fsOp: 'list' },
-  WebFetch: { capability: 'http_request', urlField: 'url' },
-  WebSearch: { capability: 'web_search' },
-
-  // Antigravity-specific / shared
-  Subagent: { capability: 'subagent' },
-  Task: { capability: 'subagent' },
-  RunCode: { capability: 'execute_code' },
-  Plugin: { capability: 'plugin_invoke' },
+  // Antigravity built-in tools (https://antigravity.google/docs/hooks)
+  run_command: { capability: 'shell_exec', commandField: 'CommandLine' },
+  view_file: { capability: 'file_read', pathField: 'AbsolutePath', fsOp: 'read' },
+  write_to_file: { capability: 'file_write', pathField: 'TargetFile', fsOp: 'write' },
+  replace_file_content: { capability: 'file_write', pathField: 'TargetFile', fsOp: 'write' },
+  multi_replace_file_content: { capability: 'file_write', pathField: 'TargetFile', fsOp: 'write' },
+  list_dir: { capability: 'file_list', pathField: 'DirectoryPath', fsOp: 'list' },
+  find_by_name: { capability: 'file_list', pathField: 'SearchDirectory', fsOp: 'list' },
+  grep_search: { capability: 'file_read', pathField: 'SearchPath', fsOp: 'read' },
+  read_url_content: { capability: 'http_request', urlField: 'Url' },
+  search_web: { capability: 'web_search' },
+  invoke_subagent: { capability: 'subagent' },
+  define_subagent: { capability: 'subagent' },
+  send_message: { capability: 'agent_message' },
+  manage_task: { capability: 'task_control' },
+  schedule: { capability: 'schedule' },
+  generate_image: { capability: 'generate_image' },
 };
 
 /**

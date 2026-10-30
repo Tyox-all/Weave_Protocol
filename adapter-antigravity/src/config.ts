@@ -105,57 +105,100 @@ export interface InstallOptions {
   failClosed?: boolean;
 }
 
-export function isHookInstalled(settings: AntigravitySettings): boolean {
-  const entries = settings.hooks?.PreToolUse || [];
-  return entries.some((e) =>
-    e.hooks?.some((h) => h.command?.includes(WARD_HOOK_MARKER) ?? false),
-  );
+// ============================================================================
+// hooks.json (Antigravity's real hook config)
+// ============================================================================
+
+/**
+ * Antigravity reads hooks from ~/.gemini/config/hooks.json (global) or
+ * <workspace>/.agents/hooks.json, as named hooks:
+ *   { "<name>": { "enabled": true, "PreToolUse": [{ "matcher", "hooks": [...] }] } }
+ * (https://antigravity.google/docs/hooks)
+ */
+export function hooksJsonPath(opts: { workspace?: string } = {}): string {
+  if (opts.workspace) return join(resolve(opts.workspace), '.agents', 'hooks.json');
+  const base = process.env.ANTIGRAVITY_GLOBAL_CONFIG_DIR
+    ? resolve(process.env.ANTIGRAVITY_GLOBAL_CONFIG_DIR)
+    : join(homedir(), '.gemini', 'config');
+  return join(base, 'hooks.json');
 }
 
-export function installHook(opts: InstallOptions = {}): AntigravitySettings {
-  const settings = readSettings();
-  const binary = opts.binary || 'weave-antigravity';
-  const matcher = opts.toolMatcher || '*';
-  const failFlag = opts.failClosed ? ' --fail-closed' : '';
-
-  const command = `${binary} hook pre-tool-use${failFlag} ${WARD_HOOK_MARKER}`;
-
-  const entry: AntigravitySettingsHooksEntry = {
-    matcher,
-    hooks: [
-      {
-        type: 'command',
-        command,
-        timeout: opts.timeoutSeconds ?? 5,
-      },
-    ],
-  };
-
-  if (!settings.hooks) settings.hooks = {};
-  if (!settings.hooks.PreToolUse) settings.hooks.PreToolUse = [];
-
-  // Remove any existing WARD entries first (idempotent)
-  settings.hooks.PreToolUse = settings.hooks.PreToolUse.filter(
-    (e) => !e.hooks?.some((h) => h.command?.includes(WARD_HOOK_MARKER) ?? false),
-  );
-
-  // Add our new entry
-  settings.hooks.PreToolUse.push(entry);
-
-  writeSettings(settings);
-  return settings;
+export function readHooksJson(path: string): Record<string, unknown> {
+  if (!existsSync(path)) return {};
+  try {
+    return JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>;
+  } catch (err) {
+    throw new Error(`Failed to parse ${path}; fix the JSON or move it aside. ${err instanceof Error ? err.message : String(err)}`);
+  }
 }
 
-export function removeHook(): { removed: number; settings: AntigravitySettings } {
-  const settings = readSettings();
-  if (!settings.hooks?.PreToolUse) return { removed: 0, settings };
+export function writeHooksJson(path: string, config: Record<string, unknown>): void {
+  mkdirSync(dirname(path), { recursive: true });
+  if (existsSync(path)) copyFileSync(path, `${path}.weave-backup`);
+  const tmp = `${path}.tmp`;
+  writeFileSync(tmp, JSON.stringify(config, null, 2) + '\n', 'utf8');
+  renameSync(tmp, path);
+}
 
+/** Name of the WARD hook inside hooks.json. */
+export const WARD_HOOK_NAME = 'weave-ward';
+
+export function isHookInstalled(opts: { workspace?: string } = {}): boolean {
+  return WARD_HOOK_NAME in readHooksJson(hooksJsonPath(opts));
+}
+
+/** True if a pre-0.2 WARD entry is still sitting in the old settings.json. */
+export function isLegacyHookInstalled(): boolean {
+  try {
+    return (readSettings().hooks?.PreToolUse ?? []).some((e) =>
+      e.hooks?.some((h) => h.command?.includes(WARD_HOOK_MARKER) ?? false),
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** Remove pre-0.2 WARD entries from ~/.gemini/antigravity-cli/settings.json. */
+export function removeLegacyHook(): number {
+  if (!existsSync(antigravitySettingsPath())) return 0;
+  const settings = readSettings();
+  if (!settings.hooks?.PreToolUse) return 0;
   const before = settings.hooks.PreToolUse.length;
   settings.hooks.PreToolUse = settings.hooks.PreToolUse.filter(
     (e) => !e.hooks?.some((h) => h.command?.includes(WARD_HOOK_MARKER) ?? false),
   );
   const removed = before - settings.hooks.PreToolUse.length;
-
   if (removed > 0) writeSettings(settings);
-  return { removed, settings };
+  return removed;
+}
+
+export function installHook(opts: InstallOptions & { workspace?: string } = {}): { path: string; migrated: number } {
+  const path = hooksJsonPath(opts);
+  const config = readHooksJson(path);
+  const binary = opts.binary || 'weave-antigravity';
+  const failFlag = opts.failClosed ? ' --fail-closed' : '';
+  config[WARD_HOOK_NAME] = {
+    enabled: true,
+    PreToolUse: [
+      {
+        matcher: opts.toolMatcher || '*',
+        hooks: [{ type: 'command', command: `${binary} hook pre-tool-use${failFlag}`, timeout: opts.timeoutSeconds ?? 5 }],
+      },
+    ],
+  };
+  writeHooksJson(path, config);
+  return { path, migrated: removeLegacyHook() };
+}
+
+export function removeHook(opts: { workspace?: string } = {}): { removed: number; path: string } {
+  const path = hooksJsonPath(opts);
+  const config = readHooksJson(path);
+  let removed = 0;
+  if (WARD_HOOK_NAME in config) {
+    delete config[WARD_HOOK_NAME];
+    writeHooksJson(path, config);
+    removed++;
+  }
+  removed += removeLegacyHook();
+  return { removed, path };
 }

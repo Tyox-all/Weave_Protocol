@@ -17,6 +17,8 @@ import {
   removeHook,
   readSettings,
   isHookInstalled,
+  isLegacyHookInstalled,
+  WARD_HOOK_NAME,
   antigravitySettingsPath,
   antigravityConfigDir,
   userWardPath,
@@ -50,8 +52,8 @@ function help(): void {
   banner();
   console.error(`${c.bold}Usage:${c.reset} weave-antigravity <command> [options]\n`);
   console.error(`${c.bold}Commands:${c.reset}`);
-  console.error(`  ${c.cyan}init${c.reset} ${c.gray}[--matcher=X] [--fail-closed]${c.reset}    Install the WARD pre-tool-use hook`);
-  console.error(`  ${c.cyan}disable${c.reset}                            Remove the WARD hook`);
+  console.error(`  ${c.cyan}init${c.reset} ${c.gray}[--matcher=X] [--fail-closed] [--workspace=DIR]${c.reset}  Install the WARD hook (~/.gemini/config/hooks.json)`);
+  console.error(`  ${c.cyan}disable${c.reset} ${c.gray}[--workspace=DIR]${c.reset}          Remove the WARD hook`);
   console.error(`  ${c.cyan}status${c.reset}                             Show hook installation + active WARD policy`);
   console.error(`  ${c.cyan}test${c.reset} ${c.gray}<tool> [--input=JSON]${c.reset}         Dry-run a tool call against your WARD.md`);
   console.error(`  ${c.cyan}mund install${c.reset} ${c.gray}[--workspace=DIR]${c.reset}    Install Mund pre-install hooks (~/.gemini/config/hooks.json)`);
@@ -62,7 +64,7 @@ function help(): void {
   console.error(`${c.bold}Examples:${c.reset}`);
   console.error(`  ${c.gray}$${c.reset} weave-antigravity init`);
   console.error(`  ${c.gray}$${c.reset} weave-antigravity status`);
-  console.error(`  ${c.gray}$${c.reset} weave-antigravity test Bash --input='{"command":"rm -rf ~/.gcloud"}'`);
+  console.error(`  ${c.gray}$${c.reset} weave-antigravity test run_command --input='{"CommandLine":"rm -rf ~/.gcloud"}'`);
   console.error(`  ${c.gray}$${c.reset} weave-antigravity disable\n`);
   console.error(`${c.gray}Docs: https://github.com/Tyox-all/Weave_Protocol/tree/main/adapter-antigravity${c.reset}\n`);
 }
@@ -86,17 +88,19 @@ function runInit(args: string[]): number {
   const matcher = parseFlag(args, 'matcher') || undefined;
   const failClosed = hasFlag(args, 'fail-closed');
 
-  const settings = readSettings();
-  const wasInstalled = isHookInstalled(settings);
+  const workspace = parseFlag(args, 'workspace') || undefined;
+  const wasInstalled = isHookInstalled({ workspace });
 
-  installHook({
+  const { path, migrated } = installHook({
     toolMatcher: matcher,
     failClosed,
     timeoutSeconds: 5,
+    workspace,
   });
 
   const verb = wasInstalled ? 'Updated' : 'Installed';
-  console.error(`${c.green}✓${c.reset} ${verb} WARD hook in ${c.cyan}${antigravitySettingsPath()}${c.reset}`);
+  console.error(`${c.green}✓${c.reset} ${verb} WARD hook "${WARD_HOOK_NAME}" in ${c.cyan}${path}${c.reset}`);
+  if (migrated) console.error(`  ${c.yellow}Migrated:${c.reset} removed ${migrated} old entry from ${antigravitySettingsPath()} (Antigravity never read hooks from there)`);
   console.error(`  ${c.gray}matcher:${c.reset} ${matcher || '*'}`);
   console.error(`  ${c.gray}fail mode:${c.reset} ${failClosed ? c.red + 'closed' + c.reset : c.green + 'open' + c.reset}`);
   console.error('');
@@ -109,14 +113,14 @@ function runInit(args: string[]): number {
 }
 
 // ─── disable ───────────────────────────────────────────────────
-function runDisable(): number {
+function runDisable(args: string[] = []): number {
   banner();
-  const result = removeHook();
+  const result = removeHook({ workspace: parseFlag(args, 'workspace') || undefined });
   if (result.removed === 0) {
-    console.error(`${c.yellow}⚠${c.reset}  No WARD hooks found in ${antigravitySettingsPath()}.`);
+    console.error(`${c.yellow}⚠${c.reset}  No WARD hooks found in ${result.path}.`);
     return 0;
   }
-  console.error(`${c.green}✓${c.reset} Removed ${result.removed} WARD hook entry from ${c.cyan}${antigravitySettingsPath()}${c.reset}`);
+  console.error(`${c.green}✓${c.reset} Removed ${result.removed} WARD hook entr${result.removed === 1 ? 'y' : 'ies'} (${c.cyan}${result.path}${c.reset})`);
   console.error(`${c.gray}  (your other hooks were not touched)${c.reset}`);
   return 0;
 }
@@ -124,18 +128,15 @@ function runDisable(): number {
 // ─── status ────────────────────────────────────────────────────
 function runStatus(): number {
   banner();
-  const settingsPath = antigravitySettingsPath();
-  const exists = existsSync(settingsPath);
+  const globalPath = hooksJsonPath();
+  const workspacePath = hooksJsonPath({ workspace: process.cwd() });
 
-  console.error(`${c.bold}Antigravity CLI config${c.reset}`);
+  console.error(`${c.bold}Antigravity hooks${c.reset}`);
   console.error(`${c.gray}─${c.reset}`.repeat(60));
-  console.error(`  ${c.gray}Config dir:${c.reset}     ${c.cyan}${antigravityConfigDir()}${c.reset}`);
-  console.error(`  ${c.gray}settings.json:${c.reset}  ${exists ? c.green + 'present' + c.reset : c.red + 'missing' + c.reset}`);
-
-  if (exists) {
-    const settings = readSettings();
-    const installed = isHookInstalled(settings);
-    console.error(`  ${c.gray}WARD hook:${c.reset}      ${installed ? c.green + 'installed' + c.reset : c.yellow + 'not installed' + c.reset}`);
+  console.error(`  ${c.gray}Global:${c.reset}     ${c.cyan}${globalPath}${c.reset}  ${isHookInstalled() ? c.green + 'WARD hook installed' + c.reset : c.yellow + 'WARD hook not installed' + c.reset}`);
+  console.error(`  ${c.gray}Workspace:${c.reset}  ${c.cyan}${workspacePath}${c.reset}  ${isHookInstalled({ workspace: process.cwd() }) ? c.green + 'WARD hook installed' + c.reset : c.gray + '-' + c.reset}`);
+  if (isLegacyHookInstalled()) {
+    console.error(`  ${c.yellow}⚠ A pre-0.2 WARD entry is still in ${antigravitySettingsPath()}; Antigravity doesn't read it. Run ${c.cyan}weave-antigravity init${c.yellow} to migrate.${c.reset}`);
   }
 
   console.error('');
@@ -169,7 +170,7 @@ function runStatus(): number {
 function runTest(args: string[]): number {
   const tool = args[0];
   if (!tool) {
-    console.error(`${c.red}✗${c.reset} Usage: weave-antigravity test <tool> [--input='{"file_path":"..."}']`);
+    console.error(`${c.red}✗${c.reset} Usage: weave-antigravity test <tool> [--input='{"TargetFile":"..."}']`);
     return 2;
   }
 
@@ -223,7 +224,7 @@ async function main(): Promise<void> {
         break;
       case 'disable':
       case 'uninstall':
-        code = runDisable();
+        code = runDisable(rest);
         break;
       case 'status':
         code = runStatus();

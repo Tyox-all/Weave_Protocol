@@ -4,12 +4,17 @@
  * Reads the hook payload from stdin, looks up the active WARD policy,
  * evaluates the proposed tool call, writes the decision to stdout.
  *
- * Resolution order for WARD.md:
+ * Resolution order for WARD.md (workspace = workspacePaths[0] from the payload):
  *   1. $WEAVE_WARD_PATH if set
- *   2. <cwd>/WARD.md (from the hook payload)
- *   3. <cwd>/.agents/WARD.md (co-located with AGENTS.md)
- *   4. <cwd>/.weave/WARD.md
- *   5. ~/.gemini/antigravity-cli/WARD.md (user-global fallback)
+ *   2. <workspace>/WARD.md
+ *   3. <workspace>/.agents/WARD.md (co-located with AGENTS.md)
+ *   4. <workspace>/.weave/WARD.md
+ *   5. ~/.gemini/config/WARD.md (global, next to hooks.json)
+ *   6. ~/.gemini/antigravity-cli/WARD.md (legacy global location)
+ *
+ * Payload and output follow https://antigravity.google/docs/hooks:
+ * stdin { toolCall: { name, args }, workspacePaths, ... }; stdout
+ * { decision: "deny" | "ask", reason }, or nothing to leave the call alone.
  *
  * Failure mode (when WARD parse fails):
  *   - default: fail OPEN (warn to stderr, allow)
@@ -18,6 +23,7 @@
 
 import { readFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { homedir } from 'node:os';
 import {
   parseWard,
   checkCapability,
@@ -66,6 +72,7 @@ export function resolveWardForCwd(cwd: string): ResolvedWard | null {
     candidates.push(join(cwd, '.agents', 'WARD.md'));
     candidates.push(join(cwd, '.weave', 'WARD.md'));
   }
+  candidates.push(join(homedir(), '.gemini', 'config', 'WARD.md'));
   candidates.push(userWardPath());
 
   for (const path of candidates) {
@@ -212,9 +219,30 @@ function scanBashCommand(
 // Hook output helpers
 // ============================================================================
 
-function emit(output: AntigravityHookOutput): never {
-  process.stdout.write(JSON.stringify(output));
+/** Print a decision, or nothing (leave the call to Antigravity), then exit. */
+function emit(output?: AntigravityHookOutput): never {
+  if (output) process.stdout.write(JSON.stringify(output));
   process.exit(0);
+}
+
+/** The tool name, args and workspace from an Antigravity payload (legacy fields as fallback). */
+export function parsePayload(payload: AntigravityHookInput): { tool?: string; args?: Record<string, unknown>; cwd: string } {
+  return {
+    tool: payload.toolCall?.name ?? payload.tool_name,
+    args: payload.toolCall?.args ?? payload.tool_input,
+    cwd: payload.workspacePaths?.[0] || payload.cwd || process.cwd(),
+  };
+}
+
+/** WARD decision → Antigravity output. "require_approval" uses Antigravity's native "ask". */
+export function toHookOutput(result: HookDecision, source: string): AntigravityHookOutput | undefined {
+  if (result.decision === 'deny') {
+    return { decision: 'deny', reason: `WARD: ${result.reasons.join(' | ')} (policy: ${source})` };
+  }
+  if (result.decision === 'require_approval') {
+    return { decision: 'ask', reason: `WARD requires approval: ${result.reasons.join(' | ')} (policy: ${source})` };
+  }
+  return undefined;
 }
 
 // ============================================================================
@@ -223,57 +251,40 @@ function emit(output: AntigravityHookOutput): never {
 
 export async function runPreToolUseHook(failClosed: boolean): Promise<never> {
   const raw = await readStdin();
-
-  if (!raw.trim()) emit({});
+  if (!raw.trim()) emit();
 
   let payload: AntigravityHookInput;
   try {
     payload = JSON.parse(raw);
   } catch {
-    if (failClosed) emit({ decision: 'block', reason: 'WARD hook: malformed payload from Antigravity' });
+    if (failClosed) emit({ decision: 'deny', reason: 'WARD hook: malformed payload from Antigravity' });
     process.stderr.write('weave-antigravity: malformed hook payload, allowing\n');
-    emit({});
+    emit();
   }
 
-  if (!payload.tool_name) emit({});
-
-  const cwd = payload.cwd || process.cwd();
+  const { tool, args, cwd } = parsePayload(payload);
+  if (!tool) emit();
 
   let resolved: ResolvedWard | null = null;
   try {
     resolved = resolveWardForCwd(cwd);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    if (failClosed) emit({ decision: 'block', reason: `WARD policy could not be loaded: ${msg}` });
+    if (failClosed) emit({ decision: 'deny', reason: `WARD policy could not be loaded: ${msg}` });
     process.stderr.write(`weave-antigravity: WARD load failed (${msg}), allowing\n`);
-    emit({});
+    emit();
   }
-
-  if (!resolved) emit({});
+  if (!resolved) emit();
 
   let result: HookDecision;
   try {
-    result = evaluateCall(resolved.policy, payload.tool_name, payload.tool_input);
+    result = evaluateCall(resolved.policy, tool, args);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    if (failClosed) emit({ decision: 'block', reason: `WARD evaluation failed: ${msg}` });
+    if (failClosed) emit({ decision: 'deny', reason: `WARD evaluation failed: ${msg}` });
     process.stderr.write(`weave-antigravity: WARD eval failed (${msg}), allowing\n`);
-    emit({});
+    emit();
   }
 
-  if (result.decision === 'deny') {
-    emit({
-      decision: 'block',
-      reason: `🛡️  WARD: ${result.reasons.join(' | ')}\n   Policy: ${resolved.source}`,
-    });
-  }
-
-  if (result.decision === 'require_approval') {
-    emit({
-      decision: 'block',
-      reason: `🛡️  WARD requires approval before this call:\n   ${result.reasons.join('\n   ')}\n   Policy: ${resolved.source}\n   To proceed, explicitly confirm or update WARD.md.`,
-    });
-  }
-
-  emit({});
+  emit(toHookOutput(result, resolved.source));
 }
