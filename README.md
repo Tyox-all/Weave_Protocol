@@ -264,8 +264,8 @@ The thesis was that [WARD.md](https://www.npmjs.com/package/@weave_protocol/ward
 
 | Runtime | Vendor | Enforcer | Status |
 |---|---|---|---|
-| **MCP servers** | Open standard | [Hundredmen v1.1.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen) | ✅ Live on npm |
-| **Claude Code** | Anthropic | [adapter-claudecode v0.1.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-claudecode) | ✅ Live on npm |
+| **MCP servers** | Open standard | [Hundredmen v1.1.3](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen) | ✅ Live on npm |
+| **Claude Code** | Anthropic | [adapter-claudecode v0.2.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-claudecode) | ✅ Live on npm |
 | **Google Antigravity** (desktop + `agy` CLI + SDK) | Google | [adapter-antigravity v0.2.1](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-antigravity) | ✅ Live on npm |
 | **Microsoft Agent Framework** | Microsoft | [adapter-msaf v0.1.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-msaf) | ✅ Live on npm |
 | **Browser agents** | Open standard | [browser v0.1.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/browser) | ✅ Live on npm |
