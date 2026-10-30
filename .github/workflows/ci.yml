@@ -34,10 +34,9 @@ jobs:
             npm test
           fi
       # Importing a package must not start a server or print anything (servers
-      # live behind the bin). full only re-exports the published packages; witan
-      # is exempt until its lockfile moves to a domere release with this fix.
+      # live behind the bin). full only re-exports the published packages.
       - name: Import has no side effects
-        if: matrix.package != 'full' && matrix.package != 'witan'
+        if: matrix.package != 'full'
         env:
           YOXALL_SILENCE_BETA_WARNING: '1'  # yoxallismus' deliberate one-time beta notice
         run: |
