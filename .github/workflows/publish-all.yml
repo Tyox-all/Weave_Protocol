@@ -18,9 +18,18 @@
 #       gh attestation verify <tarball> -R Tyox-all/Weave_Protocol \
 #         --predicate-type https://cyclonedx.org/bom
 #   - npm registry provenance (--provenance), also Sigstore-backed
+#
+# Which packages run: by default, only those whose package.json version is
+# not yet on npm (so a release runs exactly the jobs it needs). Pass a
+# comma-separated "packages" input to force a specific list.
 name: Publish All Packages
 on:
   workflow_dispatch:
+    inputs:
+      packages:
+        description: 'Comma-separated package dirs, or "unpublished" for every package whose version is not on npm yet'
+        required: false
+        default: 'unpublished'
 
 permissions:
   contents: read
@@ -28,11 +37,56 @@ permissions:
   attestations: write   # actions/attest-build-provenance, actions/attest-sbom
 
 jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.pick.outputs.packages }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Pick packages
+        id: pick
+        env:
+          REQUESTED: ${{ inputs.packages }}   # via env, never inlined into the script
+        run: |
+          ALL="mund hord domere witan hundredmen tollere langchain api full cli ward adapter-claudecode adapter-antigravity adapter-msaf browser adversary agentsecbench yoxallismus"
+          PICK=""
+          if [ -z "$REQUESTED" ] || [ "$REQUESTED" = "unpublished" ]; then
+            for p in $ALL; do
+              name=$(node -p "require('./$p/package.json').name")
+              version=$(node -p "require('./$p/package.json').version")
+              if npm view "$name@$version" version >/dev/null 2>&1; then
+                echo "  skip    $name@$version (already on npm)"
+              else
+                echo "  publish $name@$version"
+                PICK="$PICK $p"
+              fi
+            done
+          else
+            for p in $(echo "$REQUESTED" | tr ',' ' '); do
+              case " $ALL " in
+                *" $p "*) PICK="$PICK $p" ;;
+                *) echo "::error::Unknown package '$p'"; exit 1 ;;
+              esac
+            done
+          fi
+          JSON=$(node -e 'console.log(JSON.stringify(process.argv.slice(1)))' $PICK)
+          echo "packages=$JSON" >> "$GITHUB_OUTPUT"
+          echo "Publishing: $JSON"
+
   publish-all:
+    needs: plan
+    if: needs.plan.outputs.packages != '[]'
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        package: [mund, hord, domere, witan, hundredmen, tollere, langchain, api, full, cli, ward, adapter-claudecode, adapter-antigravity, adapter-msaf, browser, adversary, agentsecbench, yoxallismus]
+        package: ${{ fromJSON(needs.plan.outputs.packages) }}
       fail-fast: false  # Continue publishing other packages if one fails
 
     steps:
