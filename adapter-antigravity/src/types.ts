@@ -65,6 +65,10 @@ export interface ToolMapping {
 export const TOOL_MAPPINGS: Record<string, ToolMapping> = {
   // Antigravity built-in tools (https://antigravity.google/docs/hooks)
   run_command: { capability: 'shell_exec', commandField: 'CommandLine' },
+  // Antigravity CLI (agy 1.4.x) file tools, observed live: Path may be relative to the workspace
+  read_file: { capability: 'file_read', pathField: 'Path', fsOp: 'read' },
+  write_file: { capability: 'file_write', pathField: 'Path', fsOp: 'write' },
+  edit_file: { capability: 'file_write', pathField: 'Path', fsOp: 'write' },
   view_file: { capability: 'file_read', pathField: 'AbsolutePath', fsOp: 'read' },
   write_to_file: { capability: 'file_write', pathField: 'TargetFile', fsOp: 'write' },
   replace_file_content: { capability: 'file_write', pathField: 'TargetFile', fsOp: 'write' },

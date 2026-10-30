@@ -110,6 +110,32 @@ describe('end to end', () => {
     assert.equal(hook({ toolCall: { name: 'view_file', args: { AbsolutePath: join(ws, 'WARD.md') } }, workspacePaths: [ws] }), null, 'allowed: no output');
   });
 
+  test('agy CLI tools (read_file / write_file / edit_file, observed live in agy 1.4.11)', () => {
+    const p = (name, args) => hook({ toolCall: { name, args }, workspacePaths: [ws] });
+    assert.equal(p('read_file', { Path: join(ws, 'WARD.md') }), null, 'allowed read: no output');
+    assert.equal(p('read_file', { Path: 'WARD.md' }), null, 'relative path resolves into the workspace');
+    assert.equal(p('read_file', { Path: join(home, '.ssh', 'id_rsa') }).decision, 'deny');
+    assert.equal(p('write_file', { Path: '/etc/hosts', Content: 'x' }).decision, 'deny');
+    assert.equal(p('edit_file', { Path: '/etc/hosts', Target: 'a', Replacement: 'b' }).decision, 'deny');
+    assert.equal(p('write_file', { Path: 'out.txt', Content: 'x' }), null);
+  });
+
+  test('a relative path cannot slip past a workspace deny rule', () => {
+    const dws = mkdtempSync(join(tmpdir(), 'agy-ward-deny-'));
+    writeFileSync(join(dws, 'WARD.md'), `---\nward: "1.0"\nagent: t\n---\n\n## Filesystem\n\nallow:\n  - read: ${dws}/**\ndeny:\n  - read: ${dws}/secrets/**\ndefault: deny\n\n## Capabilities\n\nallow:\n  - file_read\ndefault: deny\n`);
+    const p = (path) => hook({ toolCall: { name: 'read_file', args: { Path: path } }, workspacePaths: [dws] });
+    assert.equal(p('secrets/token.txt').decision, 'deny');
+    assert.match(p('secrets/token.txt').reason, /secrets/);
+    assert.equal(p('notes/readme.txt'), null);
+    rmSync(dws, { recursive: true, force: true });
+  });
+
+  test('unknown hook events print nothing (agy treats a bare {} as deny)', () => {
+    const r = spawnSync(process.execPath, ['dist/cli.js', 'hook', 'post-tool-use'], { input: '{}', env, encoding: 'utf8' });
+    assert.equal(r.status, 0);
+    assert.equal(r.stdout, '');
+  });
+
   test('init writes a named hook to hooks.json and migrates the old settings.json entry', () => {
     const legacy = join(home, '.gemini', 'antigravity-cli', 'settings.json');
     mkdirSync(join(home, '.gemini', 'antigravity-cli'), { recursive: true });

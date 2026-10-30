@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/adapter-antigravity",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Weave Protocol adapter for Google Antigravity - enforces WARD.md policies via Antigravity's PreToolUse hook system",
   "type": "module",
   "main": "dist/index.js",

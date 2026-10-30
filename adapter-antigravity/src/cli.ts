@@ -239,7 +239,7 @@ async function main(): Promise<void> {
           await runPreToolUseHook(failClosed);
           return;
         }
-        process.stdout.write('{}');
+        // Print nothing: agy 1.4.x treats a bare `{}` as a deny.
         process.exit(0);
       }
       case 'mund': {

@@ -22,7 +22,7 @@
  */
 
 import { readFileSync, existsSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { isAbsolute, join, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import {
   parseWard,
@@ -100,6 +100,7 @@ export function evaluateCall(
   policy: WardPolicy,
   toolName: string,
   toolInput: Record<string, unknown> | undefined,
+  cwd?: string,
 ): HookDecision {
   const reasons: string[] = [];
   let decision: 'allow' | 'deny' | 'require_approval' = 'allow';
@@ -120,7 +121,9 @@ export function evaluateCall(
 
   // 2. Filesystem check
   if (mapping.pathField && toolInput && typeof toolInput[mapping.pathField] === 'string') {
-    const path = toolInput[mapping.pathField] as string;
+    const raw = toolInput[mapping.pathField] as string;
+    // Relative paths (agy sends them) are workspace-relative; resolve so deny globs still match.
+    const path = cwd && !isAbsolute(raw) && !raw.startsWith('~') ? resolve(cwd, raw) : raw;
     const fs = checkFilesystem(policy, mapping.fsOp || 'read', path);
     if (fs.decision === 'deny') {
       return { decision: 'deny', reasons: [fs.reason] };
@@ -278,7 +281,7 @@ export async function runPreToolUseHook(failClosed: boolean): Promise<never> {
 
   let result: HookDecision;
   try {
-    result = evaluateCall(resolved.policy, tool, args);
+    result = evaluateCall(resolved.policy, tool, args, cwd);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (failClosed) emit({ decision: 'deny', reason: `WARD evaluation failed: ${msg}` });

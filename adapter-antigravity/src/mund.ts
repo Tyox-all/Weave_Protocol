@@ -34,7 +34,7 @@ import { readFileSync } from 'node:fs';
 import { hooksJsonPath, readHooksJson, writeHooksJson } from './config.js';
 import { createRequire } from 'node:module';
 import { homedir } from 'node:os';
-import { dirname, join, resolve, sep } from 'node:path';
+import { dirname, isAbsolute, join, resolve, sep } from 'node:path';
 
 export type Verdict = 'allow' | 'warn' | 'block';
 interface Issue { rule_id: string; rule_name: string; severity: string }
@@ -92,8 +92,15 @@ export const BUILTIN_TOOLS = new Set([
   'view_file', 'write_to_file', 'replace_file_content', 'multi_replace_file_content', 'list_dir', 'find_by_name',
   'grep_search', 'search_web', 'read_url_content', 'run_command', 'manage_task', 'schedule', 'list_permissions',
   'ask_permission', 'invoke_subagent', 'define_subagent', 'send_message', 'manage_subagents', 'ask_question', 'generate_image',
+  'read_file', 'write_file', 'edit_file', // Antigravity CLI (agy 1.4.x)
 ]);
-export const WRITE_TOOLS = new Set(['write_to_file', 'replace_file_content', 'multi_replace_file_content']);
+export const WRITE_TOOLS = new Set(['write_to_file', 'replace_file_content', 'multi_replace_file_content', 'write_file', 'edit_file']);
+
+/** Target path of a write tool (desktop: TargetFile; agy CLI: Path, possibly workspace-relative). */
+export function writeTarget(args: Record<string, unknown>, cwd: string): string {
+  const p = String(args.TargetFile ?? args.Path ?? '');
+  return p && !isAbsolute(p) ? resolve(cwd, p) : p;
+}
 
 const norm = (s: string) => s.replace(/[^A-Za-z0-9_-]/g, '_');
 /** Tool-name prefixes Antigravity might use for a server's tools. */
@@ -127,6 +134,8 @@ export function isSkillPath(path: string | undefined): boolean {
 /** The text a write tool would put into the file. */
 export function incomingContent(name: string, args: Record<string, unknown> = {}): string {
   if (name === 'write_to_file') return String(args.CodeContent ?? '');
+  if (name === 'write_file') return String(args.Content ?? '');
+  if (name === 'edit_file') return String(args.Replacement ?? '');
   if (name === 'replace_file_content') return String(args.ReplacementContent ?? '');
   if (name === 'multi_replace_file_content') {
     return ((args.ReplacementChunks as Array<{ ReplacementContent?: string }>) ?? []).map((c) => c.ReplacementContent ?? '').join('\n');
@@ -220,7 +229,7 @@ export async function runMundHook(event: string): Promise<never> {
     const name = input.toolCall?.name ?? '';
     const args = input.toolCall?.args ?? {};
     if (WRITE_TOOLS.has(name)) {
-      const path = String(args.TargetFile ?? '');
+      const path = writeTarget(args, cwd);
       if (!isSkillPath(path)) out();
       const r = runMund(['check-skill', '-', '--json'], { input: incomingContent(name, args), timeoutMs: 25_000 });
       if (!r.ok) {
