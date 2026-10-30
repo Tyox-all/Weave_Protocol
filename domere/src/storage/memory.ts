@@ -93,7 +93,10 @@ export class MemoryStorage implements IDomereStorage {
   
   async addHop(threadId: string, hop: ThreadHop): Promise<void> {
     const hops = this.hops.get(threadId) || [];
-    hops.push({ ...hop });
+    // Idempotent: ThreadManager.addHop saves the thread (with its hops) and then
+    // calls addHop, which before 1.3.8 recorded every hop twice and made every
+    // thread with a hop fail verification.
+    if (!hops.some((h) => h.hop_id === hop.hop_id)) hops.push({ ...hop });
     this.hops.set(threadId, hops);
   }
   

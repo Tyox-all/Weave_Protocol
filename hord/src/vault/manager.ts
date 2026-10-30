@@ -135,7 +135,9 @@ export class VaultManager {
     
     // Mark as open
     vault.sealed = false;
-    this.openVaults.set(vaultId, { vault, contents, key: keyInfo.key });
+    // Copy the key: sealVault() zeroes the open vault's key, and before 0.2.0 that
+    // wiped the key store's own buffer, so a sealed vault could never be reopened.
+    this.openVaults.set(vaultId, { vault, contents, key: Buffer.from(keyInfo.key) });
     
     // Log access
     await this.storage.logAccess({
