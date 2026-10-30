@@ -580,7 +580,15 @@
 
   async function tick() {
     try {
-      const res = await fetch('/api/dashboard/snapshot');
+      const key = sessionStorage.getItem('weave-api-key');
+      let res = await fetch('/api/dashboard/snapshot', { headers: key ? { 'X-API-Key': key } : {} });
+      if (res.status === 401 || res.status === 403) {
+        const entered = prompt('Weave API key (kept for this tab only):');
+        if (entered) {
+          sessionStorage.setItem('weave-api-key', entered);
+          res = await fetch('/api/dashboard/snapshot', { headers: { 'X-API-Key': entered } });
+        }
+      }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const snap = await res.json();
       updateHierarchy(snap.surfaces, snap.ward);
