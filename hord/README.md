@@ -14,7 +14,7 @@ Part of the [Weave Protocol Security Suite](https://github.com/Tyox-all/Weave_Pr
 | **Vault** | AES-256-GCM encryption, key rotation, secure storage |
 | **Yoxallismus v1** | ⚠️ Deprecated: output can't be decrypted. Use [`@weave_protocol/yoxallismus`](https://github.com/Tyox-all/Weave_Protocol/tree/main/yoxallismus) |
 | **Redaction** | PII/PHI masking, reversible tokenization |
-| **Sandbox** | Isolated code execution, resource limits, timeout enforcement |
+| **Sandbox** | OS-level isolation (network, filesystem, env), memory/CPU limits, process-group kill |
 | **Capability** | Token-based access control, delegation chains |
 | **Attestation** | Cryptographic proof of agent actions |
 
@@ -110,29 +110,30 @@ const original = await redactor.restore(result.redacted_text, result.tokens);
 
 ---
 
-## 🏖️ Sandbox Executor
+## 🏖️ Sandbox Executor (real isolation as of 0.1.9)
 
-Isolated code execution with resource limits.
+Runs code or commands in an isolated child process, using what the host OS provides:
 
-```typescript
-import { SandboxExecutor } from '@weave_protocol/hord';
+| Layer | macOS | Linux |
+|-------|-------|-------|
+| Network | `sandbox-exec` profile denies all network | `bwrap --unshare-net`, or `unshare -rn` |
+| Filesystem | Writes only inside the sandbox workdir; no reads of `$HOME` | `bwrap`: read-only `/`, private `/tmp` and `$HOME`, workdir read-write |
+| Environment | Scrubbed to `PATH`/`HOME`/`TMPDIR`/`LANG`, so the parent's API keys never leak in | same |
+| Limits | `ulimit` CPU seconds, file size, file descriptors | same |
+| Memory | Watchdog sums the process group's RSS, kills it over the limit, and reports the real peak | same |
+| Processes | Own process group; a timeout or overrun kills every descendant | same |
 
-const sandbox = new SandboxExecutor({
-  timeout_ms: 5000,
-  memory_limit_mb: 128,
-  allowed_modules: ['lodash', 'moment']
-});
+Every result carries an `isolation` report saying exactly what was enforced. A missing layer (e.g. Linux without `bwrap` or user namespaces) adds an `isolation_unavailable` warning and downgrades the recommendation to REVIEW. With `enforcement: 'strict'`, Hord refuses to run instead. A memory overrun is a `violation` and recommends BLOCK; a signal-killed process reports `128 + signal` (e.g. 137), never 0.
 
-const result = await sandbox.execute({
-  code: `
-    const _ = require('lodash');
-    return _.sum([1, 2, 3, 4, 5]);
-  `,
-  context: {}
-});
-
-console.log(result.output);  // 15
+```text
+hord_create_sandbox      { "type": "code", "memory_mb": 128, "timeout_ms": 5000, "enforcement": "strict" }
+hord_execute_in_sandbox  { "sandbox_id": "...", "type": "code", "language": "javascript",
+                           "content": "console.log(1 + 1)", "declared_intent": "arithmetic check" }
+→ { "status": "success", "stdout": "2", "promotion_recommendation": "safe",
+    "isolation": { "mechanism": "sandbox-exec", "network": "blocked", "filesystem": "restricted", ... } }
 ```
+
+This is process-level isolation, not a VM: kernel exploits and side channels are out of scope. For hostile code, also run Hord inside a container or VM.
 
 ---
 

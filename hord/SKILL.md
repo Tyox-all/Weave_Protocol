@@ -25,7 +25,7 @@ Hord keeps agent secrets and memory in encrypted vaults (AES-256-GCM), redacts o
 | | `hord_create_redaction_policy` / `hord_list_redaction_policies` | Manage redaction policies |
 | Capabilities | `hord_request_capability` / `hord_verify_capability` | Get a scoped, expiring capability token / check it |
 | | `hord_delegate_capability` / `hord_revoke_capability` / `hord_list_capabilities` | Delegate (depth-limited), revoke, list |
-| Sandbox | `hord_create_sandbox` / `hord_execute_in_sandbox` / `hord_get_sandbox_results` | Run code in a separate process with a timeout |
+| Sandbox | `hord_create_sandbox` / `hord_execute_in_sandbox` / `hord_get_sandbox_results` | Run code in an isolated process: no network, writes only to its workdir, scrubbed env, memory/CPU limits |
 | | `hord_promote_sandbox_result` / `hord_destroy_sandbox` | Promote a result for real execution / clean up |
 | Attestation | `hord_attest_action` / `hord_verify_attestation` | Sign an action record / verify it |
 | | `hord_get_attestations` / `hord_get_attestation_chain` / `hord_export_audit_log` | Query and export the hash-chained record |
@@ -39,7 +39,8 @@ Hord keeps agent secrets and memory in encrypted vaults (AES-256-GCM), redacts o
 
 ## Caveats
 
-- The sandbox runs code in a separate process with a timeout and a temporary working directory, but it does **not** yet enforce memory, network or filesystem isolation. Don't run untrusted code with access to anything sensitive.
+- Sandbox isolation uses what the host OS provides: `sandbox-exec` on macOS, `bwrap` (or `unshare`, network only) on Linux. Every result includes an `isolation` report. Where a layer is missing, the run still happens but gets an `isolation_unavailable` warning and a REVIEW recommendation; pass `enforcement: "strict"` to refuse instead.
+- This is process-level isolation, not a VM. Kernel exploits and side channels are out of scope; for hostile code, run Hord inside a container or VM as well.
 
 ## Links
 
