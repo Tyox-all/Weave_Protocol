@@ -4,7 +4,20 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { HordService } from '../services/hord.js';
+import { HordService, NotSupportedError } from '../services/hord.js';
+
+/** Hord scopes vaults, secrets and capabilities to an agent. */
+const agentOf = (req: Request) => (req.get('x-agent-id') || 'api').slice(0, 128);
+
+/** Map Hord errors to HTTP statuses instead of a blanket 500. */
+function fail(res: Response, error: unknown) {
+  const msg = error instanceof Error ? error.message : String(error);
+  const status = error instanceof NotSupportedError ? 501
+    : /not found/i.test(msg) ? 404
+    : /denied|not allowed|unauthori[sz]ed|capability rejected|revoked|expired|access policy/i.test(msg) ? 403
+    : 500;
+  res.status(status).json({ error: msg });
+}
 
 const router = Router();
 const hord = new HordService();
@@ -25,10 +38,10 @@ router.post('/vaults', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'name is required' });
     }
     
-    const result = await hord.createVault(name, description, config);
+    const result = await hord.createVault(name, description, config, agentOf(req));
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -36,12 +49,12 @@ router.post('/vaults', async (req: Request, res: Response) => {
  * GET /api/v1/hord/vaults
  * List all vaults
  */
-router.get('/vaults', async (_req: Request, res: Response) => {
+router.get('/vaults', async (req: Request, res: Response) => {
   try {
-    const vaults = await hord.listVaults();
+    const vaults = await hord.listVaults(agentOf(req));
     res.json(vaults);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -54,7 +67,7 @@ router.get('/vaults/:id', async (req: Request, res: Response) => {
     const vault = await hord.getVault(req.params.id);
     res.json(vault);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -64,10 +77,10 @@ router.get('/vaults/:id', async (req: Request, res: Response) => {
  */
 router.delete('/vaults/:id', async (req: Request, res: Response) => {
   try {
-    const result = await hord.deleteVault(req.params.id);
+    const result = await hord.deleteVault(req.params.id, agentOf(req));
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -87,10 +100,10 @@ router.post('/vaults/:id/secrets', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'key and value are required' });
     }
     
-    const result = await hord.storeSecret(req.params.id, key, value, metadata);
+    const result = await hord.storeSecret(req.params.id, key, value, metadata, agentOf(req));
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -101,10 +114,10 @@ router.post('/vaults/:id/secrets', async (req: Request, res: Response) => {
 router.get('/vaults/:id/secrets/:key', async (req: Request, res: Response) => {
   try {
     const token = req.headers['x-capability-token'] as string;
-    const result = await hord.retrieveSecret(req.params.id, req.params.key, token);
+    const result = await hord.retrieveSecret(req.params.id, req.params.key, token, agentOf(req));
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -117,7 +130,7 @@ router.delete('/vaults/:id/secrets/:key', async (req: Request, res: Response) =>
     const result = await hord.deleteSecret(req.params.id, req.params.key);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -137,10 +150,10 @@ router.post('/capabilities', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'vault_id and permissions are required' });
     }
     
-    const result = await hord.createCapability(vault_id, permissions, expires_in);
+    const result = await hord.createCapability(vault_id, permissions, expires_in, agentOf(req));
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -150,16 +163,16 @@ router.post('/capabilities', async (req: Request, res: Response) => {
  */
 router.post('/capabilities/verify', async (req: Request, res: Response) => {
   try {
-    const { token } = req.body;
+    const { token, action } = req.body;
     
     if (!token) {
       return res.status(400).json({ error: 'token is required' });
     }
     
-    const result = await hord.verifyCapability(token);
+    const result = await hord.verifyCapability(token, agentOf(req), action);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -169,16 +182,16 @@ router.post('/capabilities/verify', async (req: Request, res: Response) => {
  */
 router.post('/capabilities/revoke', async (req: Request, res: Response) => {
   try {
-    const { token } = req.body;
+    const { token, reason } = req.body;
     
     if (!token) {
       return res.status(400).json({ error: 'token is required' });
     }
     
-    const result = await hord.revokeCapability(token);
+    const result = await hord.revokeCapability(token, agentOf(req), reason);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -201,7 +214,7 @@ router.post('/redact', async (req: Request, res: Response) => {
     const result = await hord.redact(content, policy_id, types);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -220,7 +233,7 @@ router.post('/redact/restore', async (req: Request, res: Response) => {
     const result = await hord.restoreRedacted(redacted_content, redaction_id);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -243,7 +256,7 @@ router.post('/sandbox/execute', async (req: Request, res: Response) => {
     const result = await hord.sandboxExecute(code, language, { timeout, memory_limit });
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -263,10 +276,10 @@ router.post('/attest', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'content is required' });
     }
     
-    const result = await hord.createAttestation(content, metadata);
+    const result = await hord.createAttestation(content, metadata, agentOf(req));
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -285,7 +298,7 @@ router.post('/attest/verify', async (req: Request, res: Response) => {
     const result = await hord.verifyAttestation(attestation_id, content);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -295,62 +308,16 @@ router.post('/attest/verify', async (req: Request, res: Response) => {
 // =============================================================================
 
 /**
- * POST /api/v1/hord/yoxallismus/lock
- * Lock data with Yoxallismus vault cipher
+ * /api/v1/hord/yoxallismus/*  (410 Gone)
+ * Hord's v1 YoxallismusCipher output can never be decrypted (advisory
+ * YOXALL-2026-003). Use @weave_protocol/yoxallismus instead.
  */
-router.post("/yoxallismus/lock", async (req: Request, res: Response) => {
-  try {
-    const { data, key, tumblers, entropy_ratio, revolving } = req.body;
-    
-    if (!data || !key) {
-      return res.status(400).json({ error: "data and key are required" });
-    }
-    
-    const result = await hord.yoxallismusLock(data, key, { tumblers, entropy_ratio, revolving });
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: String(error) });
-  }
-});
-
-/**
- * POST /api/v1/hord/yoxallismus/unlock
- * Unlock data with Yoxallismus vault cipher
- */
-router.post("/yoxallismus/unlock", async (req: Request, res: Response) => {
-  try {
-    const { data, key } = req.body;
-    
-    if (!data || !key) {
-      return res.status(400).json({ error: "data and key are required" });
-    }
-    
-    const result = await hord.yoxallismusUnlock(data, key);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: String(error) });
-  }
-});
-
-/**
- * GET /api/v1/hord/yoxallismus/info
- * Get Yoxallismus cipher info
- */
-router.get("/yoxallismus/info", async (_req: Request, res: Response) => {
-  try {
-    res.json({
-      name: "Yoxallismus Vault Cipher",
-      description: "Dual-mechanism obfuscation (tumbler + deadbolt)",
-      options: {
-        tumblers: { default: 7, min: 1, max: 12, description: "Number of dial positions" },
-        entropy_ratio: { default: 0.2, min: 0.1, max: 0.5, description: "Decoy byte ratio" },
-        revolving: { default: true, description: "Pattern changes per block" },
-        block_size: { default: 64, description: "Processing block size" }
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ error: String(error) });
-  }
+router.all('/yoxallismus/*', (_req: Request, res: Response) => {
+  res.status(410).json({
+    error: 'The Yoxallismus v1 cipher endpoints are removed: its output could never be decrypted.',
+    advisory: 'https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus/SECURITY_ADVISORIES.md',
+    use_instead: '@weave_protocol/yoxallismus (seal/open, Double Ratchet)',
+  });
 });
 
 export { router as hordRoutes };

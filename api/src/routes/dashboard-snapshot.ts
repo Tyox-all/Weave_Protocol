@@ -12,7 +12,7 @@
  * v1.1.0 reads WARD.md from cwd for real, and returns realistic but
  * synthetic data for surface counts and events. Real telemetry integration
  * (collecting events from Hundredmen, adapters, and the browser package)
- * is the v1.2.0 work.
+ * is still to do.
  */
 
 import { Router } from 'express';
@@ -125,7 +125,7 @@ function countListItemsInSection(
   return (block.match(/^\s+-\s+\w/gm) || []).length;
 }
 
-// ─── Synthetic data (replaced with real telemetry in v1.2.0) ─
+// ─── Synthetic data (until real telemetry is wired up) ─
 function buildSurfaces() {
   // Realistic-looking counts, jittered per-poll so the UI feels alive
   // without requiring real telemetry plumbing yet.
@@ -183,7 +183,7 @@ function buildSurfaces() {
 
 function buildRecentEvents() {
   // Rotating sample events that look like real enforcement activity.
-  // In v1.2.0, this will be replaced with reads from an actual event log.
+  // To be replaced with reads from an actual event log.
   const now = Date.now();
   const templates = [
     { kind: 'allow', surface: 'claude-code', subject: 'Bash: ls /tmp', reason: 'allowed by capability rule' },
@@ -235,7 +235,7 @@ router.get('/snapshot', (_req, res) => {
     stats: buildStats(surfaces),
     notes: {
       dataSource:
-        'Surface counts and events are synthetic in v1.1.0. WARD.md is read from cwd. Real telemetry integration coming in v1.2.0.',
+        'Surface counts and events are synthetic; WARD.md is read from cwd. Real telemetry is not wired up yet.',
     },
   });
 });

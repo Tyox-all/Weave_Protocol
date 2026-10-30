@@ -6,6 +6,12 @@
 import { Router, Request, Response } from 'express';
 import { MundService } from '../services/mund.js';
 
+/** Bad input (unknown scan type, malformed rule) is a 400; anything else a 500. */
+function fail(res: Response, error: unknown) {
+  const msg = error instanceof Error ? error.message : String(error);
+  res.status(/unknown scan type|rule needs|not a valid regular expression/i.test(msg) ? 400 : 500).json({ error: msg });
+}
+
 const router = Router();
 const mund = new MundService();
 
@@ -28,7 +34,7 @@ router.post('/scan', async (req: Request, res: Response) => {
     const result = await mund.scan(content, scan_types);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -47,7 +53,7 @@ router.post('/scan/secrets', async (req: Request, res: Response) => {
     const result = await mund.scanSecrets(content);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -66,7 +72,7 @@ router.post('/scan/pii', async (req: Request, res: Response) => {
     const result = await mund.scanPII(content);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -85,7 +91,7 @@ router.post('/scan/injection', async (req: Request, res: Response) => {
     const result = await mund.scanInjection(content);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -104,7 +110,7 @@ router.post('/scan/exfiltration', async (req: Request, res: Response) => {
     const result = await mund.scanExfiltration(content);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -123,7 +129,7 @@ router.post('/scan/code', async (req: Request, res: Response) => {
     const result = await mund.analyzeCode(code, language);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -140,7 +146,7 @@ router.get('/rules', async (_req: Request, res: Response) => {
     const rules = await mund.getRules();
     res.json(rules);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -154,7 +160,7 @@ router.post('/rules', async (req: Request, res: Response) => {
     const result = await mund.addRule(rule);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -167,7 +173,7 @@ router.put('/rules/:id/enable', async (req: Request, res: Response) => {
     const result = await mund.enableRule(req.params.id);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -180,7 +186,7 @@ router.put('/rules/:id/disable', async (req: Request, res: Response) => {
     const result = await mund.disableRule(req.params.id);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -197,7 +203,7 @@ router.get('/stats', async (_req: Request, res: Response) => {
     const stats = await mund.getStats();
     res.json(stats);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 

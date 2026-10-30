@@ -87,6 +87,18 @@ curl -X POST http://localhost:3000/test/mixed     # Simulate mixed events
 
 ---
 
+## ✅ Backed by the real packages (1.3.0)
+
+The Mund, Hord and Dōmere endpoints call `@weave_protocol/mund`, `@weave_protocol/hord` and `@weave_protocol/domere` directly. Earlier versions used simplified stand-ins (a simulated sandbox, fake anchoring, and vault "encryption" with a fixed key).
+
+- **Mund:** the same analyzers and rules as the Mund MCP server. Matches come back masked, with a 0–100 risk score.
+- **Hord:** real encrypted vaults, capability tokens, PII tokenization, signed attestations, and the isolated sandbox. Hord scopes vaults and capabilities to an agent: send `X-Agent-Id` (default `api`).
+- **Dōmere:** the same thread, drift, language and injection code as the Dōmere MCP tools, plus one shared compliance log, so reports include earlier checkpoints.
+- **Not implemented, and said so:** on-chain anchor submission, verification and status return **501**. The Yoxallismus v1 endpoints return **410**, because its output could never be decrypted ([YOXALL-2026-003](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus/SECURITY_ADVISORIES.md)). Deleting a single secret returns **501**, because Hord can only delete whole vaults.
+- Errors use real status codes: 400 for bad input, 403 for denied access, 404 for not found.
+
+---
+
 ## 🛡️ Mund Endpoints (Guardian)
 
 ### Scan Content
@@ -97,7 +109,7 @@ Content-Type: application/json
 
 {
   "content": "My API key is sk-1234567890abcdef",
-  "types": ["secrets", "pii", "injection"]
+  "scan_types": ["secrets", "pii", "injection"]
 }
 ```
 
@@ -125,16 +137,11 @@ POST /api/v1/mund/scan/injection
 ### Analyze Code
 
 ```http
-POST /api/v1/mund/analyze/code
+POST /api/v1/mund/scan/code
 { "code": "eval(userInput)", "language": "javascript" }
 ```
 
-### Scan MCP Server
-
-```http
-POST /api/v1/mund/scan/mcp-server
-{ "server_json": { "name": "my-server", "tools": [...] } }
-```
+Scan types: `secrets`, `pii`, `injection`, `exfiltration`, `code`. Custom rules (`POST /api/v1/mund/rules`, then enable or disable them) apply to every scan.
 
 ---
 
@@ -153,8 +160,8 @@ DELETE /api/v1/hord/vaults/:id        # Delete vault
 
 ```bash
 POST /api/v1/hord/vaults/:id/secrets        # Store secret
-GET /api/v1/hord/vaults/:id/secrets/:key    # Retrieve (requires capability token)
-DELETE /api/v1/hord/vaults/:id/secrets/:key # Delete secret
+GET /api/v1/hord/vaults/:id/secrets/:key    # Retrieve (X-Capability-Token checked if sent)
+DELETE /api/v1/hord/vaults/:id/secrets/:key # 501: Hord deletes whole vaults only
 ```
 
 ### Capability Tokens
@@ -168,24 +175,22 @@ POST /api/v1/hord/capabilities/revoke  # Revoke capability
 ### Redaction
 
 ```bash
-POST /api/v1/hord/redact               # Redact content
-POST /api/v1/hord/redact/restore       # Restore redacted
+POST /api/v1/hord/redact               # Tokenize PII: { "content": "..." } → { "redacted", "tokens" }
+POST /api/v1/hord/redact/restore       # { "redacted_content": "..." } → { "restored" }
 ```
 
 ### Sandbox
 
 ```http
 POST /api/v1/hord/sandbox/execute
-{ "code": "return 2 + 2", "language": "javascript", "timeout": 5000 }
+{ "code": "console.log(2 + 2)", "language": "javascript", "timeout": 5000, "memory_limit": 128 }
 ```
 
-### Yoxallismus Cipher
+Runs in Hord's isolated sandbox (no network, writes only to its workdir, scrubbed env, memory and CPU limits). The response includes `stdout`, `exit_code`, `promotion_recommendation` and an `isolation` report.
 
-```bash
-POST /api/v1/hord/yoxallismus/lock     # Lock data
-POST /api/v1/hord/yoxallismus/unlock   # Unlock data
-GET /api/v1/hord/yoxallismus/info      # Get cipher info
-```
+### Yoxallismus Cipher (removed)
+
+`/api/v1/hord/yoxallismus/*` returns **410 Gone**. The v1 cipher's output could never be decrypted. Use [`@weave_protocol/yoxallismus`](https://www.npmjs.com/package/@weave_protocol/yoxallismus) instead.
 
 ---
 
@@ -238,9 +243,9 @@ POST /api/v1/domere/gdpr/report             # Generate report
 ```bash
 GET /api/v1/domere/anchor/estimate          # Estimate cost
 POST /api/v1/domere/anchor/prepare          # Prepare anchor
-POST /api/v1/domere/anchor/submit           # Submit signed tx
-POST /api/v1/domere/anchor/verify           # Verify anchor
-GET /api/v1/domere/anchor/:thread_id/status # Get status
+POST /api/v1/domere/anchor/submit           # 501: not implemented in Dōmere yet
+POST /api/v1/domere/anchor/verify           # 501
+GET /api/v1/domere/anchor/:thread_id/status # 501
 ```
 
 ---
@@ -304,6 +309,9 @@ POST /api/v1/functions/call  # Call a function
 | `WEAVE_CORS_ORIGINS` | none | Comma-separated allowed origins (`WEAVE_CORS_ORIGIN` also works). Default: no cross-origin access |
 | `WEAVE_RATE_LIMIT` | `100` | `/api` requests per minute per client |
 | `WEAVE_DEMO` | - | Set to `1` to enable `/reset` and `/test/*` |
+| `HORD_MASTER_KEY` | random per process | Hord vault master key: 64 hex chars or a passphrase. Without it, vault contents don't survive a restart |
+| `HORD_MASTER_KEY_FILE` | - | File containing the master key |
+| `WEAVE_SIGNING_KEY` | random per process | Signs Dōmere compliance records |
 
 **Upgrading from 1.1.x:** the server now listens on `127.0.0.1` by default, sends no CORS headers unless you list origins, protects every route (not just `/api`) when a key is set, and hides the demo endpoints. To keep a public bind, set `WEAVE_HOST=0.0.0.0` and a `WEAVE_API_KEY`.
 
