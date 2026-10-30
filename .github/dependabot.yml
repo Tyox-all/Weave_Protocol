@@ -45,7 +45,7 @@ updates:
         dependency-type: "development"
         update-types: ["minor", "patch"]
 
-  # ─── npm packages (14 of them) ───────────────────────────
+  # ─── npm packages (18 of them) ───────────────────────────
   # Each gets its own entry. Shared structure via YAML anchors isn't
   # supported in Dependabot, so we repeat — but with consistent groups.
 
@@ -582,6 +582,166 @@ updates:
       - "adapter-msaf"
     commit-message:
       prefix: "deps(adapter-msaf)"
+      include: "scope"
+    open-pull-requests-limit: 3
+    versioning-strategy: "increase"
+    groups:
+      typescript-and-types:
+        patterns:
+          - "typescript"
+          - "@types/*"
+      eslint:
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+      modelcontextprotocol:
+        patterns:
+          - "@modelcontextprotocol/*"
+      dev-deps-minor-patch:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+      prod-deps-minor-patch:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/adversary"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "America/Chicago"
+    labels:
+      - "dependencies"
+      - "npm"
+      - "adversary"
+    commit-message:
+      prefix: "deps(adversary)"
+      include: "scope"
+    open-pull-requests-limit: 3
+    versioning-strategy: "increase"
+    groups:
+      typescript-and-types:
+        patterns:
+          - "typescript"
+          - "@types/*"
+      eslint:
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+      modelcontextprotocol:
+        patterns:
+          - "@modelcontextprotocol/*"
+      dev-deps-minor-patch:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+      prod-deps-minor-patch:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/agentsecbench"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "America/Chicago"
+    labels:
+      - "dependencies"
+      - "npm"
+      - "agentsecbench"
+    commit-message:
+      prefix: "deps(agentsecbench)"
+      include: "scope"
+    open-pull-requests-limit: 3
+    versioning-strategy: "increase"
+    groups:
+      typescript-and-types:
+        patterns:
+          - "typescript"
+          - "@types/*"
+      eslint:
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+      modelcontextprotocol:
+        patterns:
+          - "@modelcontextprotocol/*"
+      dev-deps-minor-patch:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+      prod-deps-minor-patch:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/yoxallismus"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "America/Chicago"
+    labels:
+      - "dependencies"
+      - "npm"
+      - "yoxallismus"
+    commit-message:
+      prefix: "deps(yoxallismus)"
+      include: "scope"
+    open-pull-requests-limit: 3
+    versioning-strategy: "increase"
+    groups:
+      typescript-and-types:
+        patterns:
+          - "typescript"
+          - "@types/*"
+      eslint:
+        patterns:
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+      modelcontextprotocol:
+        patterns:
+          - "@modelcontextprotocol/*"
+      dev-deps-minor-patch:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+      prod-deps-minor-patch:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/browser"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "America/Chicago"
+    labels:
+      - "dependencies"
+      - "npm"
+      - "browser"
+    commit-message:
+      prefix: "deps(browser)"
       include: "scope"
     open-pull-requests-limit: 3
     versioning-strategy: "increase"
