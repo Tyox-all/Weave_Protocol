@@ -66,8 +66,11 @@ npm install @weave_protocol/full
 
 A big stretch across offense, defense, and how releases ship. Highlights:
 
-#### 🛡️ Mund: 0.4 → 0.3
+#### 🛡️ Mund: 0.5 → 0.3
 [`@weave_protocol/mund`](https://www.npmjs.com/package/@weave_protocol/mund), our most-used package, newest release first.
+
+##### 📚 0.5.0: Mund as a library
+`import { scan } from '@weave_protocol/mund'` runs the same analyzers and rules as the MCP server and returns masked findings with a 0–100 risk score. The Weave API now uses it for every scan.
 
 ##### 🚪 0.4.x: skills and MCP servers are checked before they can act
 Mund and the harness adapters now guard what your agent installs:
@@ -103,6 +106,21 @@ Security hardening in the same release:
 - Patched `express`, `qs` and `proxy-addr`, and updated the MCP SDK to 1.32.1. `npm audit` now reports **0 production vulnerabilities**.
 - Removed `nodemailer`, which carried a high-severity CVE and was never actually wired up. The email notifier now says plainly that it isn't implemented instead of silently dropping alerts.
 - Mund has its **first real test suite**.
+
+#### 🏛️ Hord 0.2.0: a real sandbox, and a key bug fixed
+- **Sandbox isolation (0.1.9).** Code runs with no network, writes only to its own folder, a scrubbed environment, and memory and CPU limits (`sandbox-exec` on macOS, `bwrap` on Linux). Each result reports what was enforced, and strict mode refuses to run without full isolation.
+- **Advisory [HORD-2026-001](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord/SECURITY_ADVISORIES.md) (high).** Before 0.2.0, any master key that wasn't 64 hex characters, including the default, gave the same key on every install. Upgrade, or set a 64-hex-character key.
+- **Sealed vaults can be reopened.** Sealing used to wipe the vault's only key.
+- **Usable as a library:** vaults, capability tokens, redaction, the sandbox and attestations are now exported.
+
+#### 🔌 API 1.3.0: real packages, locked down
+- **Backed by Mund, Hord and Dōmere.** Earlier versions simulated the sandbox and anchoring, and "encrypted" vault secrets with a fixed key. Endpoints that aren't implemented upstream now say so (501, 410).
+- **Fails closed (1.2.0).** It listens on `127.0.0.1` by default, refuses a public address without `WEAVE_API_KEY`, requires the key on every route, and no longer sends CORS `*`.
+
+#### 🧹 Across the suite
+- **No critical or high npm advisories** in any package, with the MCP SDK on 1.32. CI now builds, tests and audits all 18 packages.
+- **Importing a package no longer starts a server** (Mund, Hord, Dōmere, Hundredmen, Witan, API); servers start from their commands. `@weave_protocol/full` 0.3.0 installs current versions of everything.
+- **Also fixed:** Dōmere threads with hops failed verification (1.3.8), Witan couldn't be imported (1.1.2), and Tollere missed `react-dom` typosquats (0.2.4).
 
 #### 🔐 Yoxallismus 0.2.0-beta.0: Double Ratchet, and a wire format you can build on
 [`@weave_protocol/yoxallismus@beta`](https://www.npmjs.com/package/@weave_protocol/yoxallismus) moves from a cipher toward a messaging protocol:
@@ -858,6 +876,9 @@ done
 - [x] **Yoxallismus v0.2** (`@weave_protocol/yoxallismus@0.2.0-beta.0`): Double Ratchet seeded by the hybrid KEM, X-Wing-style KEM combiner, sealed boxes, cascade AEAD, `yoxall/2` wire format locked through 1.0, advisories YOXALL-2026-001 to 003, and Hord's broken v1 cipher deprecated (Hord 0.1.8)
 - [x] **Mund pre-install hooks** (`@weave_protocol/mund@0.4.0`, adapters 0.2.0): skill and MCP server audits with rug-pull detection, enforced as Claude Code and Antigravity hooks; fixture-backed [detection claims](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund/DETECTION_CLAIMS.md); Antigravity WARD enforcement rebuilt on the documented hook contract
 - [x] **Mund parity floor**: SARIF output (`mund-mcp scan --format=sarif`), OSV.dev live CVE lookups with offline fallback, 0–100 risk score, CycloneDX SBOM + Sigstore attestations in `publish-all`, OWASP LLM + Agentic coverage tables
+- [x] **Hord sandbox isolation** (`@weave_protocol/hord` 0.1.9–0.2.0): OS-level network, filesystem and environment isolation, memory limits and strict mode; [HORD-2026-001](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord/SECURITY_ADVISORIES.md) fixed
+- [x] **API on the real packages** (`@weave_protocol/api` 1.3.0): Mund, Hord and Dōmere backing, with fail-closed defaults from 1.2.0
+- [x] **Suite hygiene**: no critical or high advisories, CI builds, tests and audits every package, and imports have no side effects
 
 ---
 
