@@ -66,8 +66,11 @@ npm install @weave_protocol/full
 
 A big stretch across offense, defense, and how releases ship. Highlights:
 
-#### 🚪 Mund 0.4.0: skills and MCP servers are checked before they can act
-[`@weave_protocol/mund@0.4.0`](https://www.npmjs.com/package/@weave_protocol/mund) and the harness adapters now guard what your agent installs:
+#### 🛡️ Mund: 0.4 → 0.3
+[`@weave_protocol/mund`](https://www.npmjs.com/package/@weave_protocol/mund), our most-used package, newest release first.
+
+##### 🚪 0.4.x: skills and MCP servers are checked before they can act
+Mund and the harness adapters now guard what your agent installs:
 
 - **Skills are scanned before install**, including every file they ship: invisible Unicode that hides instructions from reviewers, prompt injection, data-exfiltration instructions, dangerous commands and embedded secrets.
 - **MCP servers are checked before they're used.** Mund looks at how each server is launched (typosquatted packages, plain-HTTP or data-collection URLs, secrets written into config), connects to the ones you've approved, scans their tool descriptions, and watches for **rug pulls**: tools that change after you approved them.
@@ -81,6 +84,25 @@ A big stretch across offense, defense, and how releases ship. Highlights:
   - `agy` treats an empty `{}` hook reply as a deny, so the hooks now print nothing for allowed calls.
 
   In the live run, a read of `secrets/token.txt` was denied by its WARD rule, while reads and writes inside the allowed folders went through. Upgrade with `npm i -g @weave_protocol/adapter-antigravity@latest`.
+
+**Since 0.4.0:** 0.4.1 ships the MCP SDK and zod security updates (no high or critical advisories remain), and 0.4.2 makes importing `@weave_protocol/mund` side-effect free: the MCP server now starts only from the `mund-mcp` command or when `dist/index.js` is run directly, never on `import`.
+
+##### 🐤 0.3.1: canary tokens and rug-pull detection
+- **Canary tokens (OWASP LLM07).** Put a Mund canary in your system prompt, and any output that leaks it is flagged, even spaced out, base64-encoded, or reversed.
+- **MCP rug-pull detection (OWASP ASI04).** Mund remembers each MCP server's tools when you first approve it and alerts when they change later. If a changed tool now looks malicious or asks to run commands, the verdict is `DO_NOT_USE`.
+- Both features are backed by a **fixture library** with one test case per scenario. OWASP coverage is now **3/20 green for Mund alone and 10/20 across the Weave suite**, with every green cell linked to its source.
+
+##### 🧬 0.3.0: the parity floor ([details below](#️-mund-parity-floor--plugs-into-github-code-scanning))
+- **`mund-mcp scan --format=sarif`**: findings appear as GitHub code-scanning alerts.
+- **Live dependency CVEs** from OSV.dev, with an offline cache. Unchecked packages are reported as unchecked, never as clean.
+- A **0–100 risk score** with a severity label on every scan.
+- **OWASP coverage tables** for the LLM Top 10 and the Agentic Top 10, marking honestly what's covered and what isn't.
+- **23 secret-detection rules that had never matched anything** (including AWS secret keys) are fixed.
+
+Security hardening in the same release:
+- Patched `express`, `qs` and `proxy-addr`, and updated the MCP SDK to 1.32.1. `npm audit` now reports **0 production vulnerabilities**.
+- Removed `nodemailer`, which carried a high-severity CVE and was never actually wired up. The email notifier now says plainly that it isn't implemented instead of silently dropping alerts.
+- Mund has its **first real test suite**.
 
 #### 🔐 Yoxallismus 0.2.0-beta.0: Double Ratchet, and a wire format you can build on
 [`@weave_protocol/yoxallismus@beta`](https://www.npmjs.com/package/@weave_protocol/yoxallismus) moves from a cipher toward a messaging protocol:
@@ -105,24 +127,6 @@ A big stretch across offense, defense, and how releases ship. Highlights:
 - **No more false perfect scores.** Attacks that hit an API error used to count as "blocked", so a run with no API access scored 100/100. Adversary now exits with the real error instead.
 - **Scorecard fixes.** Findings record the agent's tool calls again, `timeToExploit` means conversation turns again, and `--redact-evidence` also scrubs the per-attempt evidence it used to leak.
 - **First test suite for Adversary**, covering retry logic, v0.2 compatibility, and redaction.
-
-#### 🛡️ Mund security hardening (in Mund 0.3.0)
-- Patched `express`, `qs` and `proxy-addr`, and updated the MCP SDK to 1.32.1. `npm audit` now reports **0 production vulnerabilities**.
-- Removed `nodemailer`, which carried a high-severity CVE and was never actually wired up. The email notifier now says plainly that it isn't implemented instead of silently dropping alerts.
-- Mund has its **first real test suite**.
-
-#### 🧬 Mund 0.3.0, on npm now ([details below](#️-mund-parity-floor--plugs-into-github-code-scanning))
-[`@weave_protocol/mund@0.3.0`](https://www.npmjs.com/package/@weave_protocol/mund) ships the parity floor:
-- **`mund-mcp scan --format=sarif`**: findings appear as GitHub code-scanning alerts.
-- **Live dependency CVEs** from OSV.dev, with an offline cache. Unchecked packages are reported as unchecked, never as clean.
-- A **0–100 risk score** with a severity label on every scan.
-- **OWASP coverage tables** for the LLM Top 10 and the Agentic Top 10, marking honestly what's covered and what isn't.
-- **23 secret-detection rules that had never matched anything** (including AWS secret keys) are fixed.
-
-#### 🐤 Mund 0.3.1: canary tokens and rug-pull detection
-- **Canary tokens (OWASP LLM07).** Put a Mund canary in your system prompt, and any output that leaks it is flagged, even spaced out, base64-encoded, or reversed.
-- **MCP rug-pull detection (OWASP ASI04).** Mund remembers each MCP server's tools when you first approve it and alerts when they change later. If a changed tool now looks malicious or asks to run commands, the verdict is `DO_NOT_USE`.
-- Both features are backed by a **fixture library** with one test case per scenario. OWASP coverage is now **3/20 green for Mund alone and 10/20 across the Weave suite**, with every green cell linked to its source.
 
 #### 🔏 How releases ship
 - **npm Trusted Publishing (OIDC).** CI publishes without any long-lived npm token.
@@ -696,6 +700,9 @@ flowchart TD
     MSAF["🛡️ <b>adapter-msaf</b><br/>Microsoft · middleware<br/>✅ Live"]
     BR["🌐 <b>browser</b><br/>Browser agents<br/>✅ Live"]
 
+    CC -.->|Mund hooks: skills + MCP servers| MUND
+    AG -.->|Mund hooks: skills + MCP servers| MUND
+
     HM --> AGENT
     CC --> AGENT
     AG --> AGENT
@@ -706,8 +713,9 @@ flowchart TD
         direction TB
         subgraph CORE["Defense — Core security"]
             direction LR
-            MUND["🛡️ Mund<br/>Guardian<br/><i>scanning</i>"]
-            HORD["🏛️ Hord<br/>Vault<br/><i>encryption</i>"]
+            MUND["🛡️ Mund<br/>Guardian<br/><i>scanning · pre-install checks</i>"]
+            HORD["🏛️ Hord<br/>Vault<br/><i>secrets · isolated sandbox</i>"]
+            YOX["🔐 Yoxallismus<br/>PQ cipher<br/><i>beta</i>"]
             DOMERE["⚖️ Domere<br/>Judge<br/><i>compliance</i>"]
             WITAN["👥 Witan<br/>Council<br/><i>consensus</i>"]
         end
@@ -750,7 +758,7 @@ flowchart TD
 
     class CLI,WARD policy
     class HM,CC,AG,MSAF,BR enforcer
-    class MUND,HORD,DOMERE,WITAN core
+    class MUND,HORD,DOMERE,WITAN,YOX core
     class TOLLERE,API,LC ops
     class ADV,ASB,MUT offensive
     class OSV,GHCS external
