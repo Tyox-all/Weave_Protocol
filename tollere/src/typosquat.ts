@@ -8,10 +8,10 @@ import type { TyposquatMatch } from "./types.js";
 // Top popular npm packages - common typosquat targets
 // In production, this would be loaded from a regularly-updated source
 const POPULAR_PACKAGES = [
-  "react", "lodash", "axios", "express", "vue", "angular", "next",
+  "react", "react-dom", "react-native", "lodash", "axios", "express", "vue", "angular", "next",
   "typescript", "webpack", "babel", "eslint", "prettier", "jest",
   "mocha", "chai", "moment", "uuid", "dotenv", "chalk", "commander",
-  "yargs", "inquirer", "request", "fs-extra", "glob", "rimraf",
+  "yargs", "inquirer", "request", "fs-extra", "glob", "rimraf", "zod", "@types/node",
   "cross-env", "concurrently", "nodemon", "ts-node", "tsx",
   "openai", "anthropic", "@anthropic-ai/sdk", "langchain",
   "@langchain/core", "@modelcontextprotocol/sdk", "llamaindex",

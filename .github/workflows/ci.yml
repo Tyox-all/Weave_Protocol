@@ -1,33 +1,52 @@
 name: CI
 on: [push, pull_request]
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with:
-          node-version: '20'
-      - run: cd mund && npm install && npm run build
-      - run: cd hord && npm install && npm run build
-      - run: cd domere && npm install && npm run build
 
-  # Packages with test suites. Yoxallismus' suite includes the yoxall/2
-  # known-answer vectors, so this job is what keeps that wire format locked.
-  test:
+permissions:
+  contents: read
+
+jobs:
+  # Every npm package: clean install, build, run its tests (if it has any),
+  # and fail on critical production advisories. Yoxallismus' suite includes
+  # the yoxall/2 known-answer vectors, so this job keeps that wire format locked.
+  package:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        package: [mund, hord, adversary, agentsecbench, yoxallismus, adapter-claudecode, adapter-antigravity]
+        package: [mund, hord, domere, witan, hundredmen, tollere, ward, langchain, api, cli, full, browser, adversary, agentsecbench, yoxallismus, adapter-claudecode, adapter-antigravity, adapter-msaf]
+    defaults:
+      run:
+        working-directory: ${{ matrix.package }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
       - name: Install
-        working-directory: ${{ matrix.package }}
         run: npm ci
+      - name: Build
+        run: npm run build --if-present
       - name: Test
-        working-directory: ${{ matrix.package }}
-        run: npm test
+        run: |
+          if npm pkg get scripts.test | grep -q '{}'; then
+            echo "::warning title=No tests::${{ matrix.package }} has no test suite"
+          else
+            npm test
+          fi
+      # Critical only for now: api/full still pull zod 3 through published
+      # hord/mund until those releases go out; then raise this to high.
+      - name: Audit (production deps)
+        run: npm audit --omit=dev --audit-level=critical
+
+  python:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: llamaindex-py
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -e '.[dev]'
+      - run: pytest -q
