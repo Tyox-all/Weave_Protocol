@@ -38,6 +38,8 @@ jobs:
       # is exempt until its lockfile moves to a domere release with this fix.
       - name: Import has no side effects
         if: matrix.package != 'full' && matrix.package != 'witan'
+        env:
+          YOXALL_SILENCE_BETA_WARNING: '1'  # yoxallismus' deliberate one-time beta notice
         run: |
           main=$(node -p "const p=require('./package.json'); (p.exports?.['.']?.import || p.main || '').replace(/^\.\//,'')")
           [ -n "$main" ] && [ -f "$main" ] || { echo "no main entry"; exit 0; }
