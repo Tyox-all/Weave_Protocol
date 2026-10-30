@@ -75,6 +75,12 @@ A big stretch across offense, defense, and how releases ship. Highlights:
 - **Every claim is a test.** [DETECTION_CLAIMS.md](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund/DETECTION_CLAIMS.md) links each one to a fixture that CI checks.
 - **Safe by design:** Mund never starts a server you haven't approved, or one whose package or URL it already distrusts.
 - **Antigravity WARD enforcement fixed** (adapter 0.2.0). The original hook didn't match Antigravity's documented hook format, so WARD rules were likely not being enforced there. Re-run `weave-antigravity init` after upgrading.
+- **Live-checked in the Antigravity CLI** ([adapter 0.2.1](https://www.npmjs.com/package/@weave_protocol/adapter-antigravity)). We ran the WARD and Mund hooks in real `agy` 1.4.11 sessions, which turned up three bugs, now fixed:
+  - `agy` uses its own file tools (`read_file`, `write_file`, `edit_file`), which the adapter didn't recognise, so allowed reads were blocked and path rules never applied. Mund's skill check now covers these write tools too.
+  - `agy` sometimes sends workspace-relative paths, which could slip past a deny rule like `secrets/**`. Paths are now resolved against the workspace before matching.
+  - `agy` treats an empty `{}` hook reply as a deny, so the hooks now print nothing for allowed calls.
+
+  In the live run, a read of `secrets/token.txt` was denied by its WARD rule, while reads and writes inside the allowed folders went through. Upgrade with `npm i -g @weave_protocol/adapter-antigravity@latest`.
 
 #### 🔐 Yoxallismus 0.2.0-beta.0: Double Ratchet, and a wire format you can build on
 [`@weave_protocol/yoxallismus@beta`](https://www.npmjs.com/package/@weave_protocol/yoxallismus) moves from a cipher toward a messaging protocol:
@@ -256,7 +262,7 @@ The thesis was that [WARD.md](https://www.npmjs.com/package/@weave_protocol/ward
 |---|---|---|---|
 | **MCP servers** | Open standard | [Hundredmen v1.1.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen) | ✅ Live on npm |
 | **Claude Code** | Anthropic | [adapter-claudecode v0.1.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-claudecode) | ✅ Live on npm |
-| **Google Antigravity** (desktop + `agy` CLI + SDK) | Google | [adapter-antigravity v0.1.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-antigravity) | ✅ Live on npm |
+| **Google Antigravity** (desktop + `agy` CLI + SDK) | Google | [adapter-antigravity v0.2.1](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-antigravity) | ✅ Live on npm |
 | **Microsoft Agent Framework** | Microsoft | [adapter-msaf v0.1.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-msaf) | ✅ Live on npm |
 | **Browser agents** | Open standard | [browser v0.1.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/browser) | ✅ Live on npm |
 
