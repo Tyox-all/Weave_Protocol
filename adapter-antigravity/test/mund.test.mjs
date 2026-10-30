@@ -59,7 +59,9 @@ e2e('hook commands end to end (local Mund)', () => {
   const hook = (sub, payload) => {
     const r = spawnSync(process.execPath, ['dist/cli.js', 'mund', sub], { input: JSON.stringify(payload), env, encoding: 'utf8' });
     assert.equal(r.status, 0, r.stderr);
-    return JSON.parse(r.stdout || '{}');
+    // Allowed must be empty stdout: agy 1.4.x treats a bare `{}` as a deny.
+    assert.notEqual(r.stdout.trim(), '{}', 'never print a bare {}');
+    return r.stdout ? JSON.parse(r.stdout) : null;
   };
 
   test('session-start injects a summary; pre-tool-use gates MCP calls from the cache', () => {
@@ -71,14 +73,22 @@ e2e('hook commands end to end (local Mund)', () => {
     const out = hook('session-start', { conversationId: 'c', workspacePaths: [ws] });
     assert.match(out.injectSteps[0].systemMessage, /squat/);
     assert.equal(hook('pre-tool-use', { toolCall: { name: 'mcp__squat__read_file', args: {} }, workspacePaths: [ws] }).decision, 'deny');
-    assert.deepEqual(hook('pre-tool-use', { toolCall: { name: 'mcp__notes__read_note', args: {} }, workspacePaths: [ws] }), {});
-    assert.deepEqual(hook('pre-tool-use', { toolCall: { name: 'run_command', args: { CommandLine: 'ls' } }, workspacePaths: [ws] }), {});
+    assert.deepEqual(hook('pre-tool-use', { toolCall: { name: 'mcp__notes__read_note', args: {} }, workspacePaths: [ws] }), null);
+    assert.deepEqual(hook('pre-tool-use', { toolCall: { name: 'run_command', args: { CommandLine: 'ls' } }, workspacePaths: [ws] }), null);
   });
 
   test('pre-tool-use denies hidden-text skill content before write_to_file runs', () => {
     const target = join(ws, '.agents', 'skills', 'fmt', 'SKILL.md');
     assert.equal(hook('pre-tool-use', { toolCall: { name: 'write_to_file', args: { TargetFile: target, CodeContent: HIDDEN } }, workspacePaths: [ws] }).decision, 'deny');
-    assert.deepEqual(hook('pre-tool-use', { toolCall: { name: 'write_to_file', args: { TargetFile: target, CodeContent: 'Formats tables.' } }, workspacePaths: [ws] }), {});
+    assert.deepEqual(hook('pre-tool-use', { toolCall: { name: 'write_to_file', args: { TargetFile: target, CodeContent: 'Formats tables.' } }, workspacePaths: [ws] }), null);
+  });
+
+  test('agy CLI write_file / edit_file with workspace-relative Path are skill-checked too', () => {
+    const rel = '.agents/skills/fmt2/SKILL.md';
+    assert.equal(hook('pre-tool-use', { toolCall: { name: 'write_file', args: { Path: rel, Content: HIDDEN } }, workspacePaths: [ws] }).decision, 'deny');
+    assert.equal(hook('pre-tool-use', { toolCall: { name: 'edit_file', args: { Path: rel, Target: 'x', Replacement: HIDDEN } }, workspacePaths: [ws] }).decision, 'deny');
+    assert.equal(hook('pre-tool-use', { toolCall: { name: 'write_file', args: { Path: rel, Content: 'Formats tables.' } }, workspacePaths: [ws] }), null);
+    assert.equal(hook('pre-tool-use', { toolCall: { name: 'read_file', args: { Path: rel } }, workspacePaths: [ws] }), null, 'built-in, not an MCP call');
   });
 
   test('install / uninstall manage only the weave-mund entry in hooks.json', () => {

@@ -111,11 +111,15 @@ Antigravity's [documented tools](https://antigravity.google/docs/hooks) map to g
 | `write_to_file` / `replace_file_content` / `multi_replace_file_content` | `file_write` | `TargetFile` | `write` |
 | `view_file` | `file_read` | `AbsolutePath` | `read` |
 | `grep_search` | `file_read` | `SearchPath` | `read` |
+| `read_file` (agy CLI) | `file_read` | `Path` (workspace-relative paths resolved) | `read` |
+| `write_file` / `edit_file` (agy CLI) | `file_write` | `Path` (workspace-relative paths resolved) | `write` |
 | `list_dir` / `find_by_name` | `file_list` | `DirectoryPath` / `SearchDirectory` | `list` |
 | `read_url_content` | `http_request` | `Url` | — |
 | `search_web` | `web_search` | — | — |
 | `invoke_subagent` / `define_subagent` | `subagent` | — | — |
 | `send_message` / `manage_task` / `schedule` / `generate_image` | `agent_message` / `task_control` / `schedule` / `generate_image` | — | — |
+
+The `agy` CLI (1.4.x) uses its own file tools, `read_file`, `write_file` and `edit_file`; their names and arguments were observed in a live session, not taken from the docs. Allowed calls produce no output: `agy` treats a bare `{}` as a deny.
 
 Your WARD.md can use either name, for example `run_command` or `shell_exec`. Any other tool, including MCP tools, is checked by its raw name. Explicit rules win over default decisions.
 
