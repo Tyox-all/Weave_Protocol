@@ -188,7 +188,10 @@ export function planLaunch(command: string, args: string[], opts: LaunchOptions)
       ...(root && root.startsWith(home) ? ['--ro-bind', root, root] : []),
       '--bind', workdir, workdir, '--chdir', workdir,
       '--unshare-pid', '--unshare-ipc', '--unshare-uts', ...(allowNetwork ? [] : ['--unshare-net']),
-      '--die-with-parent', '--new-session', '--', ...inner,
+      // No --new-session: its setsid() would move the child out of the process group
+      // the watchdog measures and the timeout kills. The detached spawn already gives
+      // it a fresh session with no controlling terminal, so TIOCSTI isn't reachable.
+      '--die-with-parent', '--', ...inner,
     ];
   } else if (platform === 'linux' && has.unshare && !allowNetwork) {
     mechanism = 'unshare';

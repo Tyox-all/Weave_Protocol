@@ -93,12 +93,13 @@ describe('escape attempts', () => {
       const fs = require('fs');
       try { fs.writeFileSync('inside.txt', 'ok'); console.log('inside:ok'); } catch (e) { console.log('inside:' + e.code); }
       try { fs.writeFileSync(${JSON.stringify(escape)}, 'x'); console.log('escape-write:ok'); } catch (e) { console.log('escape-write:' + e.code); }
-      try { fs.readFileSync(${JSON.stringify(probe)}, 'utf8'); console.log('home-read:ok'); } catch (e) { console.log('home-read:' + e.code); }`);
+      try { console.log('home-read:' + fs.readFileSync(${JSON.stringify(probe)}, 'utf8')); } catch (e) { console.log('home-read:' + e.code); }`);
     expect(r.stdout).toContain('inside:ok');
+    // Judge by what reaches the host: under bwrap $HOME is a private tmpfs, so a
+    // write there "succeeds" but is thrown away, and the real home isn't visible.
     if (r.isolation?.filesystem === 'restricted') {
-      expect(r.stdout).not.toContain('escape-write:ok');
-      expect(r.stdout).not.toContain('home-read:ok');
       expect(existsSync(escape)).toBe(false);
+      expect(r.stdout).not.toContain('home-read:private');
     }
     rmSync(escape, { force: true });
   });
