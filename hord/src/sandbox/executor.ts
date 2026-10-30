@@ -25,6 +25,19 @@ import type {
 import { SandboxError, PromotionRecommendation as PR, IsolationLevel } from '../types.js';
 import { SANDBOX } from '../constants.js';
 import { generateId } from '../vault/encryption.js';
+import { planLaunch, missingForStrict, startMemoryWatchdog, type IsolationReport } from './isolation.js';
+import { constants as osConstants } from 'os';
+
+interface ProcessOutcome {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+  timeout: boolean;
+  signal?: string;
+  memoryExceeded: boolean;
+  peak_memory_mb: number;
+  isolation: IsolationReport;
+}
 
 // ============================================================================
 // Sandbox Manager
@@ -93,6 +106,21 @@ export class SandboxManager {
       throw new SandboxError('Sandbox working directory not initialized');
     }
     
+    // Strict sandboxes refuse to run without real isolation.
+    const probe = planLaunch('true', [], {
+      workdir,
+      limits: sandbox.config.resource_limits,
+      network: sandbox.config.network_policy,
+      filesystem: sandbox.config.filesystem_policy,
+    }).report;
+    const missing = missingForStrict(probe, sandbox.config.network_policy);
+    if (sandbox.config.enforcement === 'strict' && missing.length > 0) {
+      throw new SandboxError(
+        `Strict sandbox cannot run on this host: missing ${missing.join(', ')} (isolation available: ${probe.mechanism})`,
+        { sandbox_id: sandbox.id, missing },
+      );
+    }
+
     // Update status
     sandbox.status = 'running';
     sandbox.started_at = new Date();
@@ -108,6 +136,40 @@ export class SandboxManager {
     let stderr = '';
     let exitCode: number | undefined;
     let status: SandboxResult['status'] = 'success';
+    let isolation: IsolationReport | undefined;
+    let peakMemoryMb = 0;
+
+    // Fold one process outcome into the result.
+    const absorb = (result: ProcessOutcome) => {
+      stdout = result.stdout;
+      stderr = result.stderr;
+      exitCode = result.exitCode;
+      isolation = result.isolation;
+      peakMemoryMb = result.peak_memory_mb;
+      if (result.memoryExceeded) {
+        status = 'violation';
+        securityEvents.push({
+          timestamp: new Date(),
+          severity: 'critical',
+          type: 'resource_limit_exceeded',
+          description: `Memory limit exceeded (${sandbox.config.resource_limits.memory_mb} MB); process group killed`,
+          details: { peak_memory_mb: result.peak_memory_mb },
+        });
+      } else if (result.timeout) {
+        status = 'timeout';
+      } else if (exitCode !== 0) {
+        status = 'failure';
+      }
+      for (const gap of missingForStrict(result.isolation, sandbox.config.network_policy)) {
+        securityEvents.push({
+          timestamp: new Date(),
+          severity: 'warning',
+          type: 'isolation_unavailable',
+          description: `Ran without ${gap}: the host provides "${result.isolation.mechanism}" isolation`,
+          details: { isolation: result.isolation },
+        });
+      }
+    };
     
     try {
       // Check for suspicious patterns before execution
@@ -125,15 +187,7 @@ export class SandboxManager {
           sandbox.config,
           request.inputs
         );
-        stdout = result.stdout;
-        stderr = result.stderr;
-        exitCode = result.exitCode;
-        
-        if (result.timeout) {
-          status = 'timeout';
-        } else if (exitCode !== 0) {
-          status = 'failure';
-        }
+        absorb(result);
         
         // Check for security violations in output
         const outputCheck = this.checkOutputForViolations(stdout + stderr);
@@ -145,15 +199,7 @@ export class SandboxManager {
           workdir,
           sandbox.config
         );
-        stdout = result.stdout;
-        stderr = result.stderr;
-        exitCode = result.exitCode;
-        
-        if (result.timeout) {
-          status = 'timeout';
-        } else if (exitCode !== 0) {
-          status = 'failure';
-        }
+        absorb(result);
       }
       
       // Check filesystem changes
@@ -178,7 +224,7 @@ export class SandboxManager {
     // Calculate resource usage (simplified)
     const resourceUsage: ResourceUsage = {
       cpu_seconds_used: duration_ms / 1000,
-      memory_peak_mb: 0,  // Would need process monitoring
+      memory_peak_mb: peakMemoryMb,
       disk_written_mb: filesystemChanges.reduce((sum, c) => sum + (c.size_bytes || 0), 0) / (1024 * 1024),
       network_bytes_sent: 0,
       network_bytes_received: 0,
@@ -214,6 +260,7 @@ export class SandboxManager {
       security_events: securityEvents,
       promotion_recommendation: recommendation,
       recommendation_reasons: reasons,
+      isolation,
     };
     
     await this.storage.saveSandboxResult(result);
@@ -314,7 +361,7 @@ export class SandboxManager {
     workdir: string,
     config: SandboxConfig,
     inputs?: Record<string, unknown>
-  ): Promise<{ stdout: string; stderr: string; exitCode: number; timeout: boolean }> {
+  ): Promise<ProcessOutcome> {
     let command: string;
     let args: string[];
     let filename: string;
@@ -362,7 +409,7 @@ export class SandboxManager {
     command: string,
     workdir: string,
     config: SandboxConfig
-  ): Promise<{ stdout: string; stderr: string; exitCode: number; timeout: boolean }> {
+  ): Promise<ProcessOutcome> {
     // Parse command
     const parts = command.split(/\s+/);
     const cmd = parts[0];
@@ -376,67 +423,88 @@ export class SandboxManager {
     args: string[],
     workdir: string,
     config: SandboxConfig
-  ): Promise<{ stdout: string; stderr: string; exitCode: number; timeout: boolean }> {
+  ): Promise<ProcessOutcome> {
+    const plan = planLaunch(command, args, {
+      workdir,
+      limits: config.resource_limits,
+      network: config.network_policy,
+      filesystem: config.filesystem_policy,
+      environment: config.environment,
+    });
+
     return new Promise((resolve) => {
       const timeout = config.timeout_ms || SANDBOX.DEFAULT_LIMITS.cpu_seconds * 1000;
       let stdout = '';
       let stderr = '';
       let timedOut = false;
-      
-      const proc = spawn(command, args, {
+      let memoryExceeded = false;
+      let settled = false;
+
+      const proc = spawn(plan.command, plan.args, {
         cwd: workdir,
-        timeout,
-        env: {
-          ...process.env,
-          ...config.environment,
-          // Restrict some env vars
-          HOME: workdir,
-          TMPDIR: workdir,
-        },
-        // Resource limits via ulimit would go here in production
+        env: plan.env,
+        detached: plan.detached, // own process group, so we can kill the whole tree
+        stdio: ['ignore', 'pipe', 'pipe'],
       });
-      
+
+      const killGroup = () => {
+        try {
+          if (plan.detached && proc.pid) process.kill(-proc.pid, 'SIGKILL');
+          else proc.kill('SIGKILL');
+        } catch {
+          /* already gone */
+        }
+      };
+
+      const stopWatchdog = proc.pid && plan.detached
+        ? startMemoryWatchdog(proc.pid, config.resource_limits.memory_mb, () => {
+            memoryExceeded = true;
+            killGroup();
+          })
+        : () => 0;
+
       const timeoutId = setTimeout(() => {
         timedOut = true;
-        proc.kill('SIGKILL');
+        killGroup();
       }, timeout);
-      
+
       proc.stdout?.on('data', (data) => {
         stdout += data.toString();
-        // Limit output size
-        if (stdout.length > 1024 * 1024) {
-          proc.kill('SIGKILL');
-        }
+        if (stdout.length > 1024 * 1024) killGroup();
       });
-      
       proc.stderr?.on('data', (data) => {
         stderr += data.toString();
-        if (stderr.length > 1024 * 1024) {
-          proc.kill('SIGKILL');
-        }
+        if (stderr.length > 1024 * 1024) killGroup();
       });
-      
-      proc.on('close', (code) => {
+
+      const finish = (outcome: Omit<ProcessOutcome, 'peak_memory_mb' | 'isolation'>) => {
+        if (settled) return;
+        settled = true;
         clearTimeout(timeoutId);
-        resolve({
-          stdout: stdout.slice(0, 100000),  // Truncate
+        resolve({ ...outcome, peak_memory_mb: stopWatchdog(), isolation: plan.report });
+      };
+
+      proc.on('close', (code, signal) => {
+        // A process killed by a signal has no exit code; report 128 + signo
+        // (shell convention) instead of the old "code || 0", which made a
+        // killed run look successful.
+        const signo = signal ? (osConstants.signals as Record<string, number>)[signal] ?? 0 : 0;
+        finish({
+          stdout: stdout.slice(0, 100000),
           stderr: stderr.slice(0, 100000),
-          exitCode: code || 0,
+          exitCode: code ?? (signal ? 128 + signo : 1),
           timeout: timedOut,
+          signal: signal ?? undefined,
+          memoryExceeded,
         });
       });
-      
+
       proc.on('error', (err) => {
-        clearTimeout(timeoutId);
-        resolve({
-          stdout,
-          stderr: err.message,
-          exitCode: 1,
-          timeout: false,
-        });
+        finish({ stdout, stderr: err.message, exitCode: 1, timeout: false, memoryExceeded: false });
       });
     });
   }
+
   
   private checkSuspiciousPatterns(content: string): SecurityEvent[] {
     const events: SecurityEvent[] = [];
@@ -537,6 +605,13 @@ export class SandboxManager {
     
     if (status === 'error') {
       reasons.push('Execution error occurred');
+      return { recommendation: PR.REVIEW, reasons };
+    }
+
+    // A run without full isolation can't be promoted as safe, however clean it looked.
+    const gaps = securityEvents.filter(e => e.type === 'isolation_unavailable');
+    if (gaps.length > 0) {
+      reasons.push(`Ran without full isolation: ${gaps.map(g => g.description).join('; ')}`);
       return { recommendation: PR.REVIEW, reasons };
     }
     

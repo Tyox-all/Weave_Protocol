@@ -211,6 +211,12 @@ export interface SandboxConfig {
   filesystem_policy: FilesystemPolicy;
   environment?: Record<string, string>;
   timeout_ms?: number;
+  /**
+   * "best_effort" (default): run with whatever isolation the host provides and
+   * report what was missing. "strict": refuse to run unless network (when not
+   * allowed), filesystem and memory isolation are all enforced.
+   */
+  enforcement?: 'best_effort' | 'strict';
 }
 
 export interface Sandbox {
@@ -275,6 +281,8 @@ export interface SandboxResult {
   security_events: SecurityEvent[];
   promotion_recommendation: PromotionRecommendation;
   recommendation_reasons: string[];
+  /** What isolation was actually enforced for this run. */
+  isolation?: import('./sandbox/isolation.js').IsolationReport;
 }
 
 export interface ResourceUsage {

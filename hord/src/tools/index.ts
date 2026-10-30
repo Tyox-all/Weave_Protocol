@@ -440,8 +440,9 @@ function registerSandboxTools(server: McpServer, sandboxManager: SandboxManager)
       timeout_ms: z.number().optional().describe('Timeout in milliseconds'),
       memory_mb: z.number().optional().describe('Memory limit in MB'),
       allow_network: z.boolean().optional().describe('Allow network access'),
+      enforcement: z.enum(['best_effort', 'strict']).optional().describe('strict: refuse to run unless network, filesystem and memory isolation are all available on this host'),
     },
-    async ({ type, isolation_level, timeout_ms, memory_mb, allow_network }) => {
+    async ({ type, isolation_level, timeout_ms, memory_mb, allow_network, enforcement }) => {
       const sandbox = await sandboxManager.createSandbox({
         type,
         isolation_level: (isolation_level as IsolationLevel) || IsolationLevel.PROCESS,
@@ -463,6 +464,7 @@ function registerSandboxTools(server: McpServer, sandboxManager: SandboxManager)
           allow_symlinks: false,
         },
         timeout_ms,
+        enforcement,
       });
       
       return {
@@ -512,6 +514,8 @@ function registerSandboxTools(server: McpServer, sandboxManager: SandboxManager)
             promotion_recommendation: result.promotion_recommendation,
             recommendation_reasons: result.recommendation_reasons,
             security_events_count: result.security_events.length,
+            memory_peak_mb: result.resource_usage.memory_peak_mb,
+            isolation: result.isolation,
           }, null, 2),
         }],
       };
