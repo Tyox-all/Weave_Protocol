@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/full",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "The complete Weave Protocol security suite for AI agents - 13 packages covering policy (WARD.md), enforcement (4 harness adapters), scanning, encryption, compliance, consensus, supply chain, and observability",
   "type": "module",
   "main": "index.js",
@@ -39,19 +39,19 @@
     "url": "https://github.com/Tyox-all/Weave_Protocol/issues"
   },
   "dependencies": {
-    "@weave_protocol/adapter-antigravity": "^0.1.0",
-    "@weave_protocol/adapter-claudecode": "^0.1.0",
+    "@weave_protocol/adapter-antigravity": "^0.2.1",
+    "@weave_protocol/adapter-claudecode": "^0.2.0",
     "@weave_protocol/adapter-msaf": "^0.1.0",
-    "@weave_protocol/api": "^1.0.12",
+    "@weave_protocol/api": "^1.2.0",
     "@weave_protocol/cli": "^0.1.0",
-    "@weave_protocol/domere": "^1.3.4",
-    "@weave_protocol/hord": "^0.1.6",
-    "@weave_protocol/hundredmen": "^1.1.0",
-    "@weave_protocol/langchain": "^1.0.1",
-    "@weave_protocol/mund": "^0.2.2",
-    "@weave_protocol/tollere": "^0.2.2",
-    "@weave_protocol/ward": "^0.1.0",
-    "@weave_protocol/witan": "^1.0.2"
+    "@weave_protocol/domere": "^1.3.6",
+    "@weave_protocol/hord": "^0.1.10",
+    "@weave_protocol/hundredmen": "^1.1.2",
+    "@weave_protocol/langchain": "^1.0.2",
+    "@weave_protocol/mund": "^0.4.1",
+    "@weave_protocol/tollere": "^0.2.3",
+    "@weave_protocol/ward": "^0.1.1",
+    "@weave_protocol/witan": "^1.1.0"
   },
   "files": [
     "index.js",
