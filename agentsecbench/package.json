@@ -55,7 +55,7 @@
     "@weave_protocol/adversary": "^0.3.0"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "^26.6.5",
     "typescript": "^5.3.0"
   }
 }
