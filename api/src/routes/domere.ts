@@ -4,7 +4,14 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { DomereService } from '../services/domere.js';
+import { DomereService, NotSupportedError } from '../services/domere.js';
+
+/** Map Dōmere errors to HTTP statuses instead of a blanket 500. */
+function fail(res: Response, error: unknown) {
+  const msg = error instanceof Error ? error.message : String(error);
+  const status = error instanceof NotSupportedError ? 501 : /not found/i.test(msg) ? 404 : 500;
+  res.status(status).json({ error: msg });
+}
 
 const router = Router();
 const domere = new DomereService();
@@ -34,7 +41,7 @@ router.post('/threads', async (req: Request, res: Response) => {
     });
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -52,7 +59,7 @@ router.get('/threads', async (req: Request, res: Response) => {
     });
     res.json(threads);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -65,7 +72,7 @@ router.get('/threads/:id', async (req: Request, res: Response) => {
     const thread = await domere.getThread(req.params.id);
     res.json(thread);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -92,7 +99,7 @@ router.post('/threads/:id/hops', async (req: Request, res: Response) => {
     });
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -111,7 +118,7 @@ router.post('/threads/:id/close', async (req: Request, res: Response) => {
     const result = await domere.closeThread(req.params.id, outcome);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -124,7 +131,7 @@ router.post('/threads/:id/verify', async (req: Request, res: Response) => {
     const result = await domere.verifyThread(req.params.id);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -147,7 +154,7 @@ router.post('/intent/analyze', async (req: Request, res: Response) => {
     const result = await domere.analyzeIntent(content);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -166,7 +173,7 @@ router.post('/drift/check', async (req: Request, res: Response) => {
     const result = await domere.checkDrift(original_intent, current_intent, constraints);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -185,7 +192,7 @@ router.post('/intent/compare', async (req: Request, res: Response) => {
     const result = await domere.compareIntents(intent1, intent2);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -208,7 +215,7 @@ router.post('/language/detect', async (req: Request, res: Response) => {
     const result = await domere.detectLanguage(content);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -227,7 +234,7 @@ router.post('/language/analyze', async (req: Request, res: Response) => {
     const result = await domere.analyzeContent(content);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -246,7 +253,7 @@ router.post('/injection/check', async (req: Request, res: Response) => {
     const result = await domere.checkInjection(content);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -269,7 +276,7 @@ router.get('/anchor/estimate', async (req: Request, res: Response) => {
     const result = await domere.estimateAnchorCost(network as string);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -288,7 +295,7 @@ router.post('/anchor/prepare', async (req: Request, res: Response) => {
     const result = await domere.prepareAnchor(thread_id, network);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -307,7 +314,7 @@ router.post('/anchor/submit', async (req: Request, res: Response) => {
     const result = await domere.submitAnchor(network, signed_transaction);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -326,7 +333,7 @@ router.post('/anchor/verify', async (req: Request, res: Response) => {
     const result = await domere.verifyAnchor(network, thread_id, merkle_root);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -339,7 +346,7 @@ router.get('/anchor/:thread_id/status', async (req: Request, res: Response) => {
     const result = await domere.getAnchorStatus(req.params.thread_id);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -360,7 +367,7 @@ router.post("/compliance/checkpoint", async (req: Request, res: Response) => {
     const result = await domere.createCheckpoint({ thread_id, framework, control, event_type, event_description, data_classification, agent_id, user_id, risk_level, sign });
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -376,7 +383,7 @@ router.post("/compliance/cardholder", async (req: Request, res: Response) => {
     const result = await domere.logCardholderDataAccess({ thread_id, agent_id, data_type, action, masked: masked ?? false, encrypted: encrypted ?? false, business_justification });
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -392,7 +399,7 @@ router.post("/compliance/incident", async (req: Request, res: Response) => {
     const result = await domere.logSecurityIncident({ thread_id, agent_id, incident_id, incident_type, severity, status, affected_assets: affected_assets || [], description });
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -408,7 +415,7 @@ router.post("/compliance/asset", async (req: Request, res: Response) => {
     const result = await domere.logAssetEvent({ thread_id, agent_id, asset_id, asset_type, action, classification });
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 
@@ -424,7 +431,7 @@ router.post("/compliance/report", async (req: Request, res: Response) => {
     const result = await domere.generateComplianceReport({ framework, period_start: new Date(period_start), period_end: new Date(period_end) });
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: String(error) });
+    fail(res, error);
   }
 });
 

@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/api",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "Universal REST API for Weave Protocol Security Suite - works with OpenAI, Gemini, LangChain, and any HTTP client",
   "type": "module",
   "main": "dist/index.js",
@@ -28,9 +28,10 @@
   ],
   "license": "Apache-2.0",
   "dependencies": {
-    "@weave_protocol/domere": "^1.3.6",
-    "@weave_protocol/hord": "^0.1.10",
+    "@weave_protocol/domere": "^1.3.8",
+    "@weave_protocol/hord": "^0.2.0",
     "@weave_protocol/hundredmen": "^1.1.2",
+    "@weave_protocol/mund": "^0.5.0",
     "cors": "^2.8.5",
     "express": "^4.21.0",
     "express-rate-limit": "^7.1.0",
