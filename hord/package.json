@@ -1,15 +1,15 @@
 {
   "name": "@weave_protocol/hord",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "description": "The Vault Protocol - Cryptographic containment and capability management for AI agents",
   "main": "dist/index.js",
   "bin": {
-    "hord-mcp": "dist/index.js"
+    "hord-mcp": "dist/server.js"
   },
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "node dist/server.js",
     "dev": "tsx watch src/index.ts",
     "lint": "eslint src/**/*.ts",
     "test": "vitest run",

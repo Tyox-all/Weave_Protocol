@@ -33,6 +33,16 @@ jobs:
           else
             npm test
           fi
+      # Importing a package must not start a server or print anything (servers
+      # live behind the bin). full only re-exports the published packages; witan
+      # is exempt until its lockfile moves to a domere release with this fix.
+      - name: Import has no side effects
+        if: matrix.package != 'full' && matrix.package != 'witan'
+        run: |
+          main=$(node -p "const p=require('./package.json'); (p.exports?.['.']?.import || p.main || '').replace(/^\.\//,'')")
+          [ -n "$main" ] && [ -f "$main" ] || { echo "no main entry"; exit 0; }
+          out=$(node --input-type=module -e "const t=setTimeout(()=>{console.log('still running after 8s');process.exit(3)},8000); await import('./$main'); clearTimeout(t);" </dev/null 2>&1) || { echo "::error::import of $main failed: $out"; exit 1; }
+          [ -z "$out" ] || { echo "::error::import of $main printed output: $out"; exit 1; }
       # Critical only for now: api/full still pull zod 3 through published
       # hord/mund until those releases go out; then raise this to high.
       - name: Audit (production deps)
