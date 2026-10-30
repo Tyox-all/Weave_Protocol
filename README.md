@@ -66,6 +66,16 @@ npm install @weave_protocol/full
 
 A big stretch across offense, defense, and how releases ship. Highlights:
 
+#### 🚪 Mund 0.4.0: skills and MCP servers are checked before they can act
+[`@weave_protocol/mund@0.4.0`](https://www.npmjs.com/package/@weave_protocol/mund) and the harness adapters now guard what your agent installs:
+
+- **Skills are scanned before install**, including every file they ship: invisible Unicode that hides instructions from reviewers, prompt injection, data-exfiltration instructions, dangerous commands and embedded secrets.
+- **MCP servers are checked before they're used.** Mund looks at how each server is launched (typosquatted packages, plain-HTTP or data-collection URLs, secrets written into config), connects to the ones you've approved, scans their tool descriptions, and watches for **rug pulls**: tools that change after you approved them.
+- **Enforced by hooks** in Claude Code (`weave-claude-code mund install`) and Antigravity (`weave-antigravity mund install`). Calls to blocked servers are denied, flagged ones ask you first, and a poisoned skill is stopped before it's written.
+- **Every claim is a test.** [DETECTION_CLAIMS.md](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund/DETECTION_CLAIMS.md) links each one to a fixture that CI checks.
+- **Safe by design:** Mund never starts a server you haven't approved, or one whose package or URL it already distrusts.
+- **Antigravity WARD enforcement fixed** (adapter 0.2.0). The original hook didn't match Antigravity's documented hook format, so WARD rules were likely not being enforced there. Re-run `weave-antigravity init` after upgrading.
+
 #### 🔐 Yoxallismus 0.2.0-beta.0: Double Ratchet, and a wire format you can build on
 [`@weave_protocol/yoxallismus@beta`](https://www.npmjs.com/package/@weave_protocol/yoxallismus) moves from a cipher toward a messaging protocol:
 
@@ -300,12 +310,12 @@ The packages that keep your agent within policy: declare it, enforce it across e
 | Package | Version | Description |
 |---|---|---|
 | [🛡️ @weave_protocol/ward](https://github.com/Tyox-all/Weave_Protocol/blob/main/ward) | 0.1.0 | **WARD.md** — agent security policy standard (parser, validator, runtime checks) |
-| [🛡️ @weave_protocol/adapter-claudecode](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-claudecode) | 0.1.0 | **Claude Code adapter** — enforces WARD.md via PreToolUse hooks |
-| [🛡️ @weave_protocol/adapter-antigravity](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-antigravity) | 0.1.0 | **Google Antigravity adapter** — enforces WARD.md across desktop, `agy` CLI, and SDK |
+| [🛡️ @weave_protocol/adapter-claudecode](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-claudecode) | 0.2.0 | **Claude Code adapter** — enforces WARD.md via PreToolUse hooks; Mund pre-install hooks for skills + MCP |
+| [🛡️ @weave_protocol/adapter-antigravity](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-antigravity) | 0.2.0 | **Google Antigravity adapter** — enforces WARD.md across desktop, `agy` CLI, and SDK; Mund pre-install hooks |
 | [🛡️ @weave_protocol/adapter-msaf](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-msaf) | 0.1.0 | **Microsoft Agent Framework adapter** — middleware-based WARD enforcement |
 | [🌐 @weave_protocol/browser](https://github.com/Tyox-all/Weave_Protocol/blob/main/browser) | 0.1.0 | **Browser agent security** — runtime IPI scanner (33 patterns) for headless agents |
 | [🔍 @weave_protocol/hundredmen](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen) | 1.1.0 | **MCP proxy** — intercept, scan, gate tool calls; enforces WARD.md as first gate |
-| [🛡️ @weave_protocol/mund](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund) | 0.3.1 | **Scanner** — secrets, PII, injection, MCP vetting, OSV dependency CVEs, SARIF output, threat intel |
+| [🛡️ @weave_protocol/mund](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund) | 0.4.0 | **Scanner** — secrets, PII, injection, MCP vetting, pre-install checks for skills + MCP (rug pulls), OSV dependency CVEs, SARIF, threat intel |
 | [🏛️ @weave_protocol/hord](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord) | 0.1.8 | **Vault** — encrypted storage, sandboxing, capability tokens, attestation |
 | [🔐 @weave_protocol/yoxallismus](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus) | **0.2.0-beta.0** | **Post-quantum cipher** — X25519 + ML-KEM-768 hybrid KEM · sealed boxes · cascade AEAD · Double Ratchet · locked `yoxall/2` format · ⚠️ NOT AUDITED |
 | [⚖️ @weave_protocol/domere](https://github.com/Tyox-all/Weave_Protocol/blob/main/domere) | 1.3.4 | **Judge** — compliance (PCI-DSS, ISO27001, SOC2, HIPAA, GDPR, CCPA), blockchain anchoring |
@@ -832,6 +842,7 @@ done
 - [x] **Witan autonomous spending caps** (`@weave_protocol/witan` v1.1.0) — per-window budgets on LLM cost + tokens + tool calls, gated by block / approval / notify
 - [x] **Yoxallismus v2** (`@weave_protocol/yoxallismus@0.1.0-beta.0`) — **open beta shipped**. PQ-hybrid KEM (X25519 + ML-KEM-768 / NIST FIPS 203) + AEAD + ratcheting. Unaudited by design; validated by public use, forks, and responsible disclosure. v0.2+ adds DH double-ratchet, cascade cipher, threshold encryption; v0.3+ adds ZK/VDF/QRNG; v0.4+ adds FHE. See [yoxallismus/README.md](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus).
 - [x] **Yoxallismus v0.2** (`@weave_protocol/yoxallismus@0.2.0-beta.0`): Double Ratchet seeded by the hybrid KEM, X-Wing-style KEM combiner, sealed boxes, cascade AEAD, `yoxall/2` wire format locked through 1.0, advisories YOXALL-2026-001 to 003, and Hord's broken v1 cipher deprecated (Hord 0.1.8)
+- [x] **Mund pre-install hooks** (`@weave_protocol/mund@0.4.0`, adapters 0.2.0): skill and MCP server audits with rug-pull detection, enforced as Claude Code and Antigravity hooks; fixture-backed [detection claims](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund/DETECTION_CLAIMS.md); Antigravity WARD enforcement rebuilt on the documented hook contract
 - [x] **Mund parity floor**: SARIF output (`mund-mcp scan --format=sarif`), OSV.dev live CVE lookups with offline fallback, 0–100 risk score, CycloneDX SBOM + Sigstore attestations in `publish-all`, OWASP LLM + Agentic coverage tables
 
 ---
