@@ -10,6 +10,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import express from 'express';
+import { readFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
 
 import type { HordConfig } from './types.js';
 import { DEFAULT_CONFIG, SERVER_INFO } from './constants.js';
@@ -65,15 +67,23 @@ function loadConfig(): HordConfig {
 // Server Setup
 // ============================================================================
 
+/**
+ * Master key: HORD_MASTER_KEY (64 hex chars, or a passphrase), else the contents of
+ * HORD_MASTER_KEY_FILE, else a random key for this process only.
+ */
+function resolveMasterKey(enc: HordConfig['encryption']): string | Buffer {
+  if (enc.master_key) return enc.master_key;
+  if (enc.master_key_file) return readFileSync(enc.master_key_file, 'utf8').trim();
+  console.error('[hord] No HORD_MASTER_KEY or HORD_MASTER_KEY_FILE set: using a random master key. Vault contents will not be readable after this process exits.');
+  return randomBytes(32);
+}
+
 async function createServer(config: HordConfig) {
   // Initialize storage
   const storage = createStorage(config.storage);
   
   // Initialize key store
-  const masterKey = config.encryption.master_key || 
-    config.encryption.master_key_file ||
-    'hord-default-master-key-change-in-production-' + Date.now();
-  keyStore.initialize(masterKey);
+  keyStore.initialize(resolveMasterKey(config.encryption));
   
   // Initialize managers
   const vaultManager = new VaultManager(storage);
@@ -176,7 +186,8 @@ Environment Variables:
   HORD_HOST                  HTTP host
   HORD_TRANSPORT             Transport type
   HORD_STORAGE               Storage backend
-  HORD_MASTER_KEY            Master encryption key
+  HORD_MASTER_KEY            Master key: 64 hex chars or a passphrase
+  HORD_MASTER_KEY_FILE       File containing the master key
   HORD_SANDBOX_TIMEOUT_MS    Sandbox timeout
   HORD_MUND_URL              Mund server URL for integration
 
