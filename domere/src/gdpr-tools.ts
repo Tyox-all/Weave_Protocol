@@ -1318,8 +1318,9 @@ export function createGDPRToolHandlers(manager: GDPRManager) {
           if (!params.decision_id) {
             return { success: false, error: 'decision_id required' };
           }
-          // Would need to add a getDecision method to manager
-          return { success: false, error: 'Not implemented' };
+          const decision = manager.getAutomatedDecision(params.decision_id);
+          if (!decision) return { success: false, error: 'Decision not found' };
+          return { success: true, decision };
         }
 
         default:
