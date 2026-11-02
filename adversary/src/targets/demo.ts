@@ -23,7 +23,7 @@
  */
 
 import type { Attack, Target, TargetResponse } from '../types.js';
-import { callModel, estimateModelCost, resolveModelConfig, type ModelConfig } from '../providers.js';
+import { callModel, estimateModelCost, resolveModelConfig, QuotaExhaustedError, type ModelConfig } from '../providers.js';
 
 // Deliberately naive system prompt — the demo agent has tools, no
 // defenses, and a "be helpful, just do it" posture. This is what
@@ -59,6 +59,8 @@ export interface DemoTargetOptions {
   baseUrl?: string;
   /** reasoning_effort for OpenAI-compatible thinking models */
   reasoningEffort?: string;
+  /** Requests per minute to stay under (free tiers) */
+  rpm?: number;
 }
 
 interface UsageStats {
@@ -71,6 +73,8 @@ interface UsageStats {
 export class DemoTarget implements Target {
   kind = 'demo' as const;
   identifier: string;
+  /** Set when the provider's quota ran out; the agent stops the run */
+  exhausted?: string;
 
   private mode: 'mock' | 'real';
   private config?: ModelConfig;
@@ -148,8 +152,9 @@ export class DemoTarget implements Target {
         },
       };
     } catch (err) {
-      this.usage.errors += 1;
       const errMsg = (err as Error).message;
+      if (err instanceof QuotaExhaustedError) this.exhausted = errMsg;
+      else this.usage.errors += 1;
       return {
         text: `(real-mode API error: ${errMsg})`,
         toolCalls: [],

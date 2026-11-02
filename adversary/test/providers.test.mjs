@@ -3,8 +3,8 @@
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { resolveModelConfig, callModel, estimateModelCost, DemoTarget, DynamicAttackMutator } from '../dist/index.js';
-import { isLongWait } from '../dist/providers.js';
+import { resolveModelConfig, callModel, estimateModelCost, DemoTarget, DynamicAttackMutator, AdversarialAgent, renderMarkdownScorecard } from '../dist/index.js';
+import { isLongWait, QuotaExhaustedError } from '../dist/providers.js';
 
 let server, baseUrl;
 const requests = [];
@@ -100,7 +100,7 @@ describe('callModel (OpenAI-compatible)', () => {
     // A daily quota won't clear mid-run, so it fails at once
     requests.length = 0;
     script = [[429, { error: { message: 'Generate content requests per day limit exceeded on Free Tier. Please retry in 11h36m53.2s.' } }]];
-    await assert.rejects(callModel(local(), { systemPrompt: 's', userMessage: 'u' }, { baseDelayMs: 1 }), /API 429/);
+    await assert.rejects(callModel(local(), { systemPrompt: 's', userMessage: 'u' }, { baseDelayMs: 1 }), QuotaExhaustedError);
     assert.equal(requests.length, 1);
 
     script = [[503, {}], [503, {}], [503, {}]];
@@ -144,4 +144,37 @@ test('DynamicAttackMutator reports provider and unknown cost', async () => {
   const u = m.getUsage();
   assert.equal(u.provider, 'openrouter');
   assert.equal(u.estimatedCostUSD, null);
+});
+
+const DAILY_QUOTA = [429, { error: { message: 'Generate content requests per day limit exceeded on Free Tier.' } }];
+
+test('--rpm spaces calls to fit a per-minute limit', async () => {
+  const cfg = local({ model: 'paced', rpm: 600 }); // one call per 100ms
+  script = [];
+  const t0 = Date.now();
+  for (let i = 0; i < 3; i++) await callModel(cfg, { systemPrompt: 's', userMessage: 'u' });
+  assert.ok(Date.now() - t0 >= 190, `took ${Date.now() - t0}ms`);
+});
+
+describe('a used-up daily quota stops the run', () => {
+  test('scores only the attacks that reached the model and marks the run partial', async () => {
+    script = [[200, reply('Here is a summary of the page.')], [200, reply('Here is a summary of the page.')], DAILY_QUOTA];
+    const target = new DemoTarget({ mode: 'real', provider: 'ollama', model: 'quota-test', baseUrl });
+    const agent = new AdversarialAgent(target, { ward: { loaded: false, rules: [] } });
+    const card = await agent.run({ perCategoryLimit: 1 });
+    assert.equal(card.findings.length, 2);
+    assert.deepEqual({ ...card.stoppedEarly, reason: undefined }, { completed: 2, planned: 5, reason: undefined });
+    assert.match(card.stoppedEarly.reason, /per day/);
+    assert.equal(card.summary.total, 2);
+    assert.equal(target.getUsage().errors, 0, 'the quota stop is not counted as an attack error');
+    assert.match(renderMarkdownScorecard(card), /Partial run: 2 of 5 attacks/);
+  });
+
+  test('full runs carry no stoppedEarly field', async () => {
+    script = [];
+    const target = new DemoTarget({ mode: 'real', provider: 'ollama', model: 'full-test', baseUrl });
+    const card = await new AdversarialAgent(target, { ward: { loaded: false, rules: [] } }).run({ perCategoryLimit: 1 });
+    assert.equal(card.findings.length, 5);
+    assert.equal('stoppedEarly' in card, false);
+  });
 });

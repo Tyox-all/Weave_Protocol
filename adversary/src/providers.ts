@@ -56,6 +56,8 @@ export interface ModelConfig {
   /** Name of the env var the key came from, for error messages */
   keySource?: string;
   reasoningEffort?: string;
+  /** Requests per minute to stay under; calls are spaced to fit (free tiers) */
+  rpm?: number;
 }
 
 export interface ResolveOptions {
@@ -65,6 +67,7 @@ export interface ResolveOptions {
   baseUrl?: string;
   apiKey?: string;
   reasoningEffort?: string;
+  rpm?: number;
   env?: Record<string, string | undefined>;
 }
 
@@ -99,6 +102,7 @@ export function resolveModelConfig(opts: ResolveOptions = {}): ModelConfig {
     apiKey,
     keySource,
     reasoningEffort: opts.reasoningEffort ?? preset.defaultReasoningEffort,
+    ...(opts.rpm && opts.rpm > 0 ? { rpm: opts.rpm } : {}),
   };
 }
 
@@ -133,6 +137,31 @@ export function isLongWait(message: string): boolean {
   return seconds > 60;
 }
 
+/**
+ * The provider's quota is used up for longer than a run can wait (a
+ * free tier's daily limit). Targets surface this so the run stops
+ * instead of scoring every remaining attack as an error.
+ */
+export class QuotaExhaustedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'QuotaExhaustedError';
+  }
+}
+
+// Next free call slot per endpoint+model, shared by every caller (the
+// target and the mutator on the same model share one quota).
+const nextSlot = new Map<string, number>();
+
+async function pace(cfg: ModelConfig): Promise<void> {
+  if (!cfg.rpm) return;
+  const key = `${cfg.baseUrl}|${cfg.model}`;
+  const now = Date.now();
+  const at = Math.max(now, nextSlot.get(key) ?? 0);
+  nextSlot.set(key, at + 60_000 / cfg.rpm);
+  if (at > now) await new Promise((r) => setTimeout(r, at - now));
+}
+
 export interface RetryOptions {
   /** Retries after the first attempt. Default 3 */
   retries?: number;
@@ -150,6 +179,7 @@ export async function callModel(cfg: ModelConfig, opts: ModelCallOptions, retry:
   const retries = retry.retries ?? 3;
   const base = retry.baseDelayMs ?? 2000;
   for (let attempt = 0; ; attempt++) {
+    await pace(cfg);
     try {
       if (PROVIDERS[cfg.provider]?.protocol === 'anthropic') {
         return await callAnthropic({ apiKey: cfg.apiKey!, model: cfg.model, ...opts });
@@ -157,7 +187,8 @@ export async function callModel(cfg: ModelConfig, opts: ModelCallOptions, retry:
       return await callOpenAICompatible(cfg, opts);
     } catch (err) {
       const msg = (err as Error).message;
-      if (attempt >= retries || !RETRYABLE.test(msg) || isLongWait(msg)) throw err;
+      if (RETRYABLE.test(msg) && isLongWait(msg)) throw new QuotaExhaustedError(msg);
+      if (attempt >= retries || !RETRYABLE.test(msg)) throw err;
       await new Promise((r) => setTimeout(r, base * 2 ** attempt));
     }
   }

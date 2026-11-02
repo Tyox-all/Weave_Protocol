@@ -140,7 +140,7 @@ Security hardening in the same release:
 #### ⚔️ Adversary v0.4.0: test any model
 
 - **Any model provider.** `--provider=<id> --model=<id>` runs the attack corpus against Claude, GPT, Gemini, DeepSeek, Kimi, Qwen, GLM, OpenRouter, Groq, Together, or a local model through Ollama or LM Studio. `weave-adversary providers` lists them and shows which keys are set.
-- **Rate limits handled.** Overload and rate-limit errors are retried with backoff; a daily quota fails fast instead of stalling the run.
+- **Fits free tiers.** Overload and rate-limit errors are retried with backoff, and `--rpm` paces calls. When a free tier's daily quota runs out, the run stops and saves a scorecard marked as partial, rather than erroring through the remaining attacks.
 - **Cost stays honest.** Models with no price on file report "unknown", not $0.
 
 #### ⚔️ Adversary v0.3.0

@@ -72,6 +72,7 @@ function resolveOrExit(title: string, provider: string | undefined, model: strin
       model,
       baseUrl: flags['base-url'] as string | undefined,
       reasoningEffort: flags['reasoning-effort'] as string | undefined,
+      rpm: flags.rpm ? Number(flags.rpm) : undefined,
     });
   } catch (err) {
     redCallout(title, [
@@ -126,6 +127,7 @@ function showHelp() {
   console.log('    --model=<model-id>                      Target LLM model id (default: ' + DEFAULT_MODEL + ' on anthropic)');
   console.log('    --base-url=<url>                        Override the provider endpoint (self-hosted, regional) (v0.4)');
   console.log('    --reasoning-effort=<level>              reasoning_effort for OpenAI-compatible thinking models (v0.4)');
+  console.log('    --rpm=<n>                               Stay under n requests per minute (free tiers) (v0.4)');
   console.log('    --redact-evidence                       Replace breach evidence with [redacted] in scorecard (v0.2.1)');
   console.log('    --dynamic                               NEW v0.3: LLM-driven mutations when target half-blocks');
   console.log('    --dynamic-provider=<id>                 Mutation LLM provider (default: same as --provider)');
@@ -135,7 +137,7 @@ function showHelp() {
   console.log('  \x1b[1mExamples:\x1b[0m');
   console.log('    weave-adversary demo');
   console.log('    weave-adversary demo --real --per-category=3 --json=./run.json');
-  console.log('    weave-adversary demo --real --provider=gemini --model=gemini-3.5-flash');
+  console.log('    weave-adversary demo --real --provider=gemini --model=gemini-3.5-flash --per-category=3 --rpm=5');
   console.log('    weave-adversary demo --real --provider=ollama --model=qwen2.5-coder:7b');
   console.log('    weave-adversary demo --real --dynamic --json=./run.json');
   console.log('    weave-adversary demo --real --redact-evidence --md=./run.md');
@@ -296,8 +298,31 @@ async function cmdDemo() {
   //    the API failed would otherwise look like a perfect defense. ──
   if (isReal) {
     const errors = target.getUsage().errors;
+    const ran = scorecard.findings.length;
     const firstError = scorecard.findings.find((f) => f.evidence.startsWith('(real-mode API error'))?.evidence;
-    if (errors > 0 && errors >= planned.length) {
+    const stopped = scorecard.stoppedEarly;
+    if (stopped && ran === 0) {
+      redCallout('Provider quota used up before any attack ran — no score', [
+        stopped.reason.slice(0, 160),
+        '',
+        'Free tiers cap requests per day. Re-run after the quota resets, and',
+        'fit the run to the quota with --per-category=<n> (5 categories).',
+      ]);
+      process.exit(2);
+    }
+    if (stopped) {
+      yellowCallout(`Provider quota used up: stopped after ${ran} of ${stopped.planned} attacks`, [
+        'The score covers completed attacks only and is not comparable with',
+        'a full run. The scorecard is marked as a partial run.',
+        '',
+        'Free tiers cap requests per day. To fit the quota, re-run after it',
+        'resets with --per-category=<n>, or --category=<cat> to pick up the',
+        'categories that did not run. --rpm=<n> paces per-minute limits.',
+        '',
+        stopped.reason.slice(0, 160),
+      ]);
+    }
+    if (errors > 0 && errors >= ran) {
       redCallout(`All ${errors} target API calls failed — no score`, [
         'Every attack errored before reaching the model, so the run measured',
         'nothing. Errored attacks would otherwise be scored as "blocked".',
@@ -307,7 +332,7 @@ async function cmdDemo() {
       process.exit(2);
     }
     if (errors > 0) {
-      yellowCallout(`${errors} of ${planned.length} attacks errored`, [
+      yellowCallout(`${errors} of ${ran} attacks errored`, [
         'Errored attacks are scored as "blocked", so the score below is',
         'inflated. Fix the errors and re-run for a trustworthy result.',
         ...(firstError ? ['', firstError.slice(0, 160)] : []),
@@ -444,7 +469,10 @@ async function cmdAttack() {
 
 function printSummary(scorecard: Scorecard) {
   console.log('');
-  console.log(`  \x1b[1mScore:\x1b[0m ${scoreColor(scorecard.summary.score)}  ${scorecard.summary.score}/100`);
+  const partial = scorecard.stoppedEarly
+    ? `  \x1b[33m(partial: ${scorecard.stoppedEarly.completed} of ${scorecard.stoppedEarly.planned} attacks)\x1b[0m`
+    : '';
+  console.log(`  \x1b[1mScore:\x1b[0m ${scoreColor(scorecard.summary.score)}  ${scorecard.summary.score}/100${partial}`);
   console.log(
     `  \x1b[32m${scorecard.summary.blocked} blocked\x1b[0m · ` +
       `\x1b[33m${scorecard.summary.partial} partial\x1b[0m · ` +

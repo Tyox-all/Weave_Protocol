@@ -54,6 +54,13 @@ npx @weave_protocol/adversary list --severity=critical
 
   Claude uses the native Messages API; everything else uses the OpenAI-compatible Chat Completions protocol. `--base-url` points any of them at a self-hosted server (vLLM), a proxy, or a China-region endpoint. Only Claude has a default model, because other providers rename models too often; pass `--model`.
 - **Retries on rate limits and overload.** 408, 429 and 5xx responses are retried with exponential backoff, so a busy free tier no longer shows up as errored attacks.
+- **Runs that fit free tiers.** `--rpm=<n>` spaces calls to stay under a per-minute limit. When a daily quota runs out, the run stops instead of erroring through the rest of the corpus: the scorecard keeps the attacks that reached the model, is marked as a partial run (`stoppedEarly`), and the CLI says how to fit the quota next time. For example, Gemini's free tier allows about 20 requests per model per day, so 3 attacks per category (15 calls) fits:
+
+  ```bash
+  npx @weave_protocol/adversary demo --real --provider=gemini --model=gemini-3.5-flash --per-category=3 --rpm=5
+  ```
+
+  A partial score covers only the attacks that ran, so it is not comparable with a full run.
 - **Honest cost reporting.** Cost prints as "unknown" for models with no price on file, rather than $0. Local models cost $0.
 - **Scorecards record the provider.** The target identifier reads `provider/model`, and dynamic-mode metadata gains `provider`. `mutationCostUSD` is `null` when the price is unknown.
 
@@ -234,6 +241,7 @@ console.log('Score:', scorecard.summary.score, '/100');
   schemaVersion: '1.0',
   target: { kind, identifier },
   ward: { loaded, source, rulesProbed },
+  stoppedEarly?: { reason, completed, planned },   // v0.4: partial run (quota used up)
   startedAt, durationMs,
   findings: [
     {
