@@ -133,6 +133,33 @@ if (cap.decision === "require_approval") {
 Every check returns `{ decision: "allow" | "deny" | "require_approval", reason, severity }`
 so hosts can decide whether to block, log, prompt, or attest.
 
+### Evaluating a whole tool call (0.2.0+)
+
+Harness adapters should use `evaluateToolCall`, which runs every check a tool call needs in one place:
+
+```typescript
+import { parseWard, evaluateToolCall } from "@weave_protocol/ward";
+
+const result = evaluateToolCall(policy, "Bash", { command: "curl https://a.example && cat ~/.ssh/id_rsa" }, {
+  mappings: { Bash: { capability: "shell_exec", commandField: "command" } },
+  cwd: process.cwd(),
+});
+// result.decision: "deny"; result.reasons names the offending token
+```
+
+- **Capability:** checks the mapped capability and the raw tool name. An explicit rule for either beats a policy default.
+- **Path and URL arguments:** checks every one of them, not just a single well-known field:
+  - any argument whose name ends in `path`, `file`, `dir`, `src`, `dest`, `target`, `output`, `url`, `uri`, `endpoint`, `href` or `link`, in any casing, including arrays;
+  - `dest`, `target` and `output` count as writes, and `src` counts as a read.
+- **Shell commands:**
+  - every URL in the command is checked;
+  - so is every absolute or `~` path, and redirect targets and copy destinations count as writes;
+  - relative tokens count only when they match an explicit rule, so commit messages and regexes don't trip a default.
+
+  This scanning is best effort. To draw a hard line on shell use, gate `shell_exec` itself with `requireApproval` or `deny`.
+- **Relative paths** resolve against `cwd`.
+- **Strictness:** the strictest result wins (deny, then require_approval, then allow).
+
 ---
 
 ## Policy sections
