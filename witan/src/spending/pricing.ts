@@ -23,14 +23,26 @@ export interface Price {
  * Provider names normalized to lowercase.
  */
 export const LLM_PRICING: Record<string, Price> = {
-  // ─── Anthropic ─────────────────────────────────────────────
+  // ─── Anthropic (first-party API rates, checked 2026-10) ─────
+  'anthropic:claude-fable-5-1':           { input: 10.00, output: 50.00 },
+  'anthropic:claude-fable-5':             { input: 10.00, output: 50.00 },
+  'anthropic:claude-opus-5-5':            { input: 4.00, output: 20.00 },
+  'anthropic:claude-opus-5':              { input: 5.00, output: 25.00 },
+  'anthropic:claude-opus-4-8':            { input: 5.00, output: 25.00 },
+  'anthropic:claude-opus-4-6':            { input: 5.00, output: 25.00 },
+  'anthropic:claude-sonnet-5-5':          { input: 2.00, output: 10.00 },
+  'anthropic:claude-sonnet-5':            { input: 2.00, output: 10.00 },
+  'anthropic:claude-sonnet-4-6':          { input: 3.00, output: 15.00 },
+  // Haiku 5.5: prompts up to 100K tokens; $0.50 / $2.50 beyond.
+  'anthropic:claude-haiku-5-5':           { input: 0.10, output: 0.50 },
+  'anthropic:claude-haiku-4-5':           { input: 1.00, output: 5.00 },
   'anthropic:claude-3-5-haiku-20241022':  { input: 1.00, output: 5.00 },
   'anthropic:claude-3-5-sonnet-20241022': { input: 3.00, output: 15.00 },
   'anthropic:claude-3-7-sonnet-latest':   { input: 3.00, output: 15.00 },
   'anthropic:claude-3-7-sonnet-20250219': { input: 3.00, output: 15.00 },
   'anthropic:claude-3-5-sonnet-latest':   { input: 3.00, output: 15.00 },
   'anthropic:claude-opus-4-1':            { input: 15.00, output: 75.00 },
-  'anthropic:claude-opus-4-7':            { input: 15.00, output: 75.00 },
+  'anthropic:claude-opus-4-7':            { input: 5.00, output: 25.00 },
   'anthropic:claude-sonnet-4-5':          { input: 3.00, output: 15.00 },
   'anthropic:claude-haiku-4-5-20251001':  { input: 1.00, output: 5.00 },
 

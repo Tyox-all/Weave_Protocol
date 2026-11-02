@@ -41,9 +41,14 @@ export function checkFilesystem(
   const fs = policy.filesystem;
   if (!fs) return { decision: "allow", reason: "No filesystem policy declared (default allow)." };
 
+  // Match on the normalized path, so "a/../secrets" or "a//secrets" can't
+  // slip past a deny rule or out of an allowed directory.
+  path = normalizePath(path);
+  const matches = (rule: FilesystemRule) => rule.op === op && matchGlob(path, normalizePath(rule.path));
+
   // Deny rules take precedence
   for (const rule of fs.deny || []) {
-    if (rule.op === op && matchGlob(path, rule.path)) {
+    if (matches(rule)) {
       return {
         decision: "deny",
         reason: `Denied by filesystem rule: ${rule.op} ${rule.path}`,
@@ -55,7 +60,7 @@ export function checkFilesystem(
 
   // Allow rules
   for (const rule of fs.allow || []) {
-    if (rule.op === op && matchGlob(path, rule.path)) {
+    if (matches(rule)) {
       return {
         decision: "allow",
         reason: `Allowed by filesystem rule: ${rule.op} ${rule.path}`,
@@ -84,8 +89,17 @@ export function checkNetwork(
   const net = policy.network;
   if (!net) return { decision: "allow", reason: "No network policy declared (default allow)." };
 
+  // Match on the canonical URL (lowercase scheme and host, no userinfo, default
+  // port or fragment), so "HTTPS://EVIL.COM", "https://user@evil.com" or
+  // "https://evil.com#.github.com" can't dodge a rule.
+  const canonical = canonicalUrl(url);
+  if (canonical === null) {
+    return { decision: "deny", reason: `Unparseable URL: ${url}`, severity: "medium" };
+  }
+  url = canonical;
+
   const matchesRule = (rule: NetworkRule) => {
-    if (!matchGlob(url, rule.url)) return false;
+    if (!matchGlob(url, canonicalPattern(rule.url))) return false;
     if (rule.methods && rule.methods.length > 0 && !rule.methods.includes(method)) return false;
     return true;
   };
@@ -262,6 +276,49 @@ export function checkBehavioral(policy: WardPolicy, state: RuntimeState): CheckR
   }
 
   return { decision: "allow", reason: "Within all behavioral limits." };
+}
+
+// ─────────────────────────────────────────────────────────
+// Normalization (no Node built-ins: Ward also runs in browsers)
+// ─────────────────────────────────────────────────────────
+
+/** Expand a leading "~", collapse "//", and resolve "." and ".." segments. */
+export function normalizePath(path: string): string {
+  const home = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.HOME;
+  if (home && (path === "~" || path.startsWith("~/"))) path = home.replace(/\/+$/, "") + path.slice(1);
+  const absolute = path.startsWith("/");
+  const out: string[] = [];
+  for (const seg of path.split("/")) {
+    if (seg === "" || seg === ".") continue;
+    if (seg === "..") {
+      if (out.length && out[out.length - 1] !== "..") out.pop();
+      else if (!absolute) out.push("..");
+      continue;
+    }
+    out.push(seg);
+  }
+  const joined = out.join("/");
+  return absolute ? "/" + joined : joined || ".";
+}
+
+/** Canonical form of a URL for matching, or null if it can't be parsed. */
+export function canonicalUrl(url: string): string | null {
+  let u: URL;
+  try {
+    u = new URL(url);
+  } catch {
+    return null;
+  }
+  // URL already lowercases scheme and host, drops default ports and resolves "..".
+  return `${u.protocol}//${u.host}${u.pathname}${u.search}`;
+}
+
+/** Lowercase a rule's scheme and host so rules match canonical URLs. */
+function canonicalPattern(pattern: string): string {
+  const m = /^([a-z][a-z0-9+.-]*:\/\/)([^/]*)(.*)$/i.exec(pattern);
+  if (!m) return pattern;
+  const host = m[2].toLowerCase().replace(/:(443)$/, (p) => (m[1].toLowerCase() === "https://" ? "" : p)).replace(/:(80)$/, (p) => (m[1].toLowerCase() === "http://" ? "" : p));
+  return m[1].toLowerCase() + host + m[3];
 }
 
 // ─────────────────────────────────────────────────────────

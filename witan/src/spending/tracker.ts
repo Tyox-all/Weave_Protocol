@@ -39,7 +39,7 @@ import type {
   WindowUsage,
 } from './types.js';
 import { InMemorySpendingStore, type SpendingStore } from './store.js';
-import { estimateLLMCost } from './pricing.js';
+import { estimateLLMCost, lookupPricing } from './pricing.js';
 import { windowKey } from './windows.js';
 import { resolveHandler, type ApprovalHandler } from './approval.js';
 
@@ -151,7 +151,7 @@ export class SpendingTracker {
   async recordTool(call: ToolCallRecord): Promise<void> {
     const scope = call.scope || this.defaultScope;
     const ts = call.ts ?? this.now();
-    const amount = call.amountUSD ?? extractPaymentAmount(call);
+    const amount = nonNegative(call.amountUSD) ?? extractPaymentAmount(call);
 
     for (const cap of this.caps) {
       if (cap.scope && cap.scope !== scope) continue;
@@ -240,7 +240,7 @@ export class SpendingTracker {
     if (action.kind === 'llm') {
       return estimateLLMCost(action.provider, action.model, action.estInputTokens, action.estOutputTokens);
     }
-    return action.amountUSD ?? 0;
+    return nonNegative(action.amountUSD) ?? 0;
   }
 
   private async checkCap(
@@ -253,7 +253,17 @@ export class SpendingTracker {
     const wk = windowKey(cap.window, scope, this.now());
 
     // USD
-    if (cap.budget.usd !== undefined) {
+    if (cap.budget.usd !== undefined && action.kind === 'llm' && !lookupPricing(action.provider, action.model)) {
+      // Fail closed: an unpriced model would otherwise cost $0 and never trip the cap.
+      const current = await this.store.get(`${wk}:usd`);
+      violations.push({
+        cap,
+        reason: `No price known for ${action.provider}:${action.model}, so the ${cap.window} USD cap can't be enforced; add it with registerPricing()`,
+        current,
+        proposed: current,
+        limit: cap.budget.usd,
+      });
+    } else if (cap.budget.usd !== undefined) {
       const current = await this.store.get(`${wk}:usd`);
       const proposed = current + estCostUSD;
       if (proposed > cap.budget.usd) {
@@ -315,7 +325,7 @@ export class SpendingTracker {
           }
         }
         if (tb.max_amount_usd !== undefined) {
-          const amount = action.amountUSD ?? extractPaymentAmount({ tool: action.tool, args: action.args });
+          const amount = nonNegative(action.amountUSD) ?? extractPaymentAmount({ tool: action.tool, args: action.args });
           if (amount !== undefined) {
             const current = await this.store.get(`${wk}:tool:${action.tool}:amount_usd`);
             const proposed = current + amount;
@@ -356,13 +366,21 @@ function extractPaymentAmount(call: { tool: string; args?: Record<string, unknow
   const candidates = ['amount_usd', 'amountUSD', 'amount', 'value', 'total', 'price'];
   for (const c of candidates) {
     const v = call.args[c];
-    if (typeof v === 'number' && Number.isFinite(v)) return v;
+    if (typeof v === 'number' && Number.isFinite(v)) return nonNegative(v);
     if (typeof v === 'string') {
       const parsed = parseFloat(v.replace(/[$,]/g, ''));
-      if (Number.isFinite(parsed)) return parsed;
+      if (Number.isFinite(parsed)) return nonNegative(parsed);
     }
   }
   return undefined;
+}
+
+/**
+ * Spend only counts up. A negative "amount" (a refund, or an attempt to game
+ * the counter) is ignored rather than subtracted from the window.
+ */
+function nonNegative(n: number | undefined): number | undefined {
+  return n === undefined || !Number.isFinite(n) ? undefined : Math.max(0, n);
 }
 
 function defaultNotify(e: NotifyEvent): void {
