@@ -30,19 +30,19 @@
   "dependencies": {
     "@weave_protocol/domere": "^1.3.8",
     "@weave_protocol/hord": "^0.2.0",
-    "@weave_protocol/hundredmen": "^1.1.2",
+    "@weave_protocol/hundredmen": "^1.1.3",
     "@weave_protocol/mund": "^0.5.0",
-    "cors": "^2.8.5",
-    "express": "^4.21.0",
-    "express-rate-limit": "^7.1.0",
-    "helmet": "^7.1.0"
+    "cors": "^2.8.6",
+    "express": "^4.22.3",
+    "express-rate-limit": "^7.5.1",
+    "helmet": "^7.2.0"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.17",
-    "@types/express": "^4.17.21",
-    "@types/node": "^20.10.0",
-    "tsx": "^4.7.0",
-    "typescript": "^5.3.0"
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.25",
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
   },
   "engines": {
     "node": ">=18.0.0"

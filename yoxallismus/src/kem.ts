@@ -34,7 +34,7 @@
  */
 
 import { generateKeyPairSync, createPrivateKey, createPublicKey, diffieHellman, randomBytes } from 'node:crypto';
-import { ml_kem768 } from '@noble/post-quantum/ml-kem';
+import { ml_kem768 } from '@noble/post-quantum/ml-kem.js';
 import type { HybridKeypair, HybridPublicKey, EncapsulationResult, HybridCiphertext } from './types.js';
 import { hkdf } from './kdf.js';
 
