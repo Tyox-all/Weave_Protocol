@@ -130,11 +130,18 @@ export interface MiddlewareOptions {
   toolMappings?: Record<string, ToolMapping>;
 
   /**
-   * Fail mode:
-   *   - 'open' (default): if WARD can't be loaded, allow the call and warn
-   *   - 'closed': if WARD can't be loaded, deny the call
+   * What to do when no WARD.md is configured or found anywhere:
+   *   - 'open' (default): warn and run with no policy (every call allowed)
+   *   - 'closed': throw from the constructor
+   *
+   * Since 0.2.0, a policy that exists but is invalid, or an explicit
+   * wardPath that doesn't exist, always throws: running without the policy
+   * you asked for would be a silent bypass.
    */
   failMode?: 'open' | 'closed';
+
+  /** Working directory used to resolve relative paths. Default: process.cwd() */
+  cwd?: string;
 
   /**
    * Optional callback when a call is allowed. Useful for logging/attestation.

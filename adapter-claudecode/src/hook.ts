@@ -11,26 +11,20 @@
  *   3. <cwd>/.weave/WARD.md
  *   4. ~/.claude/WARD.md (user-global fallback)
  *
- * Failure mode (when WARD parse fails):
- *   - default: fail OPEN (write a warning to stderr, allow the call)
- *   - --fail-closed: fail CLOSED (block the call with the error reason)
+ * Failure modes:
+ *   - A WARD.md that exists but is invalid always blocks (since 0.3.0): a
+ *     typo must not silently switch enforcement off.
+ *   - Malformed hook payloads and evaluator errors: fail OPEN by default
+ *     (warn on stderr, allow); --fail-closed blocks instead.
  */
 
 import { readFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import {
-  parseWard,
-  checkCapability,
-  checkFilesystem,
-  checkNetwork,
-  type WardPolicy,
-  type HttpMethod,
-} from '@weave_protocol/ward';
+import { parseAndValidate, evaluateToolCall, type WardPolicy } from '@weave_protocol/ward';
 import {
   TOOL_MAPPINGS,
   type ClaudeCodeHookInput,
   type ClaudeCodeHookOutput,
-  type ToolMapping,
 } from './types.js';
 import { userWardPath } from './config.js';
 
@@ -70,9 +64,11 @@ export function resolveWardForCwd(cwd: string): ResolvedWard | null {
   for (const path of candidates) {
     const resolved = resolve(path);
     if (existsSync(resolved)) {
-      const source = readFileSync(resolved, 'utf8');
-      const policy = parseWard(source);
-      return { policy, source: resolved };
+      const result = parseAndValidate(readFileSync(resolved, 'utf8'));
+      if (!result.valid || !result.policy) {
+        throw new Error(`Invalid WARD.md at ${resolved}: ${result.errors.map((e) => e.message).join('; ')}`);
+      }
+      return { policy: result.policy, source: resolved };
     }
   }
   return null;
@@ -88,156 +84,20 @@ export interface HookDecision {
   policySource?: string;
 }
 
+/**
+ * Decide a tool call with Ward's shared evaluator: the capability, every
+ * path and URL argument, and every URL and path in a shell command.
+ * (Before 0.3.0 this checked one field per tool and the first URL of a
+ * command; see WARD-2026-001.)
+ */
 export function evaluateCall(
   policy: WardPolicy,
   toolName: string,
   toolInput: Record<string, unknown> | undefined,
+  cwd?: string,
 ): HookDecision {
-  const reasons: string[] = [];
-  let decision: 'allow' | 'deny' | 'require_approval' = 'allow';
-
-  const mapping: ToolMapping = TOOL_MAPPINGS[toolName] || { capability: toolName };
-
-  // 1. Capability check (try mapped name first, then raw tool name)
-  const capByMapping = checkCapability(policy, mapping.capability);
-  const capByRaw = checkCapability(policy, toolName);
-  // Smart merge: explicit rules (allow/deny/approval list) beat default decisions.
-  // The user can use either the Claude tool name (Bash) or the generic
-  // capability (shell_exec) in their WARD.md — either explicit match wins.
-  const cap = mergeCapability(capByMapping, capByRaw);
-  if (cap.decision === 'deny') {
-    return { decision: 'deny', reasons: [cap.reason] };
-  }
-  if (cap.decision === 'require_approval') {
-    decision = 'require_approval';
-    reasons.push(cap.reason);
-  }
-
-  // 2. Filesystem check
-  if (mapping.pathField && toolInput && typeof toolInput[mapping.pathField] === 'string') {
-    const path = toolInput[mapping.pathField] as string;
-    const fs = checkFilesystem(policy, mapping.fsOp || 'read', path);
-    if (fs.decision === 'deny') {
-      return { decision: 'deny', reasons: [fs.reason] };
-    }
-    if (fs.decision === 'require_approval' && decision !== 'require_approval') {
-      decision = 'require_approval';
-      reasons.push(fs.reason);
-    }
-  }
-
-  // 3. Network check
-  if (mapping.urlField && toolInput && typeof toolInput[mapping.urlField] === 'string') {
-    const url = toolInput[mapping.urlField] as string;
-    const method = (toolInput.method as HttpMethod) || 'GET';
-    const net = checkNetwork(policy, url, method);
-    if (net.decision === 'deny') {
-      return { decision: 'deny', reasons: [net.reason] };
-    }
-    if (net.decision === 'require_approval' && decision !== 'require_approval') {
-      decision = 'require_approval';
-      reasons.push(net.reason);
-    }
-  }
-
-  // 4. Bash command heuristics — scan the command string for path patterns
-  if (mapping.commandField && toolInput && typeof toolInput[mapping.commandField] === 'string') {
-    const command = toolInput[mapping.commandField] as string;
-    const bashCheck = scanBashCommand(policy, command);
-    if (bashCheck.decision === 'deny') {
-      return { decision: 'deny', reasons: [bashCheck.reason] };
-    }
-    if (bashCheck.decision === 'require_approval' && decision !== 'require_approval') {
-      decision = 'require_approval';
-      reasons.push(bashCheck.reason);
-    }
-  }
-
+  const { decision, reasons } = evaluateToolCall(policy, toolName, toolInput, { mappings: TOOL_MAPPINGS, cwd });
   return { decision, reasons };
-}
-
-/**
- * Distinguish "explicit rule match" (user listed this tool in allow/deny/
- * requireApproval) from "default decision" (policy default kicked in
- * because nothing matched). Explicit rules win across both name variants.
- */
-function isExplicit(reason: string): boolean {
-  return (
-    reason.includes('is in the allow list') ||
-    reason.includes('is in the deny list') ||
-    reason.includes('requires human approval')
-  );
-}
-
-function mergeCapability(
-  a: { decision: 'allow' | 'deny' | 'require_approval'; reason: string },
-  b: { decision: 'allow' | 'deny' | 'require_approval'; reason: string },
-): { decision: 'allow' | 'deny' | 'require_approval'; reason: string } {
-  const aExp = isExplicit(a.reason);
-  const bExp = isExplicit(b.reason);
-
-  // If exactly one is explicit, that one wins regardless of decision.
-  if (aExp && !bExp) return a;
-  if (bExp && !aExp) return b;
-
-  // Both explicit OR both default — take the strictest:
-  //   deny > require_approval > allow
-  if (a.decision === 'deny' || b.decision === 'deny') {
-    return a.decision === 'deny' ? a : b;
-  }
-  if (a.decision === 'require_approval' || b.decision === 'require_approval') {
-    return a.decision === 'require_approval' ? a : b;
-  }
-  return a;
-}
-
-function mergeStricter(
-  a: { decision: 'allow' | 'deny' | 'require_approval'; reason: string },
-  b: { decision: 'allow' | 'deny' | 'require_approval'; reason: string },
-): { decision: 'allow' | 'deny' | 'require_approval'; reason: string } {
-  if (a.decision === 'deny' || b.decision === 'deny') {
-    return a.decision === 'deny' ? a : b;
-  }
-  if (a.decision === 'require_approval' || b.decision === 'require_approval') {
-    return a.decision === 'require_approval' ? a : b;
-  }
-  return a;
-}
-
-/**
- * Lightweight scan of a bash command for paths/URLs that might violate the
- * filesystem/network policy. This is best-effort — full bash parsing isn't
- * practical at this layer. We catch the common cases: explicit paths to
- * sensitive files, curl/wget to disallowed URLs.
- */
-function scanBashCommand(
-  policy: WardPolicy,
-  command: string,
-): { decision: 'allow' | 'deny' | 'require_approval'; reason: string } {
-  // Look for URLs
-  const urlMatch = command.match(/https?:\/\/[^\s'"`)]+/);
-  if (urlMatch) {
-    const net = checkNetwork(policy, urlMatch[0], 'GET');
-    if (net.decision === 'deny') return { decision: 'deny', reason: `bash command targets ${urlMatch[0]}: ${net.reason}` };
-    if (net.decision === 'require_approval') return { decision: 'require_approval', reason: `bash command targets ${urlMatch[0]}: ${net.reason}` };
-  }
-
-  // Look for obvious destructive operations to common sensitive paths
-  const dangerousPaths = ['~/.ssh', '~/.aws', '/etc/', '/usr/', '/.env'];
-  for (const danger of dangerousPaths) {
-    if (command.includes(danger)) {
-      // Infer op from command verb
-      let op: 'read' | 'write' | 'delete' = 'read';
-      if (/^|[\s;|]rm\s|>\s*['"]?\Q+danger/.test(command)) op = 'delete';
-      else if (/>|>>|tee|sed -i/.test(command)) op = 'write';
-
-      const fs = checkFilesystem(policy, op, danger + (danger.endsWith('/') ? '**' : ''));
-      if (fs.decision === 'deny') return { decision: 'deny', reason: `bash touches ${danger}: ${fs.reason}` };
-      if (fs.decision === 'require_approval') return { decision: 'require_approval', reason: `bash touches ${danger}: ${fs.reason}` };
-    }
-  }
-
-  return { decision: 'allow', reason: '' };
 }
 
 // ============================================================================
@@ -278,10 +138,9 @@ export async function runPreToolUseHook(failClosed: boolean): Promise<never> {
   try {
     resolved = resolveWardForCwd(cwd);
   } catch (err) {
+    // A policy exists but can't be used: block rather than run unprotected.
     const msg = err instanceof Error ? err.message : String(err);
-    if (failClosed) emit({ decision: 'block', reason: `WARD policy could not be loaded: ${msg}` });
-    process.stderr.write(`weave-claude-code: WARD load failed (${msg}), allowing\n`);
-    emit({});
+    emit({ decision: 'block', reason: `🛡️  WARD policy could not be loaded: ${msg}\n   Fix WARD.md to continue.` });
   }
 
   if (!resolved) {
@@ -292,7 +151,7 @@ export async function runPreToolUseHook(failClosed: boolean): Promise<never> {
   // Evaluate
   let result: HookDecision;
   try {
-    result = evaluateCall(resolved.policy, payload.tool_name, payload.tool_input);
+    result = evaluateCall(resolved.policy, payload.tool_name, payload.tool_input, cwd);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (failClosed) emit({ decision: 'block', reason: `WARD evaluation failed: ${msg}` });

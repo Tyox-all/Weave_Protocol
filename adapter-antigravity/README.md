@@ -137,7 +137,7 @@ weave-antigravity init [--matcher=X] [--fail-closed] [--workspace=DIR]
     (or DIR/.agents/hooks.json). Also removes a pre-0.2 entry from
     ~/.gemini/antigravity-cli/settings.json.
     --matcher=REGEX            Restrict to specific tools (default: all), e.g. run_command|write_to_file
-    --fail-closed              Deny on policy errors (default: fail-open)
+    --fail-closed              Deny on payload or evaluation errors (default: fail-open; an invalid WARD.md always denies)
 
 weave-antigravity disable [--workspace=DIR]
     Remove the WARD hook (your other hooks are not touched)
@@ -175,15 +175,13 @@ weave-antigravity test read_url_content --input='{"Url":"https://evil.example.co
 
 ## Fail-open vs fail-closed
 
-By default, the hook is **fail-open**: if WARD.md is missing, malformed, or evaluation throws, the tool call is **allowed** and a warning is written to stderr. This is the right default for adoption — broken policy files shouldn't break your workflow.
+**An invalid WARD.md always denies the call** (since 0.3.0). If a policy file exists but doesn't parse or validate, the hook denies every call with the error, so a typo can't silently switch enforcement off. If there's no WARD.md anywhere, nothing is enforced.
 
-For higher-stakes contexts (managed agents in production, automated pipelines), install with `--fail-closed`:
+Malformed hook payloads and evaluator errors are **fail-open** by default: the call is allowed and a warning goes to stderr. For higher-stakes contexts, install with `--fail-closed` so those are denied too:
 
 ```bash
 weave-antigravity init --fail-closed
 ```
-
-Then a missing or broken policy blocks the call.
 
 ---
 

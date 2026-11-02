@@ -88,8 +88,10 @@ When the middleware is constructed (or `weave-msaf status` runs), it looks in th
 6. `<cwd>/.msaf/WARD.md`
 
 First match wins. If nothing is found:
-- Default (fail-open): every call is allowed; a warning is logged once
-- `failMode: 'closed'`: constructor throws
+- Default (`failMode: 'open'`): every call is allowed, and a warning is logged
+- `failMode: 'closed'`: the constructor throws
+
+A policy that exists but is invalid, or an explicit `wardPath` that doesn't exist, always makes the constructor throw (since 0.2.0). Running without the policy you asked for would be a silent bypass.
 
 ---
 

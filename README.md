@@ -66,6 +66,14 @@ npm install @weave_protocol/full
 
 A big stretch across offense, defense, and how releases ship. Highlights:
 
+#### 🛡️ Security fix: harness adapters now check the whole tool call ([WARD-2026-001](https://github.com/Tyox-all/Weave_Protocol/blob/main/ward/SECURITY_ADVISORIES.md))
+The Claude Code, Antigravity and MSAF adapters each checked only part of a tool call. They looked at one argument per tool and the first URL in a shell command, so some calls a WARD policy denies got through. Ward 0.2.0 adds one shared evaluator, `evaluateToolCall`, which all three now use. It checks:
+- every path and URL argument;
+- every URL and path in shell commands;
+- traversal tricks.
+
+An invalid WARD.md now blocks instead of switching enforcement off. **Upgrade to adapter-claudecode 0.3.0, adapter-antigravity 0.3.0 or adapter-msaf 0.2.0.**
+
 #### 🛡️ Mund: 0.5 → 0.3
 [`@weave_protocol/mund`](https://www.npmjs.com/package/@weave_protocol/mund), our most-used package, newest release first.
 
@@ -293,9 +301,9 @@ The thesis was that [WARD.md](https://www.npmjs.com/package/@weave_protocol/ward
 | Runtime | Vendor | Enforcer | Status |
 |---|---|---|---|
 | **MCP servers** | Open standard | [Hundredmen v1.2.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen) | ✅ Live on npm |
-| **Claude Code** | Anthropic | [adapter-claudecode v0.2.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-claudecode) | ✅ Live on npm |
-| **Google Antigravity** (desktop + `agy` CLI + SDK) | Google | [adapter-antigravity v0.2.1](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-antigravity) | ✅ Live on npm |
-| **Microsoft Agent Framework** | Microsoft | [adapter-msaf v0.1.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-msaf) | ✅ Live on npm |
+| **Claude Code** | Anthropic | [adapter-claudecode v0.3.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-claudecode) | ✅ Live on npm |
+| **Google Antigravity** (desktop + `agy` CLI + SDK) | Google | [adapter-antigravity v0.3.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-antigravity) | ✅ Live on npm |
+| **Microsoft Agent Framework** | Microsoft | [adapter-msaf v0.2.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-msaf) | ✅ Live on npm |
 | **Browser agents** | Open standard | [browser v0.1.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/browser) | ✅ Live on npm |
 
 The same `WARD.md` file in your project root is now read and enforced by **Anthropic's, Google's, Microsoft's, MCP's, and the browser harness's runtimes** — without any platform-specific edits.
@@ -347,10 +355,10 @@ The packages that keep your agent within policy: declare it, enforce it across e
 
 | Package | Version | Description |
 |---|---|---|
-| [🛡️ @weave_protocol/ward](https://github.com/Tyox-all/Weave_Protocol/blob/main/ward) | 0.1.3 | **WARD.md** — agent security policy standard (parser, validator, runtime checks) |
-| [🛡️ @weave_protocol/adapter-claudecode](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-claudecode) | 0.2.0 | **Claude Code adapter** — enforces WARD.md via PreToolUse hooks; Mund pre-install hooks for skills + MCP |
-| [🛡️ @weave_protocol/adapter-antigravity](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-antigravity) | 0.2.1 | **Google Antigravity adapter** — enforces WARD.md across desktop, `agy` CLI, and SDK; Mund pre-install hooks |
-| [🛡️ @weave_protocol/adapter-msaf](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-msaf) | 0.1.0 | **Microsoft Agent Framework adapter** — middleware-based WARD enforcement |
+| [🛡️ @weave_protocol/ward](https://github.com/Tyox-all/Weave_Protocol/blob/main/ward) | 0.2.0 | **WARD.md** — agent security policy standard (parser, validator, runtime checks, shared tool-call evaluator) |
+| [🛡️ @weave_protocol/adapter-claudecode](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-claudecode) | 0.3.0 | **Claude Code adapter** — enforces WARD.md via PreToolUse hooks; Mund pre-install hooks for skills + MCP |
+| [🛡️ @weave_protocol/adapter-antigravity](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-antigravity) | 0.3.0 | **Google Antigravity adapter** — enforces WARD.md across desktop, `agy` CLI, and SDK; Mund pre-install hooks |
+| [🛡️ @weave_protocol/adapter-msaf](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-msaf) | 0.2.0 | **Microsoft Agent Framework adapter** — middleware-based WARD enforcement |
 | [🌐 @weave_protocol/browser](https://github.com/Tyox-all/Weave_Protocol/blob/main/browser) | 0.1.0 | **Browser agent security** — runtime IPI scanner (33 patterns) for headless agents |
 | [🔍 @weave_protocol/hundredmen](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen) | 1.2.0 | **MCP proxy** — intercept, scan, gate tool calls; enforces WARD.md as first gate |
 | [🛡️ @weave_protocol/mund](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund) | 0.5.0 | **Scanner** — secrets, PII, injection, MCP vetting, pre-install checks for skills + MCP (rug pulls), OSV dependency CVEs, SARIF, threat intel |
