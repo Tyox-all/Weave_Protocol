@@ -12,7 +12,7 @@
  *   - Types: SuiteManifest, Report, ComparisonReport, Tier, CategoryGap, etc.
  */
 
-export { runSuite, buildReport } from './runner.js';
+export { runSuite, buildReport, IncompleteRunError } from './runner.js';
 export { gradeTier, buildCategoryGaps, buildTrophyResults, classifyCategoryGap } from './tier.js';
 export {
   SUITES,

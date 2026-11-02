@@ -38,6 +38,7 @@ export function renderMarkdownReport(report: Report): string {
   lines.push('');
   lines.push(`**Target:** ${target.name}${target.vendor ? ` _(${target.vendor})_` : ''}${target.anonymized ? ' _(anonymized)_' : ''}`);
   lines.push(`**Type:** \`${target.type}\``);
+  if (target.model) lines.push(`**Model:** \`${target.provider ? `${target.provider}/` : ''}${target.model}\``);
   lines.push(`**Suite:** \`${suite.id}\` v${suite.version}`);
   lines.push(`**Date:** ${run.date}`);
   lines.push(`**Run by:** \`@weave_protocol/agentsecbench@${run.agentsecbenchVersion}\` (Adversary v${run.adversaryVersion})`);

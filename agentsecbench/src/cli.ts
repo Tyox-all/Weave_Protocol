@@ -11,8 +11,8 @@
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';
-import { DemoTarget } from '@weave_protocol/adversary';
-import { runSuite } from './runner.js';
+import { DemoTarget, PROVIDERS, resolveModelConfig, type ModelConfig } from '@weave_protocol/adversary';
+import { runSuite, IncompleteRunError } from './runner.js';
 import { renderMarkdownReport, renderJsonReport } from './report/index.js';
 import {
   compareReports,
@@ -73,6 +73,12 @@ function showHelp() {
   console.log('    --suite=<id>           Suite to run (default: ASB-Browser-v1)');
   console.log('    --suite-file=<path>    Run a suite defined in a JSON manifest (validated first)');
   console.log('    --name=<name>          Target display name (default: "demo")');
+  console.log('    --real                 Run the demo agent on a live model instead of the mock');
+  console.log('    --provider=<id>        Model provider for --real (default: anthropic; see "weave-adversary providers")');
+  console.log('    --model=<id>           Model for --real (required for every provider but anthropic)');
+  console.log('    --base-url=<url>       Override the provider endpoint (self-hosted, regional)');
+  console.log('    --reasoning-effort=<l> reasoning_effort for OpenAI-compatible thinking models');
+  console.log('    --rpm=<n>              Stay under n requests per minute (free tiers)');
   console.log('    --vendor=<name>        Optional vendor name');
   console.log('    --anonymize            Mark report as anonymized');
   console.log('    --measure-ward-delta   Also run without WARD for delta analysis');
@@ -82,6 +88,7 @@ function showHelp() {
   console.log('  \x1b[1mExamples:\x1b[0m');
   console.log('    agentsecbench run');
   console.log('    agentsecbench run --suite=ASB-Browser-v1 --measure-ward-delta --json=report.json');
+  console.log('    agentsecbench run --real --provider=deepseek --model=deepseek-chat --json=report.json');
   console.log('    agentsecbench compare baseline.json new.json --md=diff.md');
   console.log('    agentsecbench suite ASB-Browser-v1');
   console.log('    agentsecbench validate --suite-file=my-suite.json');
@@ -111,23 +118,61 @@ async function cmdRun() {
   }
 
   console.log(`  Suite: \x1b[1m${suite.id}\x1b[0m v${suite.version} (${suite.attackIds.length} attacks)`);
-  console.log(`  Target: \x1b[1m${(flags.name as string) || 'demo:vulnerable-agent'}\x1b[0m`);
+  let cfg: ModelConfig | undefined;
+  if (flags.real) {
+    try {
+      cfg = resolveModelConfig({
+        provider: flags.provider as string | undefined,
+        model: flags.model as string | undefined,
+        baseUrl: flags['base-url'] as string | undefined,
+        reasoningEffort: flags['reasoning-effort'] as string | undefined,
+        rpm: flags.rpm ? Number(flags.rpm) : undefined,
+      });
+    } catch (err) {
+      console.error(`  ${(err as Error).message}`);
+      process.exit(1);
+    }
+  }
+
+  const target = cfg ? new DemoTarget({ mode: 'real', ...cfg }) : new DemoTarget({ mode: 'mock' });
+  console.log(`  Target: \x1b[1m${(flags.name as string) || target.identifier}\x1b[0m`);
+  if (cfg) console.log(`  Model: \x1b[1m${cfg.provider}/${cfg.model}\x1b[0m (live ${PROVIDERS[cfg.provider].label} calls)`);
   if (flags['measure-ward-delta']) console.log('  Mode: measuring WARD delta (will run twice)');
   console.log('');
 
-  const target = new DemoTarget();
-  const report = await runSuite({
-    target,
-    suite,
-    targetMeta: {
-      name: (flags.name as string) || target.identifier,
-      vendor: flags.vendor as string | undefined,
-      type: 'demo:browser-mock',
-      anonymized: !!flags.anonymize,
-      configuration: {},
-    },
-    measureWardDelta: !!flags['measure-ward-delta'],
-  });
+  let report: Report;
+  try {
+    report = await runSuite({
+      target,
+      suite,
+      targetMeta: {
+        name: (flags.name as string) || target.identifier,
+        vendor: flags.vendor as string | undefined,
+        type: cfg ? 'demo:llm' : 'demo:browser-mock',
+        anonymized: !!flags.anonymize,
+        configuration: {},
+        ...(cfg ? { model: cfg.model, provider: cfg.provider } : {}),
+      },
+      measureWardDelta: !!flags['measure-ward-delta'],
+    });
+  } catch (err) {
+    if (err instanceof IncompleteRunError) {
+      console.error(`  \x1b[31mNo grade:\x1b[0m ${err.message}`);
+      process.exit(2);
+    }
+    throw err;
+  }
+
+  // Errored attacks are scored "blocked" by Adversary; grading them would
+  // inflate the tier, so refuse instead.
+  const errors = cfg ? target.getUsage().errors : 0;
+  if (errors > 0) {
+    console.error(
+      `  \x1b[31mNo grade:\x1b[0m ${errors} of ${report.run.attacksRun} attacks hit API errors and would count as "blocked". ` +
+        'Fix the errors (key, model id, quota) and re-run.',
+    );
+    process.exit(2);
+  }
 
   console.log(`  Tier: \x1b[1m${report.result.tier}\x1b[0m · Score: \x1b[1m${report.result.score}\x1b[0m / 100`);
   console.log(`  ${report.result.blocked} blocked · ${report.result.partial} partial · ${report.result.breached} breached`);

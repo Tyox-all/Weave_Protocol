@@ -21,6 +21,10 @@ npx @weave_protocol/agentsecbench run --json=./report.json --md=./report.md
 # Measure how much your WARD policy contributes to your score
 npx @weave_protocol/agentsecbench run --measure-ward-delta
 
+# NEW v0.3: grade a live model on any provider (Claude, GPT, Gemini, DeepSeek, Kimi, Qwen, GLM, Ollama, ...)
+npx @weave_protocol/agentsecbench run --real --provider=deepseek --model=deepseek-chat --json=./report.json
+npx @weave_protocol/agentsecbench run --real --provider=ollama --model=qwen2.5-coder:7b   # local, free
+
 # Compare two reports (before/after, A/B, regression check)
 npx @weave_protocol/agentsecbench compare baseline.json new.json
 
@@ -196,7 +200,8 @@ A suite file is a JSON `SuiteManifest`: `id` (`ASB-<Name>-v<N>`), `version: "1.0
 |---|---|
 | `suite.manifestHash` | SHA-256 of the suite's locked attack set. Equal hashes mean identical suites. |
 | `target.model` | Model under test, for LLM-backed targets |
-| `run.dynamic` | Adversary 0.3 dynamic-mutation run: model, retries, variants generated, mutation cost |
+| `target.provider` | Provider serving the model (ASB 0.3+), e.g. `gemini`, `deepseek`, `ollama` |
+| `run.dynamic` | Adversary 0.3 dynamic-mutation run: model (and `provider`, ASB 0.3+), retries, variants generated, mutation cost (`null` when the price is unknown) |
 | `result.variantOnly` | Attacks that landed only through an LLM variant. A high value means safeguards match wording, not intent. |
 
 **Results page.** [`tyox-all.github.io/Weave_Protocol/asb/`](https://tyox-all.github.io/Weave_Protocol/asb/) renders a leaderboard from public **summaries**. `agentsecbench summarize` strips every piece of per-attack evidence, keeping scores, category gaps and trophy outcomes:
@@ -208,15 +213,26 @@ agentsecbench summarize report.json --out=../docs/asb/results/my-agent.json
 
 Then list the file in `docs/asb/results/index.json`.
 
+## Any model provider (v0.3)
+
+`run --real` drives the demo agent with a live model through Adversary 0.4's provider layer. `--provider` picks the provider, `--model` the model (required for every provider but Anthropic), and `--base-url` a self-hosted or regional endpoint. Run `npx @weave_protocol/adversary providers` to see every provider and which keys are set. The report records `target.provider` and `target.model`, and the Markdown report shows them.
+
+**Only complete runs are graded.** A tier grade is only comparable when the whole suite ran, so AgentSecBench refuses to grade when:
+
+- the provider's quota ran out mid-run (Adversary marks the run `stoppedEarly`); `runSuite` and `buildReport` throw `IncompleteRunError`, or
+- any attack hit an API error, which Adversary would otherwise score as "blocked" (CLI).
+
+A free tier with a small daily quota, such as Gemini's, may not fit the 40-attack `ASB-Browser-v1` suite in one day. Use a key with a higher quota, or run Adversary directly with `--per-category` for an ungraded check.
+
 ---
 
 ## Roadmap
 
 - **v0.1** — `ASB-Browser-v1` (40 attacks), tier grading, category gaps, trophy performance, WARD delta, compare command
-- **v0.2** *(this release)*: report schema v1.1, pre-run suite validation, hash-locked suites, suite files, `validate` / `summarize` commands, results page
+- **v0.2**: report schema v1.1, pre-run suite validation, hash-locked suites, suite files, `validate` / `summarize` commands, results page
+- **v0.3** *(this release)*: grade live models on any provider via Adversary 0.4 (`run --real --provider --model`); reports record the provider; incomplete or errored runs are refused instead of graded
 - **next**: `ASB-MCP-v1` (MCP server target suite), `ASB-Safety-v1` (jailbreak resistance), target adapters for Claude Code / Antigravity / MSAF, first public scorecards
-- **v0.3** — Dynamic-mode suites (when Adversary v0.3 ships LLM-driven attacks)
-- **v0.4** — `ASB-Multi-Agent-v1` (multi-turn, stateful, blocked on Adversary v0.4)
+- **later** — Dynamic-mode suites; `ASB-Multi-Agent-v1` (multi-turn, stateful, blocked on Adversary multi-turn attacks)
 
 ---
 

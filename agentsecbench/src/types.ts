@@ -114,6 +114,8 @@ export interface Report {
     anonymized: boolean;
     /** v1.1: model under test, for LLM-backed targets (e.g. "claude-haiku-5-5") */
     model?: string;
+    /** v1.1 (ASB 0.3+): provider serving the model (e.g. "anthropic", "gemini", "deepseek", "ollama") */
+    provider?: string;
   };
   /** Benchmark run metadata */
   run: {
@@ -130,10 +132,13 @@ export interface Report {
      * only when the run retried half-blocked attacks with LLM variants.
      */
     dynamic?: {
+      /** ASB 0.3+: mutation provider; absent means anthropic */
+      provider?: string;
       model: string;
       maxRetries: number;
       variantsGenerated: number;
-      mutationCostUSD: number;
+      /** null when the mutation model's price is unknown (Adversary 0.4+) */
+      mutationCostUSD: number | null;
     };
   };
   /** The headline result */

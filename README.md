@@ -130,6 +130,11 @@ Security hardening in the same release:
 - **Wire format `yoxall/2` is locked through 1.0**, specified byte by byte, with test vectors that fail CI if anything drifts.
 - **Three security advisories, published openly.** The biggest one: Hord's original `YoxallismusCipher` could never decrypt its own output. It's now deprecated (Hord 0.1.8), so `unlock()` fails loudly instead of returning the wrong bytes.
 
+#### 🎯 AgentSecBench 0.3.0: grade any model
+
+- **Any provider.** `agentsecbench run --real --provider=<id> --model=<id>` grades a live model on the locked suite, whether it's Claude, GPT, Gemini, DeepSeek, Kimi, Qwen, GLM, or a local model through Ollama. Reports record the provider and model.
+- **Only complete runs get a grade.** If a provider's quota runs out mid-suite, or any attack hits an API error, AgentSecBench refuses to grade the run rather than publish an inflated tier.
+
 #### 🎯 AgentSecBench 0.2.0, with a public results page
 [`@weave_protocol/agentsecbench@0.2.0`](https://www.npmjs.com/package/@weave_protocol/agentsecbench) turns benchmark runs into something you can publish and compare:
 
@@ -166,7 +171,7 @@ The first agent security platform to publish its own offensive engine. Two new p
 | Package | Role | Version |
 |---|---|---|
 | [`@weave_protocol/adversary`](https://github.com/Tyox-all/Weave_Protocol/blob/main/adversary) | Offensive engine — 68 documented + novel attacks across 5 categories (IPI, tool-coercion, jailbreak, extraction, goal-corruption). Real Playwright browser target with 4 breach signal channels. Real-LLM demo mode against any provider (Claude, GPT, Gemini, DeepSeek, Kimi, Qwen, GLM, local Ollama). LLM-driven dynamic mutation retries half-blocked attacks with fresh variants. | ✅ **v0.4.0** ~! |
-| [`@weave_protocol/agentsecbench`](https://github.com/Tyox-all/Weave_Protocol/blob/main/agentsecbench) | Standardized benchmark — locked attack suites, tier grades A–F, paste-ready reports, side-by-side comparison, [public results page](https://tyox-all.github.io/Weave_Protocol/asb/) | ✅ **v0.2.0** |
+| [`@weave_protocol/agentsecbench`](https://github.com/Tyox-all/Weave_Protocol/blob/main/agentsecbench) | Standardized benchmark — locked attack suites, tier grades A–F, paste-ready reports, side-by-side comparison, [public results page](https://tyox-all.github.io/Weave_Protocol/asb/). Grades live models on any provider. | ✅ **v0.3.0** |
 
 **Trophy attacks** — documented in-the-wild incidents reproduced in the corpus:
 
@@ -362,7 +367,7 @@ The red team. We attack what we defend.
 | Package | Version | Description |
 |---|---|---|
 | [⚔️ @weave_protocol/adversary](https://github.com/Tyox-all/Weave_Protocol/blob/main/adversary) | **0.4.0** | **Offensive engine** — 68 attacks · any model provider · LLM dynamic mutation · real Playwright browser target · real-LLM demo mode · WARD-aware attack selection |
-| [🎯 @weave_protocol/agentsecbench](https://github.com/Tyox-all/Weave_Protocol/blob/main/agentsecbench) | **0.2.0** | **Standardized benchmark** — locked suites (ASB-Browser-v1), tier grading A–F, trophy attacks, WARD delta, paste-ready reports |
+| [🎯 @weave_protocol/agentsecbench](https://github.com/Tyox-all/Weave_Protocol/blob/main/agentsecbench) | **0.3.0** | **Standardized benchmark** — locked suites (ASB-Browser-v1), any model provider, tier grading A–F, trophy attacks, WARD delta, paste-ready reports |
 
 ### 🔧 Operations & Integrations (5 packages, plus 1 PyPI)
 
@@ -672,6 +677,7 @@ The interpretation layer on top of Adversary. Locked, versioned attack suites th
 ```bash
 npx @weave_protocol/agentsecbench run                          # default suite, tier-graded report
 npx @weave_protocol/agentsecbench run --measure-ward-delta     # quantify policy effectiveness
+npx @weave_protocol/agentsecbench run --real --provider=gemini --model=<id>   # grade a live model
 npx @weave_protocol/agentsecbench compare baseline.json new.json
 ```
 
@@ -878,6 +884,7 @@ done
 - [x] **Adversary v0.4** (`@weave_protocol/adversary` v0.4.0): model-agnostic audits. Provider presets for OpenAI, Gemini, DeepSeek, Kimi, Qwen, GLM, OpenRouter, Groq, Together, Ollama and LM Studio
 - [x] **AgentSecBench** (`@weave_protocol/agentsecbench` v0.1.0) — standardized benchmark, tier grades A–F
 - [x] **AgentSecBench v0.2** (`@weave_protocol/agentsecbench` v0.2.0): report schema v1.1, hash-locked suites with pre-run validation, suite files, and a [public results page](https://tyox-all.github.io/Weave_Protocol/asb/)
+- [x] **AgentSecBench v0.3** (`@weave_protocol/agentsecbench` v0.3.0): grades live models on any provider via Adversary 0.4; incomplete or errored runs are refused instead of graded
 - [x] **Witan autonomous spending caps** (`@weave_protocol/witan` v1.1.0) — per-window budgets on LLM cost + tokens + tool calls, gated by block / approval / notify
 - [x] **Yoxallismus v2** (`@weave_protocol/yoxallismus@0.1.0-beta.0`) — **open beta shipped**. PQ-hybrid KEM (X25519 + ML-KEM-768 / NIST FIPS 203) + AEAD + ratcheting. Unaudited by design; validated by public use, forks, and responsible disclosure. v0.2+ adds DH double-ratchet, cascade cipher, threshold encryption; v0.3+ adds ZK/VDF/QRNG; v0.4+ adds FHE. See [yoxallismus/README.md](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus).
 - [x] **Yoxallismus v0.2** (`@weave_protocol/yoxallismus@0.2.0-beta.0`): Double Ratchet seeded by the hybrid KEM, X-Wing-style KEM combiner, sealed boxes, cascade AEAD, `yoxall/2` wire format locked through 1.0, advisories YOXALL-2026-001 to 003, and Hord's broken v1 cipher deprecated (Hord 0.1.8)

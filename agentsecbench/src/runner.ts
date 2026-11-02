@@ -19,7 +19,7 @@ import { assertValidSuite, suiteManifestHash } from './suites/validate.js';
 import { buildCategoryGaps, buildTrophyResults, gradeTier } from './tier.js';
 import { generateInterpretation } from './report/interpret.js';
 
-const AGENTSECBENCH_VERSION = '0.2.0';
+const AGENTSECBENCH_VERSION = '0.3.0';
 
 export interface RunSuiteOptions {
   /** Target to attack */
@@ -35,6 +35,8 @@ export interface RunSuiteOptions {
     anonymized?: boolean;
     /** Model under test, for LLM-backed targets */
     model?: string;
+    /** Provider serving the model */
+    provider?: string;
   };
   /** Optional WARD policy (loaded automatically from cwd if omitted) */
   ward?: WardPolicy;
@@ -43,7 +45,36 @@ export interface RunSuiteOptions {
 }
 
 /**
+ * The run did not cover the whole suite (for example, a free tier's
+ * daily quota ran out). A tier grade for it would not be comparable, so
+ * no report is produced.
+ */
+export class IncompleteRunError extends Error {
+  constructor(
+    message: string,
+    readonly completed: number,
+    readonly planned: number,
+  ) {
+    super(message);
+    this.name = 'IncompleteRunError';
+  }
+}
+
+function assertComplete(scorecard: Scorecard, suite: SuiteManifest): void {
+  const stopped = scorecard.stoppedEarly;
+  if (stopped) {
+    throw new IncompleteRunError(
+      `Suite ${suite.id} stopped after ${stopped.completed} of ${stopped.planned} attacks: ${stopped.reason.slice(0, 200)}. ` +
+        'AgentSecBench grades complete runs only. Re-run when the provider quota resets, or use a key with a higher quota.',
+      stopped.completed,
+      stopped.planned,
+    );
+  }
+}
+
+/**
  * Run an entire suite against a target and produce a Report.
+ * Throws IncompleteRunError if the target stopped the run early.
  */
 export async function runSuite(opts: RunSuiteOptions): Promise<Report> {
   // Refuse to run a suite whose attacks aren't all in the installed corpus:
@@ -57,6 +88,7 @@ export async function runSuite(opts: RunSuiteOptions): Promise<Report> {
   const scorecard = await agent.run({
     attackIds: opts.suite.attackIds,
   });
+  assertComplete(scorecard, opts.suite);
 
   // Validate: did all suite attacks actually run?
   if (scorecard.findings.length !== opts.suite.attackIds.length) {
@@ -77,6 +109,7 @@ export async function runSuite(opts: RunSuiteOptions): Promise<Report> {
     const noWardScorecard = await noWardAgent.run({
       attackIds: opts.suite.attackIds,
     });
+    assertComplete(noWardScorecard, opts.suite);
     wardDelta = {
       withWard: scorecard.summary.score,
       withoutWard: noWardScorecard.summary.score,
@@ -98,6 +131,7 @@ export function buildReport(
   targetMeta: RunSuiteOptions['targetMeta'],
   wardDelta?: Report['wardDelta'],
 ): Report {
+  assertComplete(scorecard, suite);
   const categoryGaps = buildCategoryGaps(scorecard);
   const trophyPerformance = buildTrophyResults(scorecard, suite);
   const tier = gradeTier(scorecard.summary.score, suite.tierThresholds);
@@ -118,6 +152,7 @@ export function buildReport(
       configuration: targetMeta.configuration,
       anonymized: targetMeta.anonymized ?? false,
       ...(targetMeta.model ? { model: targetMeta.model } : {}),
+      ...(targetMeta.provider ? { provider: targetMeta.provider } : {}),
     },
     run: {
       date: new Date(scorecard.startedAt).toISOString(),
@@ -128,6 +163,7 @@ export function buildReport(
       ...(scorecard.dynamic
         ? {
             dynamic: {
+              ...(scorecard.dynamic.provider ? { provider: scorecard.dynamic.provider } : {}),
               model: scorecard.dynamic.model,
               maxRetries: scorecard.dynamic.maxRetries,
               variantsGenerated: scorecard.dynamic.variantsGenerated,
