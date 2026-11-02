@@ -179,12 +179,15 @@ export interface Scorecard {
    */
   dynamic?: {
     enabled: boolean;
+    /** Mutation provider (v0.4+; absent means anthropic) */
+    provider?: string;
     model: string;
     maxRetries: number;
     variantsGenerated: number;
     mutationInputTokens: number;
     mutationOutputTokens: number;
-    mutationCostUSD: number;
+    /** null when the mutation model's price is unknown (v0.4+) */
+    mutationCostUSD: number | null;
     mutationErrors: number;
   };
   startedAt: number;

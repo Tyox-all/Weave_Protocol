@@ -23,7 +23,7 @@ import { loadWardPolicy, wardAwareSort, scoreAttackForPolicy } from './ward.js';
 import { DynamicAttackMutator, classifyEngagement } from './dynamic.js';
 
 // Read version from package.json without bundler ceremony.
-const ADVERSARY_VERSION = '0.3.0';
+const ADVERSARY_VERSION = '0.4.0';
 
 const HOSTILE_TOOL_NAMES = new Set([
   'send_email',
@@ -86,6 +86,7 @@ export class AdversarialAgent {
               const u = this.mutator!.getUsage();
               return {
                 enabled: true,
+                provider: u.provider,
                 model: u.model,
                 maxRetries: this.mutator!.maxRetries,
                 variantsGenerated: u.mutations,

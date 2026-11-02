@@ -137,8 +137,13 @@ Security hardening in the same release:
 - **Report schema v1.1.** Each report carries a hash of the exact suite it ran, so two reports can prove they're comparable. It also records Adversary 0.3's dynamic-mutation results, including how many attacks landed only through a reworded variant.
 - **Suites that can't drift.** Suites are checked against the attack corpus before a run, and the built-in suite is hash-locked, so an accidental edit fails CI instead of quietly changing the benchmark. Suites can also be loaded from JSON files.
 
-#### ⚔️ Adversary v0.3.0, on npm now
-[`@weave_protocol/adversary@0.3.0`](https://www.npmjs.com/package/@weave_protocol/adversary) is published.
+#### ⚔️ Adversary v0.4.0: test any model
+
+- **Any model provider.** `--provider=<id> --model=<id>` runs the attack corpus against Claude, GPT, Gemini, DeepSeek, Kimi, Qwen, GLM, OpenRouter, Groq, Together, or a local model through Ollama or LM Studio. `weave-adversary providers` lists them and shows which keys are set.
+- **Rate limits handled.** Overload and rate-limit errors are retried with backoff; a daily quota fails fast instead of stalling the run.
+- **Cost stays honest.** Models with no price on file report "unknown", not $0.
+
+#### ⚔️ Adversary v0.3.0
 
 - **Dynamic mutation (`--dynamic`).** When a target refuses but still engages with an attack, an LLM writes a variant with the same intent and Adversary retries it. In the first live run on Claude Haiku 5.5, **2 of 5 attacks landed only through a variant**, for **$0.003** total. That tests whether a safeguard generalizes or only caught the original wording.
 - **Real-model mode works again.** The previous default model, Claude 3.5 Haiku, was retired in Feb 2026, so every `--real` run had been failing. The default is now Claude Haiku 5.5, and the pricing table is corrected.
@@ -160,7 +165,7 @@ The first agent security platform to publish its own offensive engine. Two new p
 
 | Package | Role | Version |
 |---|---|---|
-| [`@weave_protocol/adversary`](https://github.com/Tyox-all/Weave_Protocol/blob/main/adversary) | Offensive engine — 68 documented + novel attacks across 5 categories (IPI, tool-coercion, jailbreak, extraction, goal-corruption). Real Playwright browser target with 4 breach signal channels. Real-LLM demo mode via Anthropic API. **New in v0.3:** LLM-driven dynamic mutation retries half-blocked attacks with fresh variants. | ✅ **v0.3.0** ~! |
+| [`@weave_protocol/adversary`](https://github.com/Tyox-all/Weave_Protocol/blob/main/adversary) | Offensive engine — 68 documented + novel attacks across 5 categories (IPI, tool-coercion, jailbreak, extraction, goal-corruption). Real Playwright browser target with 4 breach signal channels. Real-LLM demo mode against any provider (Claude, GPT, Gemini, DeepSeek, Kimi, Qwen, GLM, local Ollama). LLM-driven dynamic mutation retries half-blocked attacks with fresh variants. | ✅ **v0.4.0** ~! |
 | [`@weave_protocol/agentsecbench`](https://github.com/Tyox-all/Weave_Protocol/blob/main/agentsecbench) | Standardized benchmark — locked attack suites, tier grades A–F, paste-ready reports, side-by-side comparison, [public results page](https://tyox-all.github.io/Weave_Protocol/asb/) | ✅ **v0.2.0** |
 
 **Trophy attacks** — documented in-the-wild incidents reproduced in the corpus:
@@ -356,7 +361,7 @@ The red team. We attack what we defend.
 
 | Package | Version | Description |
 |---|---|---|
-| [⚔️ @weave_protocol/adversary](https://github.com/Tyox-all/Weave_Protocol/blob/main/adversary) | **0.3.0** | **Offensive engine** — 68 attacks · LLM dynamic mutation · real Playwright browser target · real-LLM demo mode · WARD-aware attack selection |
+| [⚔️ @weave_protocol/adversary](https://github.com/Tyox-all/Weave_Protocol/blob/main/adversary) | **0.4.0** | **Offensive engine** — 68 attacks · any model provider · LLM dynamic mutation · real Playwright browser target · real-LLM demo mode · WARD-aware attack selection |
 | [🎯 @weave_protocol/agentsecbench](https://github.com/Tyox-all/Weave_Protocol/blob/main/agentsecbench) | **0.2.0** | **Standardized benchmark** — locked suites (ASB-Browser-v1), tier grading A–F, trophy attacks, WARD delta, paste-ready reports |
 
 ### 🔧 Operations & Integrations (5 packages, plus 1 PyPI)
@@ -648,6 +653,7 @@ Where the other packages defend, Adversary attacks. 68 documented and novel atta
 ```bash
 npx @weave_protocol/adversary demo               # mock, ~50ms
 npx @weave_protocol/adversary demo --real        # real LLM (Haiku 5.5)
+npx @weave_protocol/adversary demo --real --provider=deepseek --model=<id>   # any provider
 npx @weave_protocol/adversary demo --real --dynamic   # + LLM variants on half-blocks
 npx @weave_protocol/adversary attack --url=...   # real browser agent
 npx @weave_protocol/adversary demo --real --redact-evidence   # shareable scorecard
@@ -869,6 +875,7 @@ done
 
 - [x] **Adversarial agents** (`@weave_protocol/adversary` v0.2.1) — 68 documented + novel attacks, real Playwright browser target, real-LLM demo mode
 - [x] **Adversary v0.3** (`@weave_protocol/adversary` v0.3.0): LLM-driven dynamic mutation of half-blocked attacks, verified live on Claude Haiku 5.5; default model moved off the retired Claude 3.5 Haiku; API-failure runs now error out instead of scoring 100/100
+- [x] **Adversary v0.4** (`@weave_protocol/adversary` v0.4.0): model-agnostic audits. Provider presets for OpenAI, Gemini, DeepSeek, Kimi, Qwen, GLM, OpenRouter, Groq, Together, Ollama and LM Studio
 - [x] **AgentSecBench** (`@weave_protocol/agentsecbench` v0.1.0) — standardized benchmark, tier grades A–F
 - [x] **AgentSecBench v0.2** (`@weave_protocol/agentsecbench` v0.2.0): report schema v1.1, hash-locked suites with pre-run validation, suite files, and a [public results page](https://tyox-all.github.io/Weave_Protocol/asb/)
 - [x] **Witan autonomous spending caps** (`@weave_protocol/witan` v1.1.0) — per-window budgets on LLM cost + tokens + tool calls, gated by block / approval / notify

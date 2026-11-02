@@ -4,6 +4,7 @@
  *
  *   weave-adversary demo                       run mock corpus (fast, no API)
  *   weave-adversary demo --real                run corpus against a real LLM (NEW v0.2.1)
+ *   weave-adversary providers                  list model providers (NEW v0.4)
  *   weave-adversary list                       list attacks (filter via flags)
  *   weave-adversary attack --url=<endpoint>    run corpus against a real browser agent
  *   weave-adversary report <file.json>         re-render saved JSON scorecard
@@ -17,7 +18,8 @@ import { PlaywrightTarget } from './targets/playwright.js';
 import { ALL_ATTACKS, ATTACKS_BY_CATEGORY, CORPUS_STATS } from './attacks/index.js';
 import { renderMarkdownScorecard, renderJsonScorecard } from './scorecard/index.js';
 import { loadWardPolicy } from './ward.js';
-import { DEFAULT_MODEL, MODEL_PRICING } from './anthropic.js';
+import { DEFAULT_MODEL } from './anthropic.js';
+import { PROVIDERS, resolveModelConfig, estimateModelCost, type ModelConfig } from './providers.js';
 import { DynamicAttackMutator } from './dynamic.js';
 import { redactScorecard } from './scorecard/redact.js';
 import type { AttackCategory, AttackSeverity, RunOptions, Scorecard } from './types.js';
@@ -58,6 +60,36 @@ function yellowCallout(title: string, lines: string[]): void {
   console.log('');
 }
 
+function fmtCost(usd: number | null, digits = 4): string {
+  return usd === null ? 'unknown (no price on file for this model)' : `$${usd.toFixed(digits)}`;
+}
+
+/** Resolve a provider/model pair from flags, or exit with an actionable callout. */
+function resolveOrExit(title: string, provider: string | undefined, model: string | undefined, flags: Record<string, string | boolean>): ModelConfig {
+  try {
+    return resolveModelConfig({
+      provider,
+      model,
+      baseUrl: flags['base-url'] as string | undefined,
+      reasoningEffort: flags['reasoning-effort'] as string | undefined,
+    });
+  } catch (err) {
+    redCallout(title, [
+      (err as Error).message,
+      '',
+      'Keys go in your shell profile, for example:',
+      '',
+      '  export ANTHROPIC_API_KEY=...      (default provider)',
+      '  export GEMINI_API_KEY=...         (--provider=gemini --model=<id>)',
+      '',
+      'See all providers and their key variables:',
+      '',
+      '  weave-adversary providers',
+    ]);
+    process.exit(1);
+  }
+}
+
 function banner() {
   console.log('');
   console.log('  ⚔️   \x1b[1mweave-adversary\x1b[0m');
@@ -71,7 +103,8 @@ function showHelp() {
   console.log('');
   console.log('  \x1b[1mCommands:\x1b[0m');
   console.log('    demo                                    Run corpus against built-in mock target');
-  console.log('    demo --real                             Run corpus against a real LLM (requires ANTHROPIC_API_KEY) (NEW v0.2.1)');
+  console.log('    demo --real                             Run corpus against a real LLM (any provider; see "providers")');
+  console.log('    providers                               List model providers and their key variables (NEW v0.4)');
   console.log('    list                                    List all attacks in the corpus');
   console.log('    attack --url=<agent-endpoint>           Run corpus against a real HTTP agent endpoint');
   console.log('    attack --executable=<path-to-agent>     Run corpus against a CLI agent');
@@ -89,15 +122,21 @@ function showHelp() {
   console.log('    --browser=<chromium|firefox|webkit>     Playwright browser (default: chromium)');
   console.log('    --headed                                Show the browser window');
   console.log('    --real                                  Use real LLM for demo (v0.2.1)');
-  console.log('    --model=<model-id>                      Target LLM model id (default: ' + DEFAULT_MODEL + ')');
+  console.log('    --provider=<id>                         Model provider (default: anthropic; see "providers") (v0.4)');
+  console.log('    --model=<model-id>                      Target LLM model id (default: ' + DEFAULT_MODEL + ' on anthropic)');
+  console.log('    --base-url=<url>                        Override the provider endpoint (self-hosted, regional) (v0.4)');
+  console.log('    --reasoning-effort=<level>              reasoning_effort for OpenAI-compatible thinking models (v0.4)');
   console.log('    --redact-evidence                       Replace breach evidence with [redacted] in scorecard (v0.2.1)');
   console.log('    --dynamic                               NEW v0.3: LLM-driven mutations when target half-blocks');
+  console.log('    --dynamic-provider=<id>                 Mutation LLM provider (default: same as --provider)');
   console.log('    --dynamic-model=<model-id>              Mutation LLM (default: same as --model)');
   console.log('    --dynamic-max-retries=<n>               Variant retries per half-blocked attack (default: 2)');
   console.log('');
   console.log('  \x1b[1mExamples:\x1b[0m');
   console.log('    weave-adversary demo');
   console.log('    weave-adversary demo --real --per-category=3 --json=./run.json');
+  console.log('    weave-adversary demo --real --provider=gemini --model=gemini-3.5-flash');
+  console.log('    weave-adversary demo --real --provider=ollama --model=qwen2.5-coder:7b');
   console.log('    weave-adversary demo --real --dynamic --json=./run.json');
   console.log('    weave-adversary demo --real --redact-evidence --md=./run.md');
   console.log('    weave-adversary attack --url=https://my-agent.com/run --dynamic');
@@ -139,58 +178,27 @@ async function cmdDemo() {
   // ── Determine mode ────────────────────────────────────────
   const isReal = !!flags.real || process.env.ADVERSARY_DEMO_MODE === 'real';
   const isDynamic = !!flags.dynamic;
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  const model = (flags.model as string) || DEFAULT_MODEL;
-  const dynamicModel = (flags['dynamic-model'] as string) || model;
+  const provider = flags.provider as string | undefined;
+  const model = flags.model as string | undefined;
+  const dynamicProvider = (flags['dynamic-provider'] as string) || provider;
+  // Reuse the target model only when the mutator uses the same provider
+  const dynamicModel = (flags['dynamic-model'] as string) || (dynamicProvider === provider ? model : undefined);
   const dynamicMaxRetries = flags['dynamic-max-retries']
     ? parseInt(String(flags['dynamic-max-retries']), 10)
     : 2;
 
-  // ── Pre-flight check for --real ───────────────────────────
-  if (isReal && !apiKey) {
-    redCallout('ANTHROPIC_API_KEY not set', [
-      'The --real flag uses a live Claude API call for each attack.',
-      'That requires an Anthropic API key.',
-      '',
-      'Get one at https://console.anthropic.com/settings/keys',
-      '',
-      'Then export it:',
-      '',
-      '  export ANTHROPIC_API_KEY=sk-ant-...',
-      '',
-      'And re-run:',
-      '',
-      '  weave-adversary demo --real',
-    ]);
-    process.exit(1);
-  }
-
-  // ── Pre-flight check for --dynamic ────────────────────────
-  if (isDynamic && !apiKey) {
-    redCallout('ANTHROPIC_API_KEY required for --dynamic', [
-      'Dynamic mode uses an LLM to synthesize attack variants when the',
-      'target half-blocks. That requires an Anthropic API key.',
-      '',
-      'Set it:',
-      '',
-      '  export ANTHROPIC_API_KEY=sk-ant-...',
-      '',
-      'Then re-run:',
-      '',
-      '  weave-adversary demo --dynamic',
-    ]);
-    process.exit(1);
-  }
+  // ── Pre-flight: provider, model and key ───────────────────
+  const targetCfg = isReal ? resolveOrExit('Cannot run --real', provider, model, flags) : undefined;
+  const mutatorCfg = isDynamic ? resolveOrExit('Cannot run --dynamic', dynamicProvider, dynamicModel, flags) : undefined;
 
   // ── Cost warning for real mode ────────────────────────────
-  if (isReal) {
-    const pricing = MODEL_PRICING[model];
-    const costPerRun = pricing ? `~$${(pricing.input * 0.04 + pricing.output * 0.06).toFixed(3)}` : 'unknown';
+  if (targetCfg) {
+    const est = estimateModelCost(targetCfg, 40_000, 60_000);
     yellowCallout('Real-LLM mode', [
-      'This run will make live Anthropic API calls.',
+      `This run will make live ${PROVIDERS[targetCfg.provider].label} API calls.`,
       '',
-      `  Model:               ${model}`,
-      `  Estimated cost:      ${costPerRun} per full 68-attack run`,
+      `  Model:               ${targetCfg.provider}/${targetCfg.model}`,
+      `  Estimated cost:      ${est === null ? 'unknown' : `~$${est.toFixed(3)}`} per full 68-attack run`,
       `  Sensitive content:   responses may contain mildly adult/illegal content`,
       '                       (jailbreaks produce drug/weapon/exfil instructions)',
       '',
@@ -199,16 +207,14 @@ async function cmdDemo() {
   }
 
   // ── Cost warning for dynamic mode ─────────────────────────
-  if (isDynamic) {
-    const pricing = MODEL_PRICING[dynamicModel];
-    const mutationCostPerRun = pricing
-      ? `~$${((pricing.input * 0.06 + pricing.output * 0.04) * dynamicMaxRetries).toFixed(3)}`
-      : 'unknown';
+  if (mutatorCfg) {
+    const est = estimateModelCost(mutatorCfg, 60_000, 40_000);
+    const mutationCostPerRun = est === null ? 'unknown' : `~$${(est * dynamicMaxRetries).toFixed(3)}`;
     yellowCallout('Dynamic-mutation mode', [
       'When the target half-blocks an attack, an LLM will synthesize a',
       'novel variant of the payload and Adversary will retry.',
       '',
-      `  Mutation model:      ${dynamicModel}`,
+      `  Mutation model:      ${mutatorCfg.provider}/${mutatorCfg.model}`,
       `  Max retries/attack:  ${dynamicMaxRetries}`,
       `  Est. mutation cost:  ${mutationCostPerRun} on top of any --real target cost`,
       '',
@@ -229,7 +235,7 @@ async function cmdDemo() {
 
   let target: DemoTarget;
   try {
-    target = new DemoTarget({ mode: isReal ? 'real' : 'mock', model });
+    target = new DemoTarget(targetCfg ? { mode: 'real', ...targetCfg } : { mode: 'mock' });
   } catch (err) {
     redCallout('Demo target failed to initialize', [(err as Error).message]);
     process.exit(1);
@@ -237,13 +243,9 @@ async function cmdDemo() {
 
   // ── Instantiate mutator if dynamic mode ───────────────────
   let mutator: DynamicAttackMutator | undefined;
-  if (isDynamic) {
+  if (mutatorCfg) {
     try {
-      mutator = new DynamicAttackMutator({
-        apiKey,
-        model: dynamicModel,
-        maxRetries: dynamicMaxRetries,
-      });
+      mutator = new DynamicAttackMutator({ ...mutatorCfg, maxRetries: dynamicMaxRetries });
     } catch (err) {
       redCallout('Dynamic mutator failed to initialize', [(err as Error).message]);
       process.exit(1);
@@ -274,8 +276,8 @@ async function cmdDemo() {
     console.log(`    Calls:           ${u.apiCalls}${u.errors > 0 ? ` (${u.errors} errors)` : ''}`);
     console.log(`    Input tokens:    ${u.inputTokens.toLocaleString()}`);
     console.log(`    Output tokens:   ${u.outputTokens.toLocaleString()}`);
-    console.log(`    Estimated cost:  $${u.estimatedCostUSD.toFixed(4)}`);
-    console.log(`    Model:           ${u.model}`);
+    console.log(`    Estimated cost:  ${fmtCost(u.estimatedCostUSD)}`);
+    console.log(`    Model:           ${u.provider}/${u.model}`);
   }
 
   // ── Dynamic mode: print mutation usage and cost ───────────
@@ -286,8 +288,8 @@ async function cmdDemo() {
     console.log(`    Variants:        ${u.mutations}${u.errors > 0 ? ` (${u.errors} errors)` : ''}`);
     console.log(`    Input tokens:    ${u.inputTokens.toLocaleString()}`);
     console.log(`    Output tokens:   ${u.outputTokens.toLocaleString()}`);
-    console.log(`    Estimated cost:  $${u.estimatedCostUSD.toFixed(4)}`);
-    console.log(`    Model:           ${u.model}`);
+    console.log(`    Estimated cost:  ${fmtCost(u.estimatedCostUSD)}`);
+    console.log(`    Model:           ${u.provider}/${u.model}`);
   }
 
   // ── API health: errored attacks are scored "blocked", so a run where
@@ -375,30 +377,22 @@ async function cmdAttack() {
 
   // ── Dynamic mode (also supported for attack command) ──────
   const isDynamic = !!flags.dynamic;
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  const dynamicModel = (flags['dynamic-model'] as string) || DEFAULT_MODEL;
   const dynamicMaxRetries = flags['dynamic-max-retries']
     ? parseInt(String(flags['dynamic-max-retries']), 10)
     : 2;
-
-  if (isDynamic && !apiKey) {
-    redCallout('ANTHROPIC_API_KEY required for --dynamic', [
-      'Dynamic mode uses an LLM to synthesize attack variants.',
-      'Set the env var:',
-      '',
-      '  export ANTHROPIC_API_KEY=sk-ant-...',
-    ]);
-    process.exit(1);
-  }
+  const mutatorCfg = isDynamic
+    ? resolveOrExit(
+        'Cannot run --dynamic',
+        (flags['dynamic-provider'] as string) || (flags.provider as string),
+        (flags['dynamic-model'] as string) || (flags.model as string),
+        flags,
+      )
+    : undefined;
 
   let mutator: DynamicAttackMutator | undefined;
-  if (isDynamic) {
+  if (mutatorCfg) {
     try {
-      mutator = new DynamicAttackMutator({
-        apiKey,
-        model: dynamicModel,
-        maxRetries: dynamicMaxRetries,
-      });
+      mutator = new DynamicAttackMutator({ ...mutatorCfg, maxRetries: dynamicMaxRetries });
     } catch (err) {
       redCallout('Dynamic mutator failed', [(err as Error).message]);
       process.exit(1);
@@ -438,8 +432,8 @@ async function cmdAttack() {
     console.log(`    Variants:        ${u.mutations}${u.errors > 0 ? ` (${u.errors} errors)` : ''}`);
     console.log(`    Input tokens:    ${u.inputTokens.toLocaleString()}`);
     console.log(`    Output tokens:   ${u.outputTokens.toLocaleString()}`);
-    console.log(`    Estimated cost:  $${u.estimatedCostUSD.toFixed(4)}`);
-    console.log(`    Model:           ${u.model}`);
+    console.log(`    Estimated cost:  ${fmtCost(u.estimatedCostUSD)}`);
+    console.log(`    Model:           ${u.provider}/${u.model}`);
   }
 
   printSummary(scorecard);
@@ -492,6 +486,20 @@ function cmdList() {
   console.log('');
 }
 
+function cmdProviders() {
+  banner();
+  console.log('  \x1b[1mProviders\x1b[0m  (--provider=<id>; every provider but anthropic needs --model=<id>)');
+  console.log('');
+  for (const [id, p] of Object.entries(PROVIDERS)) {
+    const key = p.keyEnv.length ? p.keyEnv.join(' | ') : '(no key)';
+    const set = p.keyEnv.length === 0 || p.keyEnv.some((k) => process.env[k]) ? '\x1b[32m✓\x1b[0m' : '\x1b[2m·\x1b[0m';
+    console.log(`  ${set} ${id.padEnd(11)} ${p.label.padEnd(29)} ${key}`);
+  }
+  console.log('');
+  console.log('  \x1b[2m✓ = key found in this shell. Local providers need the server running.\x1b[0m');
+  console.log('');
+}
+
 function cmdReport() {
   const path = args[1];
   if (!path) {
@@ -526,6 +534,7 @@ function sevColor(sev: string): string {
     if (cmd === 'demo') return await cmdDemo();
     if (cmd === 'attack') return await cmdAttack();
     if (cmd === 'list') return cmdList();
+    if (cmd === 'providers') return cmdProviders();
     if (cmd === 'report') return cmdReport();
     console.error(`Unknown command: ${cmd}`);
     showHelp();
