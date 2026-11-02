@@ -398,6 +398,22 @@ export class Interceptor extends EventEmitter {
     if (!session) {
       throw new Error(`Session not found: ${sessionId}`);
     }
+    if (session.status === 'terminated') {
+      // A terminated session gets nothing through, and isn't counted as activity.
+      return {
+        id: randomUUID(),
+        timestamp: new Date(),
+        sourceServer: server,
+        sourceAgent: session.agentId,
+        sessionId,
+        tool,
+        arguments: args,
+        decision: 'auto_blocked',
+        decisionReason: `Session terminated${session.terminationReason ? `: ${session.terminationReason}` : ''}`,
+        decisionAt: new Date(),
+        status: 'blocked',
+      };
+    }
     
     // Create call record
     const call: InterceptedCall = {
