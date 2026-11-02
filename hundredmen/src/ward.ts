@@ -159,11 +159,12 @@ export class WardPolicyManager {
       matchedRule: capResult.matchedRule,
     });
 
-    // 2. Filesystem check (if the tool args look like a file path)
-    const fsArg = pickFirstFsArg(args);
-    if (fsArg) {
-      const op = inferFsOp(tool);
-      const fsResult = checkFilesystem(this.policy, op, fsArg);
+    // 2. Filesystem checks: every path-like argument, not just the first, so a
+    //    second path (e.g. a copy/move destination) can't go unchecked.
+    const op = inferFsOp(tool);
+    for (const { key, path } of fsArgs(args)) {
+      const argOp = DEST_KEYS.has(key) ? 'write' : SOURCE_KEYS.has(key) ? 'read' : op;
+      const fsResult = checkFilesystem(this.policy, argOp, path);
       breakdowns.push({
         type: 'filesystem',
         decision: fsResult.decision,
@@ -172,11 +173,10 @@ export class WardPolicyManager {
       });
     }
 
-    // 3. Network check (if the tool args look like a URL)
-    const urlArg = pickFirstUrlArg(args);
-    if (urlArg) {
-      const method = (args?.method as HttpMethod) || 'GET';
-      const netResult = checkNetwork(this.policy, urlArg, method);
+    // 3. Network checks: every URL-like argument (any case, any scheme)
+    for (const url of urlArgs(args)) {
+      const method = (String(args?.method ?? 'GET').toUpperCase() as HttpMethod);
+      const netResult = checkNetwork(this.policy, url, method);
       breakdowns.push({
         type: 'network',
         decision: netResult.decision,
@@ -241,31 +241,38 @@ function aggregate(breakdowns: WardCheckBreakdown[]): WardCheckResult {
   };
 }
 
-function pickFirstFsArg(args: Record<string, unknown> | undefined): string | null {
-  if (!args) return null;
-  const candidates = ['path', 'file', 'filepath', 'filename', 'file_path', 'target', 'src', 'dest', 'destination'];
-  for (const k of candidates) {
-    const v = args[k];
-    if (typeof v === 'string') return v;
-  }
-  return null;
+const FS_KEYS = ['path', 'paths', 'file', 'files', 'filepath', 'filename', 'file_path', 'target', 'src', 'source', 'dest', 'destination', 'directory', 'dir'];
+/** Arguments that name where data is written / read from, whatever the tool's verb. */
+const DEST_KEYS = new Set(['dest', 'destination', 'target']);
+const SOURCE_KEYS = new Set(['src', 'source']);
+const URL_KEYS = ['url', 'urls', 'uri', 'endpoint', 'href', 'target_url'];
+
+const strings = (v: unknown): string[] =>
+  typeof v === 'string' ? [v] : Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+
+function fsArgs(args: Record<string, unknown> | undefined): Array<{ key: string; path: string }> {
+  if (!args) return [];
+  return FS_KEYS.flatMap((key) => strings(args[key]).filter((p) => !looksLikeUrl(p)).map((path) => ({ key, path })));
 }
 
-function pickFirstUrlArg(args: Record<string, unknown> | undefined): string | null {
-  if (!args) return null;
-  const candidates = ['url', 'uri', 'endpoint', 'href', 'target_url'];
-  for (const k of candidates) {
-    const v = args[k];
-    if (typeof v === 'string' && /^https?:\/\//.test(v)) return v;
-  }
-  return null;
+function looksLikeUrl(v: string): boolean {
+  return /^[a-z][a-z0-9+.-]*:\/\//i.test(v);
 }
 
+function urlArgs(args: Record<string, unknown> | undefined): string[] {
+  if (!args) return [];
+  const fromUrlKeys = URL_KEYS.flatMap((k) => strings(args[k]));
+  const fromFsKeys = FS_KEYS.flatMap((k) => strings(args[k])).filter(looksLikeUrl);
+  return [...fromUrlKeys, ...fromFsKeys];
+}
+
+/** Infer the filesystem op from the tool name's words (snake, kebab or camel case). */
 function inferFsOp(tool: string): 'read' | 'write' | 'execute' | 'delete' | 'list' {
-  const t = tool.toLowerCase();
-  if (t.includes('write') || t.includes('create') || t.includes('save')) return 'write';
-  if (t.includes('delete') || t.includes('remove') || t.includes('rm')) return 'delete';
-  if (t.includes('execute') || t.includes('run') || t.includes('exec')) return 'execute';
-  if (t.includes('list') || t.includes('readdir') || t.includes('ls')) return 'list';
+  const words = new Set(tool.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase().split(/[^a-z0-9]+/));
+  const has = (...w: string[]) => w.some((x) => words.has(x));
+  if (has('write', 'create', 'save', 'edit', 'append', 'put', 'upload', 'move', 'mv', 'copy', 'cp', 'rename')) return 'write';
+  if (has('delete', 'remove', 'rm', 'unlink', 'rmdir')) return 'delete';
+  if (has('execute', 'exec', 'run', 'spawn')) return 'execute';
+  if (has('list', 'ls', 'readdir', 'glob')) return 'list';
   return 'read';
 }
