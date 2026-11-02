@@ -17,7 +17,7 @@ Part of the [Weave Protocol](https://github.com/Tyox-all/Weave_Protocol) securit
 | **Verification** | Intent tracking, drift detection, execution replay, multi-agent handoff |
 | **Orchestration** | Task scheduler, agent registry, shared state with locks |
 | **Compliance** | SOC2, HIPAA, PCI-DSS, ISO27001, **GDPR**, **CCPA** checkpoints & reporting |
-| **Blockchain** | Solana & Ethereum anchoring for immutable audit trails |
+| **Blockchain** | Prepares Solana & Ethereum anchors for you to sign and submit |
 | **GDPR** | Consent management, DSAR handling, breach notification, retention enforcement |
 | **CCPA** | Consumer requests, opt-out management, sale disclosure, annual metrics |
 
@@ -267,14 +267,19 @@ console.log('Right to Opt-Out:', metrics.requestsToOptOut);
 
 ## 🔗 Blockchain Anchoring
 
-Anchor checkpoints to blockchain for immutable audit proof:
+Dōmere **prepares** anchors; you sign and submit them with your own wallet. It never holds keys, broadcasts transactions, or reads chain state.
 
-```typescript
-const anchor = await compliance.anchorToBlockchain(checkpoint.id, 'solana');
-console.log(`Transaction: ${anchor.transactionId}`);
+```text
+domere_estimate_anchor_cost  { "network": "solana" }
+domere_prepare_anchor        { "thread_id": "thr_...", "network": "ethereum" }
+→ Ethereum: { to, data, chain_id, ... } — ABI-encoded anchorThread(...) calldata to sign and send
+→ Solana:   { instructions: [{ program_id, accounts, data_base64 }] } — add to a transaction
+            (it needs a recent blockhash), then sign and send. The thread_anchor PDA is derived for you.
 ```
 
-**Blockchain Addresses:**
+Submitting and verifying on-chain aren't implemented, and the API returns `501` for them. Before 1.4.1, preparing an anchor crashed, Ethereum function selectors were computed with SHA-256 instead of Keccak-256, the Solana PDA was a placeholder, and submit/verify returned invented transaction ids.
+
+**Default program and contract addresses** (override with `anchoring` config):
 - **Solana Mainnet:** `6g7raTAHU2h331VKtfVtkS5pmuvR8vMYwjGsZF1CUj2o`
 - **Solana Devnet:** `BeCYVJYfbUu3k2TPGmh9VoGWeJwzm2hg2NdtnvbdBNCj`
 - **Ethereum:** `0xAA8b52adD3CEce6269d14C6335a79df451543820`
@@ -296,14 +301,24 @@ console.log(`Transaction: ${anchor.transactionId}`);
 
 ## 🛠️ MCP Tools Reference
 
-### Core Compliance Tools
+### Served by the `domere` MCP server
 
 ```
-domere_checkpoint          Create tamper-evident checkpoint
-domere_verify              Verify checkpoint integrity
-domere_compliance_report   Generate framework report
-domere_anchor_blockchain   Anchor to Solana/Ethereum
+domere_create_thread         Start an intent-tracked thread
+domere_add_hop               Record an agent hop (signed, hash-chained)
+domere_get_thread            Thread status, hop count, merkle root
+domere_close_thread          Close with an outcome
+domere_verify_thread         Verify every hop's sequence, signature and hash
+domere_list_threads          List threads
+domere_detect_language       Detect languages in content
+domere_analyze_content       Language-aware content analysis
+domere_check_injection       Prompt-injection check
+domere_check_drift           Drift between declared and current intent
+domere_estimate_anchor_cost  Anchoring cost estimate
+domere_prepare_anchor        Prepare an anchor to sign and submit yourself
 ```
+
+The GDPR and CCPA tools below are exported by the library (`gdprTools` / `createGDPRToolHandlers`, `ccpaTools` / `createCCPAToolHandlers`) for use in your own MCP server; the `domere` server doesn't serve them yet.
 
 ### GDPR Tools
 

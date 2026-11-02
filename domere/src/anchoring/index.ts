@@ -98,9 +98,11 @@ export class AnchoringService {
       const tx = await this.solana.createAnchorTransaction(request);
       return {
         network: request.network,
-        transaction_data: tx.unsigned_transaction,
+        // A Solana transaction needs a recent blockhash, so Dōmere returns the
+        // instruction (program, accounts incl. the derived PDA, data) to add to one.
+        transaction_data: { instructions: tx.instructions },
         estimated_cost: tx.estimated_cost,
-        instructions: `Sign this transaction with your Solana wallet to anchor thread ${request.thread_id}`,
+        instructions: `Add this instruction to a transaction with your Solana wallet/client, then sign and send it to anchor thread ${request.thread_id}.`,
       };
     } else {
       const tx = await this.ethereum.createAnchorTransaction(request);
@@ -108,7 +110,7 @@ export class AnchoringService {
         network: request.network,
         transaction_data: tx,
         estimated_cost: tx.estimated_cost,
-        instructions: `Sign this transaction with your Ethereum wallet to anchor thread ${request.thread_id}`,
+        instructions: `Sign and send this transaction with your Ethereum wallet to anchor thread ${request.thread_id}.`,
       };
     }
   }
