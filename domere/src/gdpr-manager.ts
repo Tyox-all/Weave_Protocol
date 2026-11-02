@@ -262,6 +262,10 @@ export class GDPRManager {
   processDSAR(dsarId: string, assignedTo: string): DSARRequest | null {
     const dsar = this.storage.dsarRequests.get(dsarId);
     if (!dsar) return null;
+    // GDPR Art. 12(6): confirm the requester's identity before acting on the request.
+    if (dsar.status !== 'verified' && dsar.status !== 'in_progress') {
+      throw new Error(`DSAR ${dsarId} is ${dsar.status}; verify the requester's identity first`);
+    }
 
     dsar.status = 'in_progress';
     dsar.assignedTo = assignedTo;
@@ -272,6 +276,10 @@ export class GDPRManager {
   completeDSAR(dsarId: string, response: DSARResponse): DSARRequest | null {
     const dsar = this.storage.dsarRequests.get(dsarId);
     if (!dsar) return null;
+    // Only a verified request can be answered (GDPR Art. 12(6)), and only once.
+    if (dsar.status !== 'verified' && dsar.status !== 'in_progress') {
+      throw new Error(`DSAR ${dsarId} is ${dsar.status}; only a verified request can be completed`);
+    }
 
     dsar.status = 'completed';
     dsar.completedAt = new Date();
@@ -776,6 +784,10 @@ export class GDPRManager {
     });
 
     return decision;
+  }
+
+  getAutomatedDecision(id: string): AutomatedDecision | null {
+    return this.storage.automatedDecisions.get(id) ?? null;
   }
 
   getPendingHumanReviews(): AutomatedDecision[] {

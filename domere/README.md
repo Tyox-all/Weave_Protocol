@@ -301,7 +301,7 @@ Submitting and verifying on-chain aren't implemented, and the API returns `501` 
 
 ## 🛠️ MCP Tools Reference
 
-### Served by the `domere` MCP server
+### Core tools
 
 ```
 domere_create_thread         Start an intent-tracked thread
@@ -318,7 +318,16 @@ domere_estimate_anchor_cost  Anchoring cost estimate
 domere_prepare_anchor        Prepare an anchor to sign and submit yourself
 ```
 
-The GDPR and CCPA tools below are exported by the library (`gdprTools` / `createGDPRToolHandlers`, `ccpaTools` / `createCCPAToolHandlers`) for use in your own MCP server; the `domere` server doesn't serve them yet.
+The `domere` MCP server serves these 12 tools plus the GDPR (11) and CCPA (19) tools below: 42 in all. The GDPR and CCPA records name your organization, so set:
+
+| Variable | Used for |
+|---|---|
+| `DOMERE_ORG_NAME`, `DOMERE_ORG_EMAIL` | GDPR data controller, CCPA business |
+| `DOMERE_ORG_ADDRESS`, `DOMERE_DPO_CONTACT` | Optional controller details |
+| `DOMERE_PRIVACY_POLICY_URL`, `DOMERE_DO_NOT_SELL_URL` | CCPA business details |
+| `DOMERE_CCPA_MEETS_THRESHOLD` | `false` if the CCPA thresholds don't apply (default `true`) |
+
+Unset values appear as `(not configured)` rather than an invented organization. GDPR and CCPA records are kept in memory even when `DOMERE_STORAGE=sqlite`. A data subject access request (DSAR) can only be processed or completed after the requester's identity is verified (GDPR Art. 12(6)).
 
 ### GDPR Tools
 
