@@ -44,7 +44,13 @@ export function checkFilesystem(
   // Match on the normalized path, so "a/../secrets" or "a//secrets" can't
   // slip past a deny rule or out of an allowed directory.
   path = normalizePath(path);
-  const matches = (rule: FilesystemRule) => rule.op === op && matchGlob(path, normalizePath(rule.path));
+  // "dir/**" also covers "dir" itself, so a recursive tool pointed at a
+  // denied directory (grep, glob, ls) can't slip past its rule.
+  const matches = (rule: FilesystemRule) => {
+    if (rule.op !== op) return false;
+    const pattern = normalizePath(rule.path);
+    return matchGlob(path, pattern) || (pattern.endsWith("/**") && path === pattern.slice(0, -3));
+  };
 
   // Deny rules take precedence
   for (const rule of fs.deny || []) {

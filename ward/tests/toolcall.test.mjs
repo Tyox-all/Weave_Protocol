@@ -108,6 +108,12 @@ describe('path arguments', () => {
     assert.equal(decide('Read', { file_path: '/workspace/a', paths: ['/workspace/b', '/workspace/secrets/c'] }), 'deny');
   });
 
+  test('a directory covered by a dir/** rule is covered itself', () => {
+    assert.equal(decide('Read', { file_path: '/workspace/secrets' }), 'deny');
+    assert.equal(decide('Read', { file_path: '/workspace/secrets/' }), 'deny');
+    assert.equal(decide('Read', { file_path: '/workspace' }), 'allow');
+  });
+
   test('relative paths resolve against cwd', () => {
     assert.equal(decide('Read', { file_path: 'secrets/key' }), 'deny');
     assert.equal(decide('Read', { file_path: 'src/a.ts' }), 'allow');
