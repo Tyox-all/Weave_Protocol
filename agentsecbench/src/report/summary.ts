@@ -13,7 +13,7 @@ export interface ReportSummary {
   summaryVersion: '1';
   schemaVersion: Report['schemaVersion'];
   suite: Report['suite'];
-  target: { name: string; vendor?: string; type: string; model?: string; anonymized: boolean };
+  target: { name: string; vendor?: string; type: string; model?: string; provider?: string; anonymized: boolean };
   run: {
     date: string;
     adversaryVersion: string;
@@ -40,6 +40,7 @@ export function summarizeReport(report: Report): ReportSummary {
       ...(!anonymized && report.target.vendor ? { vendor: report.target.vendor } : {}),
       type: report.target.type,
       ...(report.target.model ? { model: report.target.model } : {}),
+      ...(report.target.provider ? { provider: report.target.provider } : {}),
       anonymized,
     },
     run: {
