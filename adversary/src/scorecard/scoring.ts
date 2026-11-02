@@ -92,6 +92,7 @@ export function buildScorecard(args: {
   target: Target;
   ward?: Scorecard['ward'];
   dynamic?: Scorecard['dynamic'];
+  stoppedEarly?: Scorecard['stoppedEarly'];
   findings: Finding[];
   startedAt: number;
   durationMs: number;
@@ -105,6 +106,7 @@ export function buildScorecard(args: {
     },
     ward: args.ward,
     ...(args.dynamic ? { dynamic: args.dynamic } : {}),
+    ...(args.stoppedEarly ? { stoppedEarly: args.stoppedEarly } : {}),
     startedAt: args.startedAt,
     durationMs: args.durationMs,
     findings: args.findings,

@@ -31,6 +31,16 @@ export {
   renderJsonScorecard,
 } from './scorecard/index.js';
 export { loadWardPolicy, parseWardPolicy, scoreAttackForPolicy, wardAwareSort } from './ward.js';
+export {
+  PROVIDERS,
+  DEFAULT_PROVIDER,
+  resolveModelConfig,
+  callModel,
+  estimateModelCost,
+  type ProviderPreset,
+  type ModelConfig,
+  type ModelResponse,
+} from './providers.js';
 export { DynamicAttackMutator, classifyEngagement, type DynamicMutatorOptions, type MutationResult } from './dynamic.js';
 export type {
   Attack,

@@ -1,6 +1,6 @@
 # ⚔️ @weave_protocol/adversary
 
-> **Offensive engine for AI agent security testing.** 68 documented + novel attacks. Real-browser target via Playwright. Real-LLM demo mode via Anthropic API. The test engine for AgentSecBench.
+> **Offensive engine for AI agent security testing.** 68 documented + novel attacks. Real-browser target via Playwright. Real-LLM demo mode against any model provider: Claude, GPT, Gemini, DeepSeek, Kimi, Qwen, GLM, or local models via Ollama. The test engine for AgentSecBench.
 
 [![npm](https://img.shields.io/npm/v/@weave_protocol/adversary?color=000&style=flat-square)](https://www.npmjs.com/package/@weave_protocol/adversary)
 [![License](https://img.shields.io/badge/license-Apache--2.0-000?style=flat-square)](../LICENSE)
@@ -19,6 +19,11 @@ npx @weave_protocol/adversary demo
 export ANTHROPIC_API_KEY=sk-ant-...
 npx @weave_protocol/adversary demo --real
 
+# NEW v0.4: any provider (see `weave-adversary providers` for the full list)
+export GEMINI_API_KEY=...
+npx @weave_protocol/adversary demo --real --provider=gemini --model=gemini-3.5-flash
+npx @weave_protocol/adversary demo --real --provider=ollama --model=qwen2.5-coder:7b   # local, free
+
 # NEW v0.3: dynamic-mutation mode — retries variants when target half-blocks
 npx @weave_protocol/adversary demo --real --dynamic
 
@@ -28,6 +33,37 @@ npx @weave_protocol/adversary attack --url=https://my-agent.example.com/run
 # List the attack corpus
 npx @weave_protocol/adversary list --severity=critical
 ```
+
+## What's new in v0.4
+
+- **Any model provider.** `--provider=<id> --model=<id>` runs the target (and, with `--dynamic-provider`, the mutation model) on any of these:
+
+  | Provider | `--provider` | Key variable |
+  |---|---|---|
+  | Anthropic (default) | `anthropic` | `ANTHROPIC_API_KEY` |
+  | OpenAI | `openai` | `OPENAI_API_KEY` |
+  | Google Gemini | `gemini` | `GEMINI_API_KEY` or `GOOGLE_API_KEY` |
+  | DeepSeek | `deepseek` | `DEEPSEEK_API_KEY` |
+  | Moonshot (Kimi) | `moonshot` | `MOONSHOT_API_KEY` |
+  | Alibaba Model Studio (Qwen), international | `qwen` | `DASHSCOPE_API_KEY` |
+  | Z.ai (GLM) | `zai` | `ZAI_API_KEY` or `ZHIPU_API_KEY` |
+  | OpenRouter | `openrouter` | `OPENROUTER_API_KEY` |
+  | Groq | `groq` | `GROQ_API_KEY` |
+  | Together AI | `together` | `TOGETHER_API_KEY` |
+  | Ollama / LM Studio (local) | `ollama` / `lmstudio` | none |
+
+  Claude uses the native Messages API; everything else uses the OpenAI-compatible Chat Completions protocol. `--base-url` points any of them at a self-hosted server (vLLM), a proxy, or a China-region endpoint. Only Claude has a default model, because other providers rename models too often; pass `--model`.
+- **Verified live on Gemini 3.5 Flash.** A full 68-attack run completed with every call answered, and dynamic mode ran with Gemini as both target and mutation model (26 variants, no mutation errors).
+- **Retries on rate limits and overload.** 408, 429 and 5xx responses are retried with exponential backoff, so a busy free tier no longer shows up as errored attacks.
+- **Runs that fit free tiers.** `--rpm=<n>` spaces calls to stay under a per-minute limit. When a daily quota runs out, the run stops instead of erroring through the rest of the corpus: the scorecard keeps the attacks that reached the model, is marked as a partial run (`stoppedEarly`), and the CLI says how to fit the quota next time. For example, Gemini's free tier allows about 20 requests per model per day, so 3 attacks per category (15 calls) fits:
+
+  ```bash
+  npx @weave_protocol/adversary demo --real --provider=gemini --model=gemini-3.5-flash --per-category=3 --rpm=5
+  ```
+
+  A partial score covers only the attacks that ran, so it is not comparable with a full run.
+- **Honest cost reporting.** Cost prints as "unknown" for models with no price on file, rather than $0. Local models cost $0.
+- **Scorecards record the provider.** The target identifier reads `provider/model`, and dynamic-mode metadata gains `provider`. `mutationCostUSD` is `null` when the price is unknown.
 
 ## What's new in v0.3
 
@@ -206,6 +242,7 @@ console.log('Score:', scorecard.summary.score, '/100');
   schemaVersion: '1.0',
   target: { kind, identifier },
   ward: { loaded, source, rulesProbed },
+  stoppedEarly?: { reason, completed, planned },   // v0.4: partial run (quota used up)
   startedAt, durationMs,
   findings: [
     {
@@ -234,10 +271,11 @@ This schema is consumed unchanged by AgentSecBench.
 
 - **v0.1** — Demo target + 68-attack corpus + WARD-aware selection + JSON/Markdown scorecards
 - **v0.2** — Real Playwright browser target + `attack` CLI command + four breach signal channels (network/form/DOM/console) + red callouts
-- **v0.2.1** *(this release)* — Real-LLM demo mode via Anthropic API + cost reporting + sensitive-output redaction flag + warning callouts
+- **v0.2.1** — Real-LLM demo mode via Anthropic API + cost reporting + sensitive-output redaction flag + warning callouts
 - **v0.3** — LLM-driven dynamic attack mode (`--mode=dynamic`) — adversary improvises against target responses
-- **v0.4** — Multi-turn / stateful attacks
-- **v0.5** — User-defined custom attack packs
+- **v0.4** *(this release)* — Any model provider: OpenAI-compatible presets for Gemini, DeepSeek, Kimi, Qwen, GLM, OpenRouter, Groq, Together, and local models
+- **v0.5** — Multi-turn / stateful attacks
+- **v0.6** — User-defined custom attack packs
 - **AgentSecBench** (separate package) — interpretation layer + tier grading built on Adversary's scorecard schema
 
 ---

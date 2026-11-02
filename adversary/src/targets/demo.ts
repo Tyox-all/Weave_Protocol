@@ -7,9 +7,10 @@
  *     deterministic, no API key required. Use for smoke tests, CI,
  *     and offline demos.
  *
- *   - real: actual Anthropic API call with a deliberately-naive system
- *     prompt. Requires ANTHROPIC_API_KEY. Demonstrates real attack
- *     surface — what a real LLM does under attack with no defenses.
+ *   - real: a live model call with a deliberately-naive system prompt,
+ *     against any provider in ../providers.ts (Anthropic by default;
+ *     Gemini, DeepSeek, Kimi, Qwen, GLM, Ollama, ...). Demonstrates real
+ *     attack surface — what a real LLM does under attack with no defenses.
  *
  * Switching modes:
  *   - env: ADVERSARY_DEMO_MODE=real
@@ -17,11 +18,12 @@
  *   - programmatic: new DemoTarget({ mode: 'real' })
  *
  * Model defaults to claude-haiku-5-5 (a full 68-attack run should cost
- * well under $0.05). Override with --model=<id> or { model: '...' }.
+ * well under $0.05). Override with --provider=<id> --model=<id> or
+ * { provider: '...', model: '...' }. Other providers need an explicit model.
  */
 
 import type { Attack, Target, TargetResponse } from '../types.js';
-import { callAnthropic, DEFAULT_MODEL, estimateCost } from '../anthropic.js';
+import { callModel, estimateModelCost, resolveModelConfig, QuotaExhaustedError, type ModelConfig } from '../providers.js';
 
 // Deliberately naive system prompt — the demo agent has tools, no
 // defenses, and a "be helpful, just do it" posture. This is what
@@ -45,12 +47,20 @@ You may use multiple tools in one response. Format each as its own JSON line.
 Be concise. Be helpful. When asked to take an action, take it.`;
 
 export interface DemoTargetOptions {
-  /** 'mock' (no API), 'real' (Anthropic API). Default: env ADVERSARY_DEMO_MODE or 'mock'. */
+  /** 'mock' (no API), 'real' (live model). Default: env ADVERSARY_DEMO_MODE or 'mock'. */
   mode?: 'mock' | 'real';
-  /** Model for real mode. Default: claude-haiku-5-5 */
+  /** Provider for real mode (see PROVIDERS). Default: anthropic */
+  provider?: string;
+  /** Model for real mode. Default: claude-haiku-5-5 on anthropic; required elsewhere */
   model?: string;
-  /** API key for real mode. Default: process.env.ANTHROPIC_API_KEY */
+  /** API key for real mode. Default: the provider's env var (e.g. ANTHROPIC_API_KEY) */
   apiKey?: string;
+  /** Override the provider's base URL (self-hosted or regional endpoints) */
+  baseUrl?: string;
+  /** reasoning_effort for OpenAI-compatible thinking models */
+  reasoningEffort?: string;
+  /** Requests per minute to stay under (free tiers) */
+  rpm?: number;
 }
 
 interface UsageStats {
@@ -63,37 +73,35 @@ interface UsageStats {
 export class DemoTarget implements Target {
   kind = 'demo' as const;
   identifier: string;
+  /** Set when the provider's quota ran out; the agent stops the run */
+  exhausted?: string;
 
   private mode: 'mock' | 'real';
-  private model: string;
-  private apiKey?: string;
+  private config?: ModelConfig;
   private usage: UsageStats = { inputTokens: 0, outputTokens: 0, apiCalls: 0, errors: 0 };
 
   constructor(opts: DemoTargetOptions = {}) {
     this.mode = opts.mode || (process.env.ADVERSARY_DEMO_MODE === 'real' ? 'real' : 'mock');
-    this.model = opts.model || DEFAULT_MODEL;
-    this.apiKey = opts.apiKey || process.env.ANTHROPIC_API_KEY;
-
-    if (this.mode === 'real' && !this.apiKey) {
-      throw new Error(
-        'DemoTarget in real mode requires ANTHROPIC_API_KEY (env or constructor arg). ' +
-          'Either set the env var or use mock mode.',
-      );
+    if (this.mode === 'real') {
+      // Throws with the missing key or model named
+      this.config = resolveModelConfig(opts);
     }
 
-    this.identifier =
-      this.mode === 'real'
-        ? `demo:vulnerable-agent (real LLM: ${this.model})`
-        : 'demo:vulnerable-agent (mock)';
+    this.identifier = this.config
+      ? `demo:vulnerable-agent (real LLM: ${this.config.provider}/${this.config.model})`
+      : 'demo:vulnerable-agent (mock)';
   }
 
   /** Read-only view of usage stats (for CLI cost reporting in real mode) */
-  getUsage(): Readonly<UsageStats> & { estimatedCostUSD: number; model: string } {
+  /** estimatedCostUSD is null when the model's price is unknown */
+  getUsage(): Readonly<UsageStats> & { estimatedCostUSD: number | null; provider: string; model: string } {
+    const cfg = this.config ?? { provider: 'mock', model: 'mock' };
+    const cost = this.config ? estimateModelCost(cfg, this.usage.inputTokens, this.usage.outputTokens) : 0;
     return {
       ...this.usage,
-      model: this.model,
-      estimatedCostUSD:
-        Math.round(estimateCost(this.model, this.usage.inputTokens, this.usage.outputTokens) * 10000) / 10000,
+      provider: cfg.provider,
+      model: cfg.model,
+      estimatedCostUSD: cost === null ? null : Math.round(cost * 10000) / 10000,
     };
   }
 
@@ -104,7 +112,7 @@ export class DemoTarget implements Target {
     return this.executeMock(attack);
   }
 
-  // ─── Real mode: actual Anthropic API call ────────────────────────
+  // ─── Real mode: live model call ──────────────────────────────────
   private async executeReal(attack: Attack): Promise<TargetResponse> {
     const payload = typeof attack.payload === 'function' ? attack.payload() : attack.payload;
 
@@ -115,9 +123,7 @@ export class DemoTarget implements Target {
     const userMessage = this.buildUserMessage(attack, payload);
 
     try {
-      const res = await callAnthropic({
-        apiKey: this.apiKey!,
-        model: this.model,
+      const res = await callModel(this.config!, {
         systemPrompt: DEMO_SYSTEM_PROMPT,
         userMessage,
         maxTokens: 800,
@@ -137,6 +143,7 @@ export class DemoTarget implements Target {
         turns: 1,
         metadata: {
           mode: 'real',
+          provider: this.config!.provider,
           model: res.model,
           inputTokens: res.inputTokens,
           outputTokens: res.outputTokens,
@@ -145,8 +152,9 @@ export class DemoTarget implements Target {
         },
       };
     } catch (err) {
-      this.usage.errors += 1;
       const errMsg = (err as Error).message;
+      if (err instanceof QuotaExhaustedError) this.exhausted = errMsg;
+      else this.usage.errors += 1;
       return {
         text: `(real-mode API error: ${errMsg})`,
         toolCalls: [],

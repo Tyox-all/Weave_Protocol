@@ -23,7 +23,7 @@ import { loadWardPolicy, wardAwareSort, scoreAttackForPolicy } from './ward.js';
 import { DynamicAttackMutator, classifyEngagement } from './dynamic.js';
 
 // Read version from package.json without bundler ceremony.
-const ADVERSARY_VERSION = '0.3.0';
+const ADVERSARY_VERSION = '0.4.0';
 
 const HOSTILE_TOOL_NAMES = new Set([
   'send_email',
@@ -60,9 +60,16 @@ export class AdversarialAgent {
     if (this.target.setup) await this.target.setup();
 
     const findings: Finding[] = [];
+    let stoppedEarly: Scorecard['stoppedEarly'];
     try {
       for (const attack of attacks) {
         const finding = await this.runOne(attack, opts);
+        // An attack that ran into an exhausted quota never reached the
+        // model; leave it out rather than score it "blocked".
+        if (this.target.exhausted) {
+          stoppedEarly = { reason: this.target.exhausted, completed: findings.length, planned: attacks.length };
+          break;
+        }
         findings.push(finding);
         if (opts.stopOnBreach && finding.result === 'breached') break;
       }
@@ -86,6 +93,7 @@ export class AdversarialAgent {
               const u = this.mutator!.getUsage();
               return {
                 enabled: true,
+                provider: u.provider,
                 model: u.model,
                 maxRetries: this.mutator!.maxRetries,
                 variantsGenerated: u.mutations,
@@ -96,6 +104,7 @@ export class AdversarialAgent {
               };
             })()
           : undefined,
+      stoppedEarly,
       findings,
       startedAt,
       durationMs: Date.now() - startedAt,

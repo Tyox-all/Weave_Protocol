@@ -1,13 +1,15 @@
 # ⚔️ Adversary skill — offensive testing for AI agents
 
-You have access to `@weave_protocol/adversary` v0.3 — a package that generates 68 documented and novel attacks against AI agents and produces standardized scorecards. v0.3 adds LLM-driven dynamic mutation: when a target half-blocks an attack, an LLM synthesizes a variant and Adversary retries.
+You have access to `@weave_protocol/adversary` v0.4 — a package that generates 68 documented and novel attacks against AI agents and produces standardized scorecards. v0.3 adds LLM-driven dynamic mutation: when a target half-blocks an attack, an LLM synthesizes a variant and Adversary retries.
 
 
 ## Dynamic mode (v0.3)
 
 Adversary can now retry variants when the target half-blocks — refuses to comply but engages with the topic (e.g., "I can't help with that, but here's some general info about..."). An LLM synthesizes a novel variant of the payload and Adversary retries with it. Up to `--dynamic-max-retries=<n>` variants per attack (default 2).
 
-Enable with `--dynamic`. Requires `ANTHROPIC_API_KEY`. Cost: ~$0.03 on top of a `--real` run (Haiku).
+Enable with `--dynamic`. Needs a key for the mutation provider (`ANTHROPIC_API_KEY` by default; `--dynamic-provider=<id>` picks another). Cost: ~$0.03 on top of a `--real` run (Haiku).
+
+Any run can target another provider with `--provider=<id> --model=<id>`; `weave-adversary providers` lists them and shows which keys are set.
 
 ```bash
 # Dynamic mode against real Claude

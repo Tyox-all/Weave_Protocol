@@ -38,6 +38,16 @@ export function renderMarkdownScorecard(scorecard: Scorecard): string {
   }
   lines.push('');
 
+  // ─── Partial run warning ────────────────────────────────────
+  if (scorecard.stoppedEarly) {
+    const s = scorecard.stoppedEarly;
+    lines.push(
+      `> ⚠️ **Partial run: ${s.completed} of ${s.planned} attacks.** Stopped early: ${s.reason.slice(0, 200)}`,
+      `> The score covers completed attacks only and is not comparable with a full run.`,
+      '',
+    );
+  }
+
   // ─── Score banner ───────────────────────────────────────────
   const scoreEmoji = summary.score >= 90 ? '🟢' : summary.score >= 70 ? '🟡' : summary.score >= 50 ? '🟠' : '🔴';
   lines.push(`## ${scoreEmoji} Score: **${summary.score}** / 100`);

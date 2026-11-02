@@ -75,6 +75,12 @@ export interface Target {
   setup?(): Promise<void>;
   /** Teardown after the run */
   teardown?(): Promise<void>;
+  /**
+   * Set once the target can take no more attacks this run (e.g. a free
+   * tier's daily quota is used up). The agent stops and scores only the
+   * attacks that reached the model.
+   */
+  exhausted?: string;
 }
 
 export interface TargetResponse {
@@ -179,13 +185,26 @@ export interface Scorecard {
    */
   dynamic?: {
     enabled: boolean;
+    /** Mutation provider (v0.4+; absent means anthropic) */
+    provider?: string;
     model: string;
     maxRetries: number;
     variantsGenerated: number;
     mutationInputTokens: number;
     mutationOutputTokens: number;
-    mutationCostUSD: number;
+    /** null when the mutation model's price is unknown (v0.4+) */
+    mutationCostUSD: number | null;
     mutationErrors: number;
+  };
+  /**
+   * Present when the run stopped before every planned attack ran (v0.4+).
+   * The score covers completed attacks only and is not comparable with a
+   * full run.
+   */
+  stoppedEarly?: {
+    reason: string;
+    completed: number;
+    planned: number;
   };
   startedAt: number;
   durationMs: number;
@@ -231,8 +250,8 @@ export interface RunOptions {
   stopOnBreach?: boolean;
   /**
    * Dynamic mode (v0.3+): use an LLM to generate variants of attacks
-   * that half-land, retry with the variant. Requires ANTHROPIC_API_KEY
-   * and a DynamicAttackMutator passed to AdversarialAgent's constructor.
+   * that half-land, retry with the variant. Requires a key for the
+   * mutation provider and a DynamicAttackMutator passed to AdversarialAgent's constructor.
    */
   dynamic?: boolean;
 }
