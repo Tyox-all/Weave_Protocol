@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/ward",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "WARD.md — the agent security policy standard. Define what your agents can and cannot do, version-controlled alongside AGENTS.md and SKILL.md.",
   "type": "module",
   "main": "dist/index.js",
@@ -11,7 +11,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "test": "npm run build && node --test \"tests/*.test.mjs\""
   },
   "keywords": [
     "weave-protocol",

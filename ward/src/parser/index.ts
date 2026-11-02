@@ -77,7 +77,17 @@ export function parseAndValidate(source: string): ValidationResult {
   }
 
   // Validation rules
-  if (policy.version !== "1.0") {
+  // The spec requires `ward:`; parseWard defaults it to "1.0" so runtime checks
+  // stay lenient, but validation reports it.
+  const rawFrontmatter = splitFrontmatter(source).frontmatter;
+  if (!rawFrontmatter || parseYAML(rawFrontmatter).ward === undefined) {
+    errors.push({
+      level: "error",
+      section: "frontmatter",
+      message: "Missing required frontmatter field: ward",
+      suggestion: "Add 'ward: \"1.0\"' to the frontmatter.",
+    });
+  } else if (policy.version !== "1.0") {
     errors.push({
       level: "error",
       section: "frontmatter",

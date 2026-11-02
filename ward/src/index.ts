@@ -35,5 +35,7 @@ export {
   checkDataEgress,
   checkBehavioral,
   matchGlob,
+  normalizePath,
+  canonicalUrl,
 } from "./enforcer/index.js";
 export type { Decision, CheckResult, RuntimeState } from "./enforcer/index.js";
