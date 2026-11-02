@@ -65,6 +65,11 @@ updates:
       include: "scope"
     open-pull-requests-limit: 3
     versioning-strategy: "increase"
+    # Hold TypeScript at 6.0.x: typescript-eslint (used by this package's
+    # lint) supports typescript <6.1.0. Remove once it supports TS 7.
+    ignore:
+      - dependency-name: "typescript"
+        versions: [">=6.1.0"]
     groups:
       typescript-and-types:
         patterns:
@@ -105,6 +110,11 @@ updates:
       include: "scope"
     open-pull-requests-limit: 3
     versioning-strategy: "increase"
+    # Hold TypeScript at 6.0.x: typescript-eslint (used by this package's
+    # lint) supports typescript <6.1.0. Remove once it supports TS 7.
+    ignore:
+      - dependency-name: "typescript"
+        versions: [">=6.1.0"]
     groups:
       typescript-and-types:
         patterns:
