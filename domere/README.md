@@ -68,6 +68,10 @@ Add to `claude_desktop_config.json`:
 
 ---
 
+## 💾 Storage
+
+Threads, hops, anchors and arbitration cases are kept in memory by default. For persistence, use SQLite (Node 22.5+, no extra dependency): set `DOMERE_STORAGE=sqlite` and optionally `DOMERE_DATABASE_URL` (default `~/.weave/domere.sqlite`, created with `0600` permissions). In code: `createStorage('sqlite', { path })`.
+
 ## 🇪🇺 GDPR Compliance
 
 Domere includes comprehensive GDPR support with 11 MCP tools.

@@ -15,6 +15,9 @@ import type {
   ArbitrationEvidence,
   CaseFilters,
 } from '../types.js';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
+import { SqliteStorage } from './sqlite.js';
 
 // ============================================================================
 // Memory Storage
@@ -260,15 +263,18 @@ export class MemoryStorage implements IDomereStorage {
 // Storage Factory
 // ============================================================================
 
-export function createStorage(type: 'memory' | 'sqlite' = 'memory'): IDomereStorage {
+export interface StorageOptions {
+  /** SQLite file path; default DOMERE_DATABASE_URL, else ~/.weave/domere.sqlite. ":memory:" for tests. */
+  path?: string;
+}
+
+export function createStorage(type: 'memory' | 'sqlite' = 'memory', options: StorageOptions = {}): IDomereStorage {
   switch (type) {
     case 'memory':
       return new MemoryStorage();
     case 'sqlite':
-      // TODO: Implement SQLite storage
-      console.warn('SQLite storage not implemented, falling back to memory');
-      return new MemoryStorage();
+      return new SqliteStorage(options.path || process.env.DOMERE_DATABASE_URL || join(homedir(), '.weave', 'domere.sqlite'));
     default:
-      return new MemoryStorage();
+      throw new Error(`Unknown storage type: ${String(type)}`);
   }
 }

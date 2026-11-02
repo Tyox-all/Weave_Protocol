@@ -80,7 +80,7 @@ function resolveMasterKey(enc: HordConfig['encryption']): string | Buffer {
 
 async function createServer(config: HordConfig) {
   // Initialize storage
-  const storage = createStorage(config.storage);
+  const storage = createStorage(config.storage, { path: config.database_url });
   
   // Initialize key store
   keyStore.initialize(resolveMasterKey(config.encryption));
@@ -185,7 +185,8 @@ Environment Variables:
   HORD_PORT                  HTTP port
   HORD_HOST                  HTTP host
   HORD_TRANSPORT             Transport type
-  HORD_STORAGE               Storage backend
+  HORD_STORAGE               memory (default) or sqlite
+  HORD_DATABASE_URL          SQLite file (default ~/.weave/hord.sqlite)
   HORD_MASTER_KEY            Master key: 64 hex chars or a passphrase
   HORD_MASTER_KEY_FILE       File containing the master key
   HORD_SANDBOX_TIMEOUT_MS    Sandbox timeout

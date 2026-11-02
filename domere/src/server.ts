@@ -12,7 +12,7 @@ import { DOMERE_TOOLS, DomereToolHandler } from './tools/index.js';
 import { createStorage } from './storage/index.js';
 
 const server = new Server({ name: 'domere', version: '1.0.0' }, { capabilities: { tools: {} } });
-const storage = createStorage('memory');
+const storage = createStorage(process.env.DOMERE_STORAGE === 'sqlite' ? 'sqlite' : 'memory');
 const toolHandler = new DomereToolHandler(storage);
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: DOMERE_TOOLS }));

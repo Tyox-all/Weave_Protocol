@@ -71,6 +71,17 @@ With neither set, Hord generates a random key for the process, so vault contents
 
 > **Advisory [HORD-2026-001](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord/SECURITY_ADVISORIES.md):** before 0.2.0, any master key that wasn't pure hex, including the built-in default, produced the same master key on every install. Upgrade, or set a 64-hex-character key.
 
+## 💾 Storage
+
+By default Hord keeps everything in memory. For data that survives restarts, use SQLite (Node 22.5+, no extra dependency):
+
+| Variable | Value |
+|---|---|
+| `HORD_STORAGE` | `memory` (default) or `sqlite` |
+| `HORD_DATABASE_URL` | SQLite file path (default `~/.weave/hord.sqlite`, created with `0600` permissions) |
+
+Vault keys are stored wrapped with the master key, so a persisted vault opens only with the same `HORD_MASTER_KEY`. In code: `createStorage('sqlite', { path })`. PostgreSQL is not implemented, and selecting it is an error.
+
 ## 🔒 Vault Manager
 
 Encrypted storage with key rotation.
