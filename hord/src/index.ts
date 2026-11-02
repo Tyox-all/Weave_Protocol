@@ -6,7 +6,8 @@
 export * from './yoxallismus.js';
 
 // Services (each takes a storage backend from createStorage)
-export { createStorage, MemoryStorage } from './storage/index.js';
+export { createStorage, MemoryStorage, SqliteStorage } from './storage/index.js';
+export type { StorageType, StorageOptions } from './storage/index.js';
 export * from './vault/index.js';
 export * from './capability/index.js';
 export * from './redaction/index.js';
