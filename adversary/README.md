@@ -53,6 +53,7 @@ npx @weave_protocol/adversary list --severity=critical
   | Ollama / LM Studio (local) | `ollama` / `lmstudio` | none |
 
   Claude uses the native Messages API; everything else uses the OpenAI-compatible Chat Completions protocol. `--base-url` points any of them at a self-hosted server (vLLM), a proxy, or a China-region endpoint. Only Claude has a default model, because other providers rename models too often; pass `--model`.
+- **Verified live on Gemini 3.5 Flash.** A full 68-attack run completed with every call answered, and dynamic mode ran with Gemini as both target and mutation model (26 variants, no mutation errors).
 - **Retries on rate limits and overload.** 408, 429 and 5xx responses are retried with exponential backoff, so a busy free tier no longer shows up as errored attacks.
 - **Runs that fit free tiers.** `--rpm=<n>` spaces calls to stay under a per-minute limit. When a daily quota runs out, the run stops instead of erroring through the rest of the corpus: the scorecard keeps the attacks that reached the model, is marked as a partial run (`stoppedEarly`), and the CLI says how to fit the quota next time. For example, Gemini's free tier allows about 20 requests per model per day, so 3 attacks per category (15 calls) fits:
 
