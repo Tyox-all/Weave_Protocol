@@ -854,45 +854,14 @@ done
 
 ## 🗺️ Roadmap
 
-### Shipped
+### Q1 2027: coming soon
 
-- [x] GDPR / CCPA / SOC2 / HIPAA / PCI-DSS / ISO27001 compliance frameworks
-- [x] MCP server reputation scoring
-- [x] Automated threat intelligence updates
-- [x] LangChain.js integration package
-- [x] Python/LlamaIndex integration
-- [x] Web dashboard for monitoring
-- [x] Supply chain security (Tollere) — npm, PyPI, Cargo, Go, Maven, Docker images, IDE extensions, sandwich pattern detection
-- [x] Bundle package + CLI (`weave init`)
-- [x] WARD.md agent security policy standard
-- [x] Hundredmen ↔ WARD enforcement integration (v1.1.0)
-- [x] **Claude Code harness adapter** (Anthropic)
-- [x] **Google Antigravity harness adapter** (Google)
-- [x] **Microsoft Agent Framework harness adapter** (Microsoft)
-- [x] **Cross-platform thesis complete — same WARD.md works across all three major vendor harnesses + MCP**
+The full Q1 2027 roadmap is on its way. Planned so far:
 
-### H2 2026 Q3 — Adoption Quarter
+- **More harness adapters.** Codex CLI, Cursor, Gemini CLI and OpenCode, all enforcing the same `WARD.md` from a shared hook core.
+- **Model-endpoint guardrails.** A WARD network rule and a Mund check that flag secrets or personal data sent to model endpoints your policy doesn't list.
 
-- [x] Browser agent security (`@weave_protocol/browser`)
-- [x] Dashboard v2 with orchestration visualization
-- [x] **[State of AI Agent Security: Q3 Report](https://tyox-all.github.io/Weave_Protocol/q3-2026.html)** — Industry analysis of agent security trends, platform maturity, supply chain risks, and market gaps
-
-### H2 2026 Q4 — Moat Quarter
-
-- [x] **Adversarial agents** (`@weave_protocol/adversary` v0.2.1) — 68 documented + novel attacks, real Playwright browser target, real-LLM demo mode
-- [x] **Adversary v0.3** (`@weave_protocol/adversary` v0.3.0): LLM-driven dynamic mutation of half-blocked attacks, verified live on Claude Haiku 5.5; default model moved off the retired Claude 3.5 Haiku; API-failure runs now error out instead of scoring 100/100
-- [x] **Adversary v0.4** (`@weave_protocol/adversary` v0.4.0): model-agnostic audits. Provider presets for OpenAI, Gemini, DeepSeek, Kimi, Qwen, GLM, OpenRouter, Groq, Together, Ollama and LM Studio
-- [x] **AgentSecBench** (`@weave_protocol/agentsecbench` v0.1.0) — standardized benchmark, tier grades A–F
-- [x] **AgentSecBench v0.2** (`@weave_protocol/agentsecbench` v0.2.0): report schema v1.1, hash-locked suites with pre-run validation, suite files, and a [public results page](https://tyox-all.github.io/Weave_Protocol/asb/)
-- [x] **AgentSecBench v0.3** (`@weave_protocol/agentsecbench` v0.3.0): grades live models on any provider via Adversary 0.4; incomplete or errored runs are refused instead of graded
-- [x] **Witan autonomous spending caps** (`@weave_protocol/witan` v1.1.0) — per-window budgets on LLM cost + tokens + tool calls, gated by block / approval / notify
-- [x] **Yoxallismus v2** (`@weave_protocol/yoxallismus@0.1.0-beta.0`) — **open beta shipped**. PQ-hybrid KEM (X25519 + ML-KEM-768 / NIST FIPS 203) + AEAD + ratcheting. Unaudited by design; validated by public use, forks, and responsible disclosure. v0.2+ adds DH double-ratchet, cascade cipher, threshold encryption; v0.3+ adds ZK/VDF/QRNG; v0.4+ adds FHE. See [yoxallismus/README.md](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus).
-- [x] **Yoxallismus v0.2** (`@weave_protocol/yoxallismus@0.2.0-beta.0`): Double Ratchet seeded by the hybrid KEM, X-Wing-style KEM combiner, sealed boxes, cascade AEAD, `yoxall/2` wire format locked through 1.0, advisories YOXALL-2026-001 to 003, and Hord's broken v1 cipher deprecated (Hord 0.1.8)
-- [x] **Mund pre-install hooks** (`@weave_protocol/mund@0.4.0`, adapters 0.2.0): skill and MCP server audits with rug-pull detection, enforced as Claude Code and Antigravity hooks; fixture-backed [detection claims](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund/DETECTION_CLAIMS.md); Antigravity WARD enforcement rebuilt on the documented hook contract
-- [x] **Mund parity floor**: SARIF output (`mund-mcp scan --format=sarif`), OSV.dev live CVE lookups with offline fallback, 0–100 risk score, CycloneDX SBOM + Sigstore attestations in `publish-all`, OWASP LLM + Agentic coverage tables
-- [x] **Hord sandbox isolation** (`@weave_protocol/hord` 0.1.9–0.2.0): OS-level network, filesystem and environment isolation, memory limits and strict mode; [HORD-2026-001](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord/SECURITY_ADVISORIES.md) fixed
-- [x] **API on the real packages** (`@weave_protocol/api` 1.3.0): Mund, Hord and Dōmere backing, with fail-closed defaults from 1.2.0
-- [x] **Suite hygiene**: no critical or high advisories, CI builds, tests and audits every package, and imports have no side effects
+Everything shipped through Q4 2026 is under [What's New](#-whats-new) and in each package's README.
 
 ---
 
