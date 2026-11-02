@@ -125,7 +125,7 @@ jobs:
           subject-path: ${{ matrix.package }}/${{ steps.pack.outputs.tarball }}
 
       - name: Attest SBOM (Sigstore)
-        uses: actions/attest-sbom@v2
+        uses: actions/attest-sbom@v4
         with:
           subject-path: ${{ matrix.package }}/${{ steps.pack.outputs.tarball }}
           sbom-path: ${{ matrix.package }}/sbom.cdx.json
