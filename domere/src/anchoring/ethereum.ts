@@ -12,6 +12,8 @@ import type {
   AnchorVerification,
   BlockchainNetwork 
 } from '../types.js';
+import { createHash } from 'node:crypto';
+import { keccak_256 } from '@noble/hashes/sha3.js';
 import { AnchoringError } from '../types.js';
 import { DEFAULT_CONFIG, PROTOCOL_FEES } from '../constants.js';
 
@@ -141,57 +143,15 @@ export class EthereumAnchorClient {
   /**
    * Submit signed transaction
    */
-  async submitSignedTransaction(signedTransaction: string): Promise<AnchorResult> {
-    // This is a placeholder - real implementation would:
-    // 1. Submit to Ethereum RPC (eth_sendRawTransaction)
-    // 2. Wait for confirmation
-    // 3. Return result
-    
-    const network: BlockchainNetwork = this.isTestnet ? 'ethereum-sepolia' : 'ethereum';
-    
-    // Simulate success for testing
-    const mockTxHash = '0x' + Array(64).fill(0).map(() => 
-      Math.floor(Math.random() * 16).toString(16)
-    ).join('');
-    
-    const mockBlockNumber = 19000000 + Math.floor(Math.random() * 100000);
-    
-    return {
-      success: true,
-      network,
-      transaction_id: mockTxHash,
-      block: mockBlockNumber,
-      timestamp: new Date(),
-      network_fee: '0.002',
-      protocol_fee: '0.0001',
-      total_cost: '0.0021',
-      verification_url: this.getExplorerUrl(mockTxHash),
-    };
+  async submitSignedTransaction(_signedTransaction: string): Promise<AnchorResult> {
+    throw new AnchoringError('Dōmere prepares anchors but does not broadcast or read blockchains. Sign and submit the prepared transaction with your own wallet/RPC client, then verify it there.');
   }
   
   /**
-   * Verify anchor on-chain
+   * Verify an anchor on-chain (not implemented: Dōmere does not read chains)
    */
-  async verifyAnchor(
-    threadId: string,
-    expectedMerkleRoot: string
-  ): Promise<AnchorVerification> {
-    // In production, this would call the contract's verifyAnchor function
-    
-    const network: BlockchainNetwork = this.isTestnet ? 'ethereum-sepolia' : 'ethereum';
-    
-    return {
-      valid: true,
-      thread_id: threadId,
-      merkle_root: expectedMerkleRoot,
-      anchor: {
-        network,
-        transaction_id: 'verification_pending',
-        timestamp: new Date(),
-        verified: false,
-      },
-      verified_at: new Date(),
-    };
+  async verifyAnchor(_threadId: string, _expectedMerkleRoot: string): Promise<AnchorVerification> {
+    throw new AnchoringError('Dōmere prepares anchors but does not broadcast or read blockchains. Sign and submit the prepared transaction with your own wallet/RPC client, then verify it there.');
   }
   
   /**
@@ -254,8 +214,7 @@ export class EthereumAnchorClient {
    * Convert string to bytes32 hex
    */
   private stringToBytes32(str: string): string {
-    const crypto = require('crypto');
-    const hash = crypto.createHash('sha256').update(str).digest('hex');
+    const hash = createHash('sha256').update(str).digest('hex');
     return '0x' + hash;
   }
   
@@ -291,13 +250,11 @@ export class EthereumAnchorClient {
   }
   
   /**
-   * Simple keccak256 (placeholder - use ethers.js in production)
+   * Keccak-256 (Ethereum's hash; not the same as SHA3-256). Before 1.4.1 this
+   * was SHA-256, so every function selector Dōmere produced was wrong.
    */
   private keccak256(input: string): string {
-    // In production, use ethers.js keccak256
-    // This is a placeholder that returns a deterministic hash
-    const crypto = require('crypto');
-    return crypto.createHash('sha256').update(input).digest('hex');
+    return Buffer.from(keccak_256(new TextEncoder().encode(input))).toString('hex');
   }
 }
 

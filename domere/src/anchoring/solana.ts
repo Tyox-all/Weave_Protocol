@@ -12,6 +12,10 @@ import type {
   AnchorVerification,
   BlockchainNetwork 
 } from '../types.js';
+import { createHash } from 'node:crypto';
+import { sha256 } from '@noble/hashes/sha2.js';
+import { ed25519 } from '@noble/curves/ed25519.js';
+import { base58 } from '@scure/base';
 import { AnchoringError } from '../types.js';
 import { DEFAULT_CONFIG, PROTOCOL_FEES } from '../constants.js';
 
@@ -99,34 +103,44 @@ export class SolanaAnchorClient {
    * Actual signing must be done client-side with the user's wallet.
    */
   async createAnchorTransaction(request: AnchorRequest): Promise<{
-    unsigned_transaction: string;  // Base64 encoded transaction
-    message: string;               // Message to sign
-    instructions: unknown[];       // Instruction data
+    unsigned_transaction: null;
+    message: string;
+    instructions: SolanaInstruction[];
     estimated_cost: any;
   }> {
     const data = this.prepareAnchorData(request);
     const cost = await this.estimateCost();
-    
-    // In a real implementation, this would create the actual Solana transaction
-    // using @solana/web3.js. For now, we return a placeholder structure.
-    
-    const instruction = {
+    const [pda] = this.findThreadAnchorPda(data.thread_id);
+
+    // Anchor instruction data: 8-byte discriminator, then Borsh-encoded args
+    // (thread_id [u8;32], merkle_root [u8;32], hop_count u64 LE, intent_hash [u8;32], compliant bool).
+    const hopCount = Buffer.alloc(8);
+    hopCount.writeBigUInt64LE(BigInt(data.hop_count));
+    const ixData = Buffer.concat([
+      Buffer.from(anchorDiscriminator('anchor_thread')),
+      Buffer.from(data.thread_id),
+      Buffer.from(data.merkle_root),
+      hopCount,
+      Buffer.from(data.intent_hash),
+      Buffer.from([data.compliant ? 1 : 0]),
+    ]);
+
+    const instruction: SolanaInstruction = {
       program_id: this.config.program_id,
       accounts: [
-        { pubkey: 'payer', isSigner: true, isWritable: true },
-        { pubkey: 'thread_anchor_pda', isSigner: false, isWritable: true },
-        { pubkey: 'treasury', isSigner: false, isWritable: true },
-        { pubkey: 'system_program', isSigner: false, isWritable: false },
+        { pubkey: '<payer: your wallet>', isSigner: true, isWritable: true },
+        { pubkey: pda, isSigner: false, isWritable: true },
+        { pubkey: this.config.treasury ?? DEFAULT_CONFIG.anchoring.solana_treasury, isSigner: false, isWritable: true },
+        { pubkey: SYSTEM_PROGRAM_ID, isSigner: false, isWritable: false },
       ],
-      data: {
-        instruction: 'anchor_thread',
-        ...data,
-      },
+      data_base64: ixData.toString('base64'),
     };
-    
+
     return {
-      unsigned_transaction: Buffer.from(JSON.stringify(instruction)).toString('base64'),
-      message: `Anchor thread ${request.thread_id} to Solana`,
+      // Building the transaction needs a recent blockhash from an RPC node, which
+      // Dōmere does not contact: add this instruction with your wallet/client.
+      unsigned_transaction: null,
+      message: `Anchor thread ${request.thread_id} to Solana: add this instruction to a transaction, then sign and send it with your wallet.`,
       instructions: [instruction],
       estimated_cost: cost,
     };
@@ -138,59 +152,15 @@ export class SolanaAnchorClient {
    * Note: In production, this would use @solana/web3.js to submit
    * the signed transaction to the network.
    */
-  async submitSignedTransaction(signedTransaction: string): Promise<AnchorResult> {
-    // This is a placeholder - real implementation would:
-    // 1. Deserialize the signed transaction
-    // 2. Submit to Solana RPC
-    // 3. Wait for confirmation
-    // 4. Return result
-    
-    const network: BlockchainNetwork = this.isDevnet ? 'solana-devnet' : 'solana';
-    
-    // Simulate success for testing
-    const mockSignature = `${Date.now().toString(16)}${'0'.repeat(64)}`.slice(0, 88);
-    const mockSlot = Math.floor(Date.now() / 400);  // Roughly Solana's slot timing
-    
-    return {
-      success: true,
-      network,
-      transaction_id: mockSignature,
-      slot: mockSlot,
-      timestamp: new Date(),
-      network_fee: '0.000005',
-      protocol_fee: '0.0001',
-      total_cost: '0.000105',
-      verification_url: this.getExplorerUrl(mockSignature),
-    };
+  async submitSignedTransaction(_signedTransaction: string): Promise<AnchorResult> {
+    throw new AnchoringError('Dōmere prepares anchors but does not broadcast or read blockchains. Sign and submit the prepared transaction with your own wallet/RPC client, then verify it there.');
   }
   
   /**
-   * Verify an anchor on-chain
+   * Verify an anchor on-chain (not implemented: Dōmere does not read chains)
    */
-  async verifyAnchor(
-    threadId: string,
-    expectedMerkleRoot: string
-  ): Promise<AnchorVerification> {
-    // In production, this would:
-    // 1. Derive the PDA for the thread anchor
-    // 2. Fetch the account data
-    // 3. Verify the merkle root matches
-    
-    // Placeholder implementation
-    const network: BlockchainNetwork = this.isDevnet ? 'solana-devnet' : 'solana';
-    
-    return {
-      valid: true,  // Would be determined by on-chain lookup
-      thread_id: threadId,
-      merkle_root: expectedMerkleRoot,
-      anchor: {
-        network,
-        transaction_id: 'verification_pending',
-        timestamp: new Date(),
-        verified: false,
-      },
-      verified_at: new Date(),
-    };
+  async verifyAnchor(_threadId: string, _expectedMerkleRoot: string): Promise<AnchorVerification> {
+    throw new AnchoringError('Dōmere prepares anchors but does not broadcast or read blockchains. Sign and submit the prepared transaction with your own wallet/RPC client, then verify it there.');
   }
   
   /**
@@ -212,9 +182,12 @@ export class SolanaAnchorClient {
    * Derive PDA for thread anchor
    */
   deriveThreadAnchorPda(threadId: string): string {
-    // In production, use @solana/web3.js PublicKey.findProgramAddressSync
-    // Seeds: ["thread_anchor", thread_id_bytes]
-    return `PDA_${threadId.slice(0, 20)}`;
+    return this.findThreadAnchorPda(this.stringToBytes32(threadId))[0];
+  }
+
+  /** PDA for seeds ["thread_anchor", thread_id], as the program derives it. */
+  findThreadAnchorPda(threadIdBytes: number[]): [string, number] {
+    return findProgramAddress([new TextEncoder().encode('thread_anchor'), Uint8Array.from(threadIdBytes)], this.config.program_id);
   }
   
   // ============================================================================
@@ -225,7 +198,7 @@ export class SolanaAnchorClient {
    * Convert string to 32-byte array
    */
   private stringToBytes32(str: string): number[] {
-    const hash = require('crypto').createHash('sha256').update(str).digest();
+    const hash = createHash('sha256').update(str).digest();
     return Array.from(hash);
   }
   
@@ -251,6 +224,51 @@ export class SolanaAnchorClient {
 // ============================================================================
 // Solana Program IDL (for reference)
 // ============================================================================
+
+// ============================================================================
+// Solana helpers (no @solana/web3.js dependency)
+// ============================================================================
+
+export interface SolanaInstruction {
+  program_id: string;
+  accounts: { pubkey: string; isSigner: boolean; isWritable: boolean }[];
+  data_base64: string;
+}
+
+export const SYSTEM_PROGRAM_ID = '11111111111111111111111111111111';
+
+/** Anchor's instruction discriminator: first 8 bytes of sha256("global:<name>"). */
+export function anchorDiscriminator(name: string): Uint8Array {
+  return sha256(new TextEncoder().encode(`global:${name}`)).slice(0, 8);
+}
+
+function isOnCurve(bytes: Uint8Array): boolean {
+  try {
+    ed25519.Point.fromBytes(bytes);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Same as @solana/web3.js PublicKey.findProgramAddressSync: the first bump
+ * (255 down) whose sha256(seeds, bump, programId, "ProgramDerivedAddress")
+ * is off the ed25519 curve.
+ */
+export function findProgramAddress(seeds: Uint8Array[], programId: string): [string, number] {
+  const program = base58.decode(programId);
+  const marker = new TextEncoder().encode('ProgramDerivedAddress');
+  for (let bump = 255; bump >= 0; bump--) {
+    const parts = [...seeds, Uint8Array.of(bump), program, marker];
+    const buf = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+    let o = 0;
+    for (const p of parts) { buf.set(p, o); o += p.length; }
+    const hash = sha256(buf);
+    if (!isOnCurve(hash)) return [base58.encode(hash), bump];
+  }
+  throw new AnchoringError('Unable to find a viable program address bump seed');
+}
 
 export const SOLANA_PROGRAM_IDL = `
 // Anchor program for Dōmere anchoring
