@@ -39,3 +39,5 @@ export {
   canonicalUrl,
 } from "./enforcer/index.js";
 export type { Decision, CheckResult, RuntimeState } from "./enforcer/index.js";
+export { evaluateToolCall } from "./enforcer/toolcall.js";
+export type { ToolMapping, ToolCallCheck, ToolCallEvaluation, EvaluateOptions } from "./enforcer/toolcall.js";
