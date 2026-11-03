@@ -61,33 +61,38 @@ export class WardMiddleware {
   private readonly toolMappings: Record<string, ToolMapping>;
   private readonly onAllow?: MiddlewareOptions['onAllow'];
   private readonly onDeny?: MiddlewareOptions['onDeny'];
+  private readonly cwd?: string;
 
   constructor(opts: MiddlewareOptions = {}) {
     this.failClosed = opts.failMode === 'closed';
     this.toolMappings = opts.toolMappings || {};
     this.onAllow = opts.onAllow;
     this.onDeny = opts.onDeny;
+    this.cwd = opts.cwd;
 
-    try {
-      if (opts.wardSource) {
-        this.resolved = loadWardFromSource(opts.wardSource, '<inline>');
-      } else if (opts.wardPath) {
-        if (!existsSync(opts.wardPath)) {
-          throw new Error(`WARD.md not found at ${opts.wardPath}`);
-        }
-        const src = readFileSync(opts.wardPath, 'utf8');
-        this.resolved = loadWardFromSource(src, opts.wardPath);
-      } else {
-        this.resolved = resolveWardForCwd();
+    // A policy the caller named explicitly must load; never fall back to
+    // running without it.
+    if (opts.wardSource !== undefined) {
+      this.resolved = loadWardFromSource(opts.wardSource, '<inline>');
+      return;
+    }
+    if (opts.wardPath) {
+      if (!existsSync(opts.wardPath)) {
+        throw new Error(`WARD.md not found at ${opts.wardPath}`);
       }
-    } catch (err) {
-      if (this.failClosed) throw err;
-      // Fail-open: log and continue with no policy (every call allowed)
+      this.resolved = loadWardFromSource(readFileSync(opts.wardPath, 'utf8'), opts.wardPath);
+      return;
+    }
+
+    // An invalid WARD.md throws here whatever the fail mode: a typo must not
+    // silently switch enforcement off.
+    this.resolved = resolveWardForCwd(opts.cwd);
+    if (!this.resolved) {
+      if (this.failClosed) {
+        throw new Error('No WARD.md found ($WEAVE_WARD_PATH, WARD.md, .weave/WARD.md, .msaf/WARD.md) and failMode is closed');
+      }
       // eslint-disable-next-line no-console
-      console.warn(
-        `[weave-msaf] WARD.md could not be loaded (${err instanceof Error ? err.message : String(err)}). Running in fail-open mode — no enforcement.`,
-      );
-      this.resolved = null;
+      console.warn('[weave-msaf] No WARD.md found. Running without a policy — no enforcement.');
     }
   }
 
@@ -121,7 +126,7 @@ export class WardMiddleware {
     if (!this.resolved) {
       return { decision: 'allow', reasons: ['No WARD.md loaded'] };
     }
-    const result = evaluateCall(this.resolved.policy, call, this.toolMappings);
+    const result = evaluateCall(this.resolved.policy, call, this.toolMappings, this.cwd);
     return { ...result, policySource: this.resolved.source };
   }
 
