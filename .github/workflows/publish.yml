@@ -30,6 +30,7 @@ on:
           - adapter-geminicli
           - adapter-codex
           - adapter-opencode
+          - adapter-cursor
           - adversary
           - agentsecbench
   push:

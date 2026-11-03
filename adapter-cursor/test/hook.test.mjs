@@ -1,0 +1,156 @@
+// adapter-cursor against Cursor's documented agent hooks
+// (https://cursor.com/docs/agent/hooks): beforeShellExecution { command, cwd },
+// beforeMCPExecution { tool_name, tool_input: string, mcp_server_name },
+// beforeReadFile { file_path }, preToolUse { tool_name, tool_input, cwd };
+// output { permission, user_message, agent_message }.
+import { test, describe } from 'node:test';
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { parseWard } from '@weave_protocol/ward';
+import { toToolCall, evaluateCall, toHookOutput } from '../dist/index.js';
+
+const WARD = (ws) => `---
+ward: "1.0"
+agent: cursor-test
+---
+
+## Filesystem
+
+allow:
+  - read: ${ws}/**
+  - write: ${ws}/src/**
+deny:
+  - read: ${ws}/secrets/**
+default: deny
+
+## Network
+
+allow:
+  - url: "https://docs.example.com/**"
+deny:
+  - url: "https://evil.example/**"
+default: deny
+
+## Capabilities
+
+allow:
+  - shell_exec
+  - file_read
+  - file_write
+  - mcp__files__*
+requireApproval:
+  - mcp__mail__*
+default: deny
+`;
+
+const WS = '/workspace';
+const policy = parseWard(WARD(WS));
+const base = { conversation_id: 'c', workspace_roots: [WS] };
+const decide = (payload) => {
+  const call = toToolCall({ ...base, ...payload });
+  return call ? evaluateCall(policy, call).decision : 'skipped';
+};
+
+describe('events', () => {
+  test('beforeShellExecution: every URL and path, relative to cwd', () => {
+    assert.equal(decide({ hook_event_name: 'beforeShellExecution', command: 'npm test', cwd: WS }), 'allow');
+    assert.equal(decide({ hook_event_name: 'beforeShellExecution', command: 'curl https://docs.example.com/a; curl https://evil.example/s', cwd: WS }), 'deny');
+    assert.equal(decide({ hook_event_name: 'beforeShellExecution', command: 'cat key', cwd: `${WS}/secrets` }), 'deny');
+  });
+
+  test('beforeReadFile uses file_path', () => {
+    assert.equal(decide({ hook_event_name: 'beforeReadFile', file_path: `${WS}/src/a.ts` }), 'allow');
+    assert.equal(decide({ hook_event_name: 'beforeReadFile', file_path: `${WS}/secrets/key` }), 'deny');
+    assert.equal(decide({ hook_event_name: 'beforeReadFile', file_path: `${WS}/src/../secrets/key` }), 'deny', 'traversal');
+  });
+
+  test('beforeMCPExecution: tool_input is a JSON string; named mcp__<server>__<tool>', () => {
+    assert.deepEqual(toToolCall({ ...base, hook_event_name: 'beforeMCPExecution', mcp_server_name: 'files', tool_name: 'copy', tool_input: '{"source":"a"}' }).tool, 'mcp__files__copy');
+    assert.equal(decide({ hook_event_name: 'beforeMCPExecution', mcp_server_name: 'files', tool_name: 'read', tool_input: JSON.stringify({ path: `${WS}/src/a` }) }), 'allow');
+    assert.equal(decide({ hook_event_name: 'beforeMCPExecution', mcp_server_name: 'files', tool_name: 'read', tool_input: JSON.stringify({ path: `${WS}/secrets/k` }) }), 'deny');
+    assert.equal(decide({ hook_event_name: 'beforeMCPExecution', mcp_server_name: 'mail', tool_name: 'send', tool_input: '{}' }), 'require_approval');
+    assert.equal(decide({ hook_event_name: 'beforeMCPExecution', mcp_server_name: 'files', tool_name: 'x', tool_input: 'not json' }), 'allow', 'bad JSON input is just empty args');
+  });
+
+  test('preToolUse covers the remaining tools and skips Shell, Read and MCP', () => {
+    assert.equal(decide({ hook_event_name: 'preToolUse', tool_name: 'Write', tool_input: { file_path: `${WS}/src/a.ts`, contents: 'x' }, cwd: WS }), 'allow');
+    assert.equal(decide({ hook_event_name: 'preToolUse', tool_name: 'Write', tool_input: { target_file: `${WS}/README.md` }, cwd: WS }), 'deny', 'outside src/');
+    assert.equal(decide({ hook_event_name: 'preToolUse', tool_name: 'Delete', tool_input: { path: `${WS}/src/a.ts` }, cwd: WS }), 'deny', 'no delete capability');
+    assert.equal(decide({ hook_event_name: 'preToolUse', tool_name: 'Shell', tool_input: { command: 'cat secrets/key' } }), 'skipped');
+    assert.equal(decide({ hook_event_name: 'preToolUse', tool_name: 'Read', tool_input: {} }), 'skipped');
+    assert.equal(decide({ hook_event_name: 'preToolUse', tool_name: 'MCP:copy', tool_input: {} }), 'skipped');
+  });
+
+  test('other events are left alone', () => {
+    assert.equal(toToolCall({ ...base, hook_event_name: 'afterFileEdit', file_path: 'x' }), null);
+  });
+});
+
+describe('output', () => {
+  test('allow prints nothing; deny carries the reason to user and agent', () => {
+    assert.equal(toHookOutput({ decision: 'allow', reasons: [] }, 'W', true), undefined);
+    const d = toHookOutput({ decision: 'deny', reasons: ['nope'] }, 'W', false);
+    assert.equal(d.permission, 'deny');
+    assert.match(d.user_message, /nope/);
+    assert.equal(d.agent_message, d.user_message);
+  });
+
+  test('require_approval is "ask" where Cursor enforces it, "deny" elsewhere', () => {
+    assert.equal(toHookOutput({ decision: 'require_approval', reasons: ['r'] }, 'W', true).permission, 'ask');
+    assert.equal(toHookOutput({ decision: 'require_approval', reasons: ['r'] }, 'W', false).permission, 'deny');
+  });
+});
+
+describe('CLI end to end (isolated HOME)', () => {
+  const cli = resolve('dist/cli.js');
+  const home = mkdtempSync(join(tmpdir(), 'cursor-home-'));
+  const ws = mkdtempSync(join(tmpdir(), 'cursor-ws-'));
+  writeFileSync(join(ws, 'WARD.md'), WARD(ws));
+  const env = { PATH: process.env.PATH, HOME: home };
+  const run = (args, input) => spawnSync(process.execPath, [cli, ...args], { input, env, encoding: 'utf8', cwd: home });
+  const hook = (payload) => {
+    const r = run(['hook'], JSON.stringify({ conversation_id: 'c', workspace_roots: [ws], ...payload }));
+    assert.equal(r.status, 0, r.stderr);
+    return r.stdout ? JSON.parse(r.stdout) : null;
+  };
+
+  test('a denied read prints deny; an allowed one prints nothing', () => {
+    assert.equal(hook({ hook_event_name: 'beforeReadFile', file_path: join(ws, 'secrets', 'k') }).permission, 'deny');
+    assert.equal(hook({ hook_event_name: 'beforeReadFile', file_path: join(ws, 'src', 'a.ts') }), null);
+  });
+
+  test('an MCP call needing approval prints "ask"', () => {
+    assert.equal(hook({ hook_event_name: 'beforeMCPExecution', mcp_server_name: 'mail', tool_name: 'send', tool_input: '{}' }).permission, 'ask');
+  });
+
+  test('an invalid WARD.md denies; a malformed payload allows unless --fail-closed', () => {
+    const broken = mkdtempSync(join(tmpdir(), 'cursor-ws-'));
+    writeFileSync(join(broken, 'WARD.md'), '# not a policy');
+    assert.match(hook({ workspace_roots: [broken], hook_event_name: 'beforeShellExecution', command: 'ls', cwd: broken }).user_message, /could not be loaded/);
+    assert.equal(run(['hook'], '{bad').stdout, '');
+    assert.equal(JSON.parse(run(['hook', '--fail-closed'], '{bad').stdout).permission, 'deny');
+  });
+
+  test('init and disable edit hooks.json on all four events, keeping other hooks', () => {
+    const path = join(home, '.cursor', 'hooks.json');
+    mkdirSync(join(home, '.cursor'), { recursive: true });
+    writeFileSync(path, JSON.stringify({ version: 1, hooks: { beforeShellExecution: [{ command: './my-audit.sh' }], afterFileEdit: [{ command: './fmt.sh' }] } }));
+    assert.equal(run(['init']).status, 0);
+    assert.equal(run(['init', '--timeout=5']).status, 0);
+    const f = JSON.parse(readFileSync(path, 'utf8'));
+    assert.equal(f.version, 1);
+    assert.deepEqual(f.hooks.afterFileEdit, [{ command: './fmt.sh' }]);
+    assert.deepEqual(f.hooks.beforeShellExecution, [{ command: './my-audit.sh' }, { command: 'weave-ward-cursor hook', timeout: 5 }]);
+    for (const ev of ['beforeMCPExecution', 'beforeReadFile', 'preToolUse']) assert.deepEqual(f.hooks[ev], [{ command: 'weave-ward-cursor hook', timeout: 5 }], ev);
+    assert.ok(existsSync(`${path}.weave-backup`));
+    assert.equal(run(['status'], '').stderr.includes('installed'), true);
+
+    assert.equal(run(['disable']).status, 0);
+    const after = JSON.parse(readFileSync(path, 'utf8'));
+    assert.deepEqual(Object.keys(after.hooks).sort(), ['afterFileEdit', 'beforeShellExecution']);
+    assert.deepEqual(after.hooks.beforeShellExecution, [{ command: './my-audit.sh' }]);
+  });
+});
