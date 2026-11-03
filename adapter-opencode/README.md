@@ -74,6 +74,11 @@ The package's main entry default-exports only the plugin, `{ id: "weave-ward", s
 
 Built against OpenCode's [plugin docs](https://opencode.ai/docs/plugins/), plus the plugin loader and tool schemas in OpenCode v1.19.5. 12 fixture tests.
 
+Live-checked in OpenCode 1.19.5 (on Gemini 3.5 Flash-Lite), loaded as a local plugin:
+- a `read` of `secrets/key` was blocked, and the model received `WARD: Denied by filesystem rule …`;
+- a `write` of `TODO.md` outside the allowed folder was blocked, and no file was created;
+- allowed `glob` and `read` calls went through.
+
 ## License
 
 Apache-2.0
