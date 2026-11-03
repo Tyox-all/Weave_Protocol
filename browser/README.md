@@ -82,10 +82,10 @@ npm install @weave_protocol/browser
 npx @weave_protocol/ward init
 
 # Print an integration snippet
-npx weave-browser init --framework=playwright
+npx -p @weave_protocol/browser weave-browser init --framework=playwright
 
 # Verify policy + scanner setup
-npx weave-browser status
+npx -p @weave_protocol/browser weave-browser status
 ```
 
 ### Playwright (recommended path)

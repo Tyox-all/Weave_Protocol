@@ -27,6 +27,23 @@ interface Pattern {
   pattern: RegExp;
   mitreId?: string;
   mitreTactic?: string;
+  /** Extra check on each regex match, to cut false positives (e.g. Luhn) */
+  validate?: (match: string) => boolean;
+}
+
+/** Luhn checksum, so random 13–19 digit numbers aren't reported as cards. */
+function luhn(match: string): boolean {
+  const digits = match.replace(/\D/g, '');
+  let sum = 0;
+  for (let i = 0; i < digits.length; i++) {
+    let d = Number(digits[digits.length - 1 - i]);
+    if (i % 2 === 1) {
+      d *= 2;
+      if (d > 9) d -= 9;
+    }
+    sum += d;
+  }
+  return digits.length >= 13 && sum % 10 === 0;
 }
 
 const BUILTIN_PATTERNS: Pattern[] = [
@@ -65,7 +82,8 @@ const BUILTIN_PATTERNS: Pattern[] = [
     name: 'DAN Jailbreak',
     category: 'jailbreak',
     severity: 'critical',
-    pattern: /\b(DAN|Do\s+Anything\s+Now)\b/i,
+    // "DAN" only in capitals: the name Dan is not a jailbreak
+    pattern: /\bDAN\b|\b[Dd]o\s+[Aa]nything\s+[Nn]ow\b/,
     mitreId: 'T1548',
     mitreTactic: 'Privilege Escalation',
   },
@@ -114,7 +132,9 @@ const BUILTIN_PATTERNS: Pattern[] = [
     name: 'Credit Card Number',
     category: 'pii',
     severity: 'high',
-    pattern: /\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13})\b/,
+    // Visa, Mastercard, Amex; digits may be grouped with spaces or dashes
+    pattern: /\b(?:4\d{3}(?:[ -]?\d{4}){2}[ -]?\d{1,4}|5[1-5]\d{2}(?:[ -]?\d{4}){3}|3[47]\d{2}[ -]?\d{6}[ -]?\d{5})\b/g,
+    validate: luhn,
   },
   
   // Secrets
@@ -123,14 +143,15 @@ const BUILTIN_PATTERNS: Pattern[] = [
     name: 'OpenAI API Key',
     category: 'secret',
     severity: 'critical',
-    pattern: /sk-[a-zA-Z0-9]{20,}/,
+    // Legacy keys and current project, service-account and admin keys
+    pattern: /\bsk-(?!ant-)(?:proj-|svcacct-|admin-)?[A-Za-z0-9_-]{20,}/,
   },
   {
     id: 'secret_anthropic',
     name: 'Anthropic API Key',
     category: 'secret',
     severity: 'critical',
-    pattern: /sk-ant-[a-zA-Z0-9-]{20,}/,
+    pattern: /\bsk-ant-[A-Za-z0-9_-]{20,}/,
   },
   {
     id: 'secret_aws',
@@ -167,8 +188,9 @@ export class LocalScanner implements Scanner {
       // Filter by category
       if (config?.categories && !config.categories.includes(pattern.category)) continue;
 
-      // Check pattern
-      const match = content.match(pattern.pattern);
+      // Check pattern (the first match that passes validation)
+      const re = new RegExp(pattern.pattern.source, pattern.pattern.flags.includes('g') ? pattern.pattern.flags : pattern.pattern.flags + 'g');
+      const match = [...content.matchAll(re)].find((m) => !pattern.validate || pattern.validate(m[0]));
       if (match) {
         threats.push({
           patternId: pattern.id,
@@ -208,15 +230,26 @@ export class LocalScanner implements Scanner {
 }
 
 // ============================================================================
-// Remote Scanner (uses Mund API)
+// Remote Scanner (uses the Weave API's Mund scan)
 // ============================================================================
 
+const SEVERITIES = ['low', 'medium', 'high', 'critical'] as const;
+
+/**
+ * Scans through a running @weave_protocol/api. `endpoint` is the API's base
+ * URL (http://host:3000) or its /api/v1 prefix. Any failure, or a response
+ * that doesn't look like a scan result, falls back to the local scanner, so
+ * content is never passed as safe because the remote call went wrong.
+ * (Before 1.1.0 this posted to /mund/scan and read a `matches` array the API
+ * never returns, so a reachable API reported every scan as safe.)
+ */
 export class RemoteScanner implements Scanner {
-  private endpoint: string;
+  private url: string;
   private apiKey?: string;
 
   constructor(endpoint: string, apiKey?: string) {
-    this.endpoint = endpoint.replace(/\/$/, '');
+    const base = endpoint.replace(/\/+$/, '');
+    this.url = /\/api\/v1$/.test(base) ? `${base}/mund/scan` : `${base}/api/v1/mund/scan`;
     this.apiKey = apiKey;
   }
 
@@ -231,61 +264,49 @@ export class RemoteScanner implements Scanner {
         headers['Authorization'] = `Bearer ${this.apiKey}`;
       }
 
-      const response = await fetch(`${this.endpoint}/mund/scan`, {
+      const response = await fetch(this.url, {
         method: 'POST',
         headers,
-        body: JSON.stringify({
-          content,
-          categories: config?.categories,
-          minSeverity: config?.minSeverity,
-        }),
+        body: JSON.stringify({ content }),
       });
 
       if (!response.ok) {
-        throw new Error(`Mund API error: ${response.statusText}`);
+        throw new Error(`Mund API error: ${response.status} ${response.statusText}`);
       }
 
-      const data = await response.json() as {
-        matches?: Array<{
-          patternId: string;
-          patternName: string;
-          category: string;
-          severity: string;
-          confidence: number;
-          matchedText: string;
-          mitreId?: string;
-          mitreTactic?: string;
-        }>;
-        summary?: {
-          highest_severity?: string;
-        };
-        recommendations?: string[];
+      const data = (await response.json()) as {
+        issues?: Array<{ rule_id: string; rule_name: string; type: string; severity: string; match?: string }>;
       };
+      if (!Array.isArray(data.issues)) {
+        throw new Error('Mund API response has no issues array');
+      }
 
-      const threats: ThreatMatch[] = (data.matches || []).map(m => ({
-        patternId: m.patternId,
-        patternName: m.patternName,
-        category: m.category,
-        severity: m.severity as ThreatMatch['severity'],
-        confidence: m.confidence,
-        matchedText: m.matchedText,
-        mitreId: m.mitreId,
-        mitreTactic: m.mitreTactic,
-      }));
+      const minIndex = config?.minSeverity ? SEVERITIES.indexOf(config.minSeverity) : 0;
+      const threats: ThreatMatch[] = data.issues
+        .map((i) => ({
+          patternId: i.rule_id,
+          patternName: i.rule_name,
+          category: i.type,
+          severity: (SEVERITIES as readonly string[]).includes(i.severity) ? (i.severity as ThreatMatch['severity']) : 'high',
+          confidence: 1,
+          matchedText: String(i.match ?? '').substring(0, 50),
+        }))
+        .filter((t) => SEVERITIES.indexOf(t.severity) >= minIndex)
+        .filter((t) => !config?.categories || config.categories.includes(t.category))
+        .sort((a, b) => SEVERITIES.indexOf(b.severity) - SEVERITIES.indexOf(a.severity));
 
       return {
         safe: threats.length === 0,
         threatCount: threats.length,
         threats,
-        highestSeverity: (data.summary?.highest_severity as ThreatMatch['severity']) || null,
+        highestSeverity: threats[0]?.severity ?? null,
         scanDurationMs: Date.now() - startTime,
-        recommendations: data.recommendations || [],
+        recommendations: threats.length > 0 ? [`Found ${threats.length} potential threat(s). Review flagged content.`] : [],
       };
     } catch (error) {
-      // Fallback to local scanner on error
-      console.warn('Remote scan failed, falling back to local scanner:', error);
-      const localScanner = new LocalScanner();
-      return localScanner.scan(content, config);
+      // Fall back to the local scanner rather than pass content unscanned
+      console.warn('Remote scan failed, falling back to local scanner:', error instanceof Error ? error.message : error);
+      return new LocalScanner().scan(content, config);
     }
   }
 

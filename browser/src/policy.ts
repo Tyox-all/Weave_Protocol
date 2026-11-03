@@ -12,14 +12,7 @@
 
 import { readFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import {
-  parseWard,
-  checkCapability,
-  checkFilesystem,
-  checkNetwork,
-  type WardPolicy,
-  type HttpMethod,
-} from '@weave_protocol/ward';
+import { parseAndValidate, checkCapability, checkNetwork, type WardPolicy } from '@weave_protocol/ward';
 import type { DecisionResult } from './types.js';
 
 export interface ResolvedWard {
@@ -37,15 +30,18 @@ export function resolveWardForCwd(cwd: string = process.cwd()): ResolvedWard | n
   }
   for (const path of candidates) {
     const r = resolve(path);
-    if (existsSync(r)) {
-      return { policy: parseWard(readFileSync(r, 'utf8')), source: r };
-    }
+    if (existsSync(r)) return loadWardFromSource(readFileSync(r, 'utf8'), r);
   }
   return null;
 }
 
+/** Parse and validate a WARD.md; throws on an invalid policy. */
 export function loadWardFromSource(source: string, label = '<inline>'): ResolvedWard {
-  return { policy: parseWard(source), source: label };
+  const result = parseAndValidate(source);
+  if (!result.valid || !result.policy) {
+    throw new Error(`Invalid WARD.md (${label}): ${result.errors.map((e) => e.message).join('; ')}`);
+  }
+  return { policy: result.policy, source: label };
 }
 
 export function loadWardFromPath(path: string): ResolvedWard {
@@ -91,16 +87,15 @@ export function evaluateDownload(
   let worst: 'allow' | 'deny' | 'require_approval' = urlCheck.decision;
   if (urlCheck.decision === 'require_approval') reasons.push(`URL: ${urlCheck.reason}`);
 
-  // 2. Extension check
-  const ext = download.filename.includes('.')
-    ? download.filename.slice(download.filename.lastIndexOf('.')).toLowerCase()
-    : '';
-  if (ext && blockedExtensions.includes(ext)) {
+  // 2. Extension check, on the name the OS will actually use
+  const ext = fileExtension(download.filename);
+  if (ext && blockedExtensions.some((b) => b.toLowerCase() === ext)) {
     return { decision: 'deny', reasons: [`Extension ${ext} is on the blocked list`] };
   }
 
-  // 3. MIME type check
-  if (download.mimeType && blockedMimeTypes.some((m) => download.mimeType!.startsWith(m))) {
+  // 3. MIME type check (MIME types are case-insensitive)
+  const mime = download.mimeType?.trim().toLowerCase();
+  if (mime && blockedMimeTypes.some((m) => mime.startsWith(m.toLowerCase()))) {
     return {
       decision: 'deny',
       reasons: [`MIME type ${download.mimeType} is on the blocked list`],
@@ -108,6 +103,17 @@ export function evaluateDownload(
   }
 
   return { decision: worst, reasons: reasons.length ? reasons : ['Download permitted by policy'] };
+}
+
+/**
+ * The extension a filename really has once saved. Windows drops trailing
+ * dots and spaces ("a.exe." and "a.exe " save as "a.exe"), and anything
+ * after a NUL or a path separator is not part of the extension.
+ */
+export function fileExtension(filename: string): string {
+  const base = filename.split(/[\\/]/).pop()!.split('\0')[0].replace(/[\s.]+$/, '').toLowerCase();
+  const dot = base.lastIndexOf('.');
+  return dot > 0 || (dot === 0 && base.length > 1) ? base.slice(dot) : '';
 }
 
 /**

@@ -18,9 +18,10 @@ import { createScanner, type Scanner } from './scanner.js';
 
 const PII_PATTERNS: Array<{ name: string; pattern: RegExp; replacement: string }> = [
   { name: 'ssn', pattern: /\b\d{3}-\d{2}-\d{4}\b/g, replacement: '[SSN REDACTED]' },
+  // Cards before phones, so a grouped card number isn't half-redacted as a phone
+  { name: 'credit_card', pattern: /\b(?:4\d{3}(?:[ -]?\d{4}){2}[ -]?\d{1,4}|5[1-5]\d{2}(?:[ -]?\d{4}){3}|3[47]\d{2}[ -]?\d{6}[ -]?\d{5})\b/g, replacement: '[CC REDACTED]' },
   { name: 'email', pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, replacement: '[EMAIL REDACTED]' },
   { name: 'phone', pattern: /\b(?:\+1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g, replacement: '[PHONE REDACTED]' },
-  { name: 'credit_card', pattern: /\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13})\b/g, replacement: '[CC REDACTED]' },
   { name: 'ip_address', pattern: /\b(?:\d{1,3}\.){3}\d{1,3}\b/g, replacement: '[IP REDACTED]' },
 ];
 

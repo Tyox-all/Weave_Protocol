@@ -126,7 +126,7 @@ export function scaffoldLangChainJS(opts: ScaffoldOptions): ScaffoldOutput {
       `Import the security callback in your chains: import { securityCallback } from "./weave-security"`,
       `Add it to any chain's \`callbacks\` array`,
       ...(has("tollere")
-        ? [`Run \`npx weave audit\` (or \`npm run weave:audit\`) before each deploy to scan dependencies`]
+        ? [`Run \`npx @weave_protocol/cli audit\` before each deploy to scan dependencies`]
         : []),
       ...(has("hundredmen")
         ? [`If using MCP tools, route them through \`mcpInterceptor\` to catch drift`]

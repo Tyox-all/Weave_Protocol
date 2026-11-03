@@ -71,7 +71,7 @@ Drop a `WARD.md` in your project root (`npx @weave_protocol/ward init`) and you'
 Verify with:
 
 ```bash
-npx weave-msaf status
+npx -p @weave_protocol/adapter-msaf weave-msaf status
 ```
 
 ---
