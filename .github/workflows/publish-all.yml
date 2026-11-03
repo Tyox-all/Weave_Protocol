@@ -55,7 +55,7 @@ jobs:
         env:
           REQUESTED: ${{ inputs.packages }}   # via env, never inlined into the script
         run: |
-          ALL="mund hord domere witan hundredmen tollere langchain api full cli ward adapter-claudecode adapter-antigravity adapter-msaf adapter-geminicli browser adversary agentsecbench yoxallismus"
+          ALL="mund hord domere witan hundredmen tollere langchain api full cli ward adapter-claudecode adapter-antigravity adapter-msaf adapter-geminicli adapter-codex browser adversary agentsecbench yoxallismus"
           PICK=""
           if [ -z "$REQUESTED" ] || [ "$REQUESTED" = "unpublished" ]; then
             for p in $ALL; do

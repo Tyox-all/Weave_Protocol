@@ -1,0 +1,55 @@
+{
+  "name": "@weave_protocol/adapter-codex",
+  "version": "0.1.0",
+  "description": "Weave Protocol adapter for OpenAI Codex CLI - enforces WARD.md policies via Codex's PreToolUse hook",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "weave-ward-codex": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "weave-protocol",
+    "ward",
+    "codex",
+    "codex-cli",
+    "openai",
+    "agent-security",
+    "ai-security",
+    "hooks",
+    "harness-adapter",
+    "policy-enforcement",
+    "ward-md"
+  ],
+  "author": "Trent Yoxall",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tyox-all/Weave_Protocol.git",
+    "directory": "adapter-codex"
+  },
+  "homepage": "https://github.com/Tyox-all/Weave_Protocol/tree/main/adapter-codex#readme",
+  "bugs": {
+    "url": "https://github.com/Tyox-all/Weave_Protocol/issues"
+  },
+  "dependencies": {
+    "@weave_protocol/ward": "^0.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist/",
+    "README.md"
+  ]
+}
