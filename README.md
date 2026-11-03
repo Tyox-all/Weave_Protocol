@@ -74,6 +74,9 @@ The Claude Code, Antigravity and MSAF adapters each checked only part of a tool 
 
 An invalid WARD.md now blocks instead of switching enforcement off. **Upgrade to adapter-claudecode 0.3.0, adapter-antigravity 0.3.0 or adapter-msaf 0.2.0.**
 
+#### 🛡️ New: WARD.md in Codex CLI
+[`@weave_protocol/adapter-codex`](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-codex) enforces WARD.md in OpenAI's Codex CLI through its `PreToolUse` hook. It checks shell commands, MCP calls, and the files each `apply_patch` edit touches. Set it up with `weave-ward-codex init`, then trust the hook with `/hooks` in Codex.
+
 #### 🛡️ New: WARD.md in Gemini CLI
 [`@weave_protocol/adapter-geminicli`](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-geminicli) enforces the same WARD.md in Gemini CLI through its `BeforeTool` hook. `npm i -g @weave_protocol/adapter-geminicli && weave-gemini init` sets it up. It's live-checked in Gemini CLI 0.66.0, where a read of a denied file was blocked before the model saw it.
 
@@ -315,7 +318,8 @@ The thesis was that [WARD.md](https://www.npmjs.com/package/@weave_protocol/ward
 | **Claude Code** | Anthropic | [adapter-claudecode v0.4.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-claudecode) | ✅ Live on npm |
 | **Google Antigravity** (desktop + `agy` CLI + SDK) | Google | [adapter-antigravity v0.4.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-antigravity) | ✅ Live on npm |
 | **Microsoft Agent Framework** | Microsoft | [adapter-msaf v0.3.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-msaf) | ✅ Live on npm |
-| **Gemini CLI** | Google | [adapter-geminicli v0.1.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-geminicli) | ✅ New |
+| **Gemini CLI** | Google | [adapter-geminicli v0.1.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-geminicli) | ✅ Live on npm |
+| **Codex CLI** | OpenAI | [adapter-codex v0.1.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-codex) | ✅ New |
 | **Browser agents** | Open standard | [browser v0.1.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/browser) | ✅ Live on npm |
 
 The same `WARD.md` file in your project root is now read and enforced by **Anthropic's, Google's, Microsoft's, MCP's, and the browser harness's runtimes** — without any platform-specific edits.
@@ -372,6 +376,7 @@ The packages that keep your agent within policy: declare it, enforce it across e
 | [🛡️ @weave_protocol/adapter-antigravity](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-antigravity) | 0.4.0 | **Google Antigravity adapter** — enforces WARD.md across desktop, `agy` CLI, and SDK; Mund pre-install hooks |
 | [🛡️ @weave_protocol/adapter-msaf](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-msaf) | 0.3.0 | **Microsoft Agent Framework adapter** — middleware-based WARD enforcement |
 | [🛡️ @weave_protocol/adapter-geminicli](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-geminicli) | 0.1.0 | **Gemini CLI adapter** — enforces WARD.md via the BeforeTool hook |
+| [🛡️ @weave_protocol/adapter-codex](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-codex) | 0.1.0 | **Codex CLI adapter** — enforces WARD.md via the PreToolUse hook, including apply_patch file edits |
 | [🌐 @weave_protocol/browser](https://github.com/Tyox-all/Weave_Protocol/blob/main/browser) | 0.3.0 | **Browser agent security** — runtime IPI scanner (33 patterns) for headless agents |
 | [🔍 @weave_protocol/hundredmen](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen) | 1.3.0 | **MCP proxy** — intercept, scan, gate tool calls; enforces WARD.md as first gate |
 | [🛡️ @weave_protocol/mund](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund) | 0.5.0 | **Scanner** — secrets, PII, injection, MCP vetting, pre-install checks for skills + MCP (rug pulls), OSV dependency CVEs, SARIF, threat intel |
@@ -879,7 +884,7 @@ done
 
 The full Q1 2027 roadmap is on its way. Planned so far:
 
-- **More harness adapters.** Gemini CLI is first ([adapter-geminicli](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-geminicli)), with Codex CLI, OpenCode and Cursor to follow, all enforcing the same `WARD.md` through Ward's shared evaluator.
+- **More harness adapters.** Gemini CLI ([adapter-geminicli](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-geminicli)) and Codex CLI ([adapter-codex](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-codex)) are out, with OpenCode and Cursor to follow, all enforcing the same `WARD.md` through Ward's shared evaluator.
 - **Model-endpoint guardrails.** A WARD network rule and a Mund check that flag secrets or personal data sent to model endpoints your policy doesn't list.
 
 Everything shipped through Q4 2026 is under [What's New](#-whats-new) and in each package's README.
