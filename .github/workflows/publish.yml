@@ -27,6 +27,7 @@ on:
           - adapter-claudecode
           - adapter-antigravity
           - adapter-msaf
+          - adapter-geminicli
           - adversary
           - agentsecbench
   push:
