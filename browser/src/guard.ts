@@ -50,6 +50,12 @@ const DEFAULT_BLOCKED_EXTENSIONS = [
   '.sh', '.bash', '.zsh', '.ps1',
   '.jar', '.deb', '.rpm', '.apk',
   '.iso', '.img',
+  // Windows script hosts, shortcuts and installers
+  '.vbs', '.vbe', '.js', '.jse', '.wsf', '.wsh', '.hta', '.lnk', '.scf',
+  '.cpl', '.reg', '.pif', '.msp', '.appx', '.appxbundle', '.msixbundle',
+  '.psm1', '.chm', '.xll',
+  // macOS double-clickable scripts
+  '.command', '.tool', '.workflow',
 ];
 
 const DEFAULT_BLOCKED_MIME = [
@@ -86,21 +92,21 @@ export class WardBrowserGuard {
     this.onDeny = opts.onDeny;
     this.onIpiDetected = opts.onIpiDetected;
 
-    try {
-      if (opts.wardSource) {
-        this.resolved = loadWardFromSource(opts.wardSource);
-      } else if (opts.wardPath) {
-        this.resolved = loadWardFromPath(opts.wardPath);
-      } else {
-        this.resolved = resolveWardForCwd();
+    // A policy that was named explicitly, or that exists but is invalid,
+    // always throws: running without it would be a silent bypass.
+    if (opts.wardSource !== undefined) {
+      this.resolved = loadWardFromSource(opts.wardSource);
+    } else if (opts.wardPath) {
+      this.resolved = loadWardFromPath(opts.wardPath);
+    } else {
+      this.resolved = resolveWardForCwd();
+      if (!this.resolved) {
+        if (this.failClosed) {
+          throw new Error('No WARD.md found ($WEAVE_WARD_PATH, WARD.md, .weave/WARD.md, .browser/WARD.md) and failMode is closed');
+        }
+        // eslint-disable-next-line no-console
+        console.warn('[weave-browser] No WARD.md found. Running without a policy — navigation and actions are not enforced.');
       }
-    } catch (err) {
-      if (this.failClosed) throw err;
-      // eslint-disable-next-line no-console
-      console.warn(
-        `[weave-browser] WARD.md could not be loaded (${err instanceof Error ? err.message : String(err)}). Running in fail-open mode — no enforcement.`,
-      );
-      this.resolved = null;
     }
 
     this.allowedOrigins = extractAllowedOrigins(this.resolved?.policy);
@@ -193,15 +199,11 @@ export class WardBrowserGuard {
   ): Promise<IpiScanResult> {
     const result = scanForIpi(content, { isHtml: opts.isHtml });
 
-    // Record provenance
-    if (opts.sessionId && opts.url) {
-      const trustLevel = classifyTrust(opts.url, this.allowedOrigins);
-      recordIngestion(
-        opts.sessionId,
-        opts.url,
-        trustLevel,
-        !result.safe,
-      );
+    // Record provenance. Content with no URL is of unknown origin; it still
+    // taints the session if it carried an injection.
+    if (opts.sessionId) {
+      const trustLevel = opts.url ? classifyTrust(opts.url, this.allowedOrigins) : 'unknown';
+      recordIngestion(opts.sessionId, opts.url ?? '(unknown source)', trustLevel, !result.safe);
     }
 
     if (!result.safe && this.onIpiDetected) {
@@ -343,9 +345,10 @@ export class WardBrowserGuard {
    * peer dep in the consuming project.
    */
   wrapPlaywrightPage(page: unknown, sessionId?: string): unknown {
-    // Minimal duck typing — Playwright Page has on(), goto(), etc.
+    // Minimal duck typing — Playwright Page has on(), route(), etc.
     const p = page as {
       on: (event: string, handler: (...args: unknown[]) => unknown) => unknown;
+      route?: (url: string, handler: (route: unknown, request: unknown) => unknown) => Promise<unknown>;
       goto?: (url: string, opts?: unknown) => Promise<unknown>;
     };
     if (!p || typeof p.on !== 'function') {
@@ -354,8 +357,26 @@ export class WardBrowserGuard {
 
     const sid = sessionId ?? `pw-${Math.random().toString(36).slice(2, 10)}`;
 
-    // 1. Gate navigation: 'request' event fires on every navigation/subresource.
-    //    We hook on 'framenavigated' for top-level navigations specifically.
+    // 1. Gate navigation BEFORE the request is sent: abort denied top-level
+    //    navigations with page.route(). (Before 0.2.0 denials were only
+    //    logged after the page had already loaded.)
+    if (typeof p.route === 'function') {
+      void p.route('**/*', async (route: unknown, request: unknown) => {
+        const rt = route as { abort: (code?: string) => Promise<unknown>; continue: () => Promise<unknown> };
+        const rq = request as { url: () => string; isNavigationRequest: () => boolean };
+        if (!rq.isNavigationRequest()) return rt.continue();
+        try {
+          await this.checkNavigation({ url: rq.url(), source: 'page-link' }, sid);
+          return rt.continue();
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.warn(`[weave-browser] navigation blocked: ${err instanceof Error ? err.message : err}`);
+          return rt.abort('blockedbyclient');
+        }
+      });
+    }
+
+    // Backstop when route() isn't available: leave a denied page at once.
     p.on('framenavigated', async (frame: unknown) => {
       const f = frame as { url: () => string; parentFrame?: () => unknown };
       if (f.parentFrame && f.parentFrame()) return; // only top-level
@@ -365,11 +386,13 @@ export class WardBrowserGuard {
         await this.checkNavigation({ url, source: 'page-link' }, sid);
       } catch (err) {
         // eslint-disable-next-line no-console
-        console.warn(`[weave-browser] post-navigation denial for ${url}: ${err}`);
+        console.warn(`[weave-browser] left denied page ${url}: ${err instanceof Error ? err.message : err}`);
+        if (typeof p.goto === 'function') await p.goto('about:blank').catch(() => undefined);
       }
     });
 
-    // 2. Scan content on each response (only HTML).
+    // 2. Scan content on each response (only HTML). Findings taint the
+    //    session, so checkAction() requires approval afterwards.
     p.on('response', async (response: unknown) => {
       const r = response as {
         url: () => string;
@@ -390,17 +413,19 @@ export class WardBrowserGuard {
       }
     });
 
-    // 3. Gate downloads.
+    // 3. Gate downloads: cancel denied ones instead of only logging them.
     p.on('download', async (download: unknown) => {
       const d = download as {
         url: () => string;
         suggestedFilename: () => string;
+        cancel?: () => Promise<unknown>;
       };
       try {
         await this.checkDownload({ url: d.url(), filename: d.suggestedFilename() });
       } catch (err) {
         // eslint-disable-next-line no-console
-        console.warn(`[weave-browser] download blocked: ${err}`);
+        console.warn(`[weave-browser] download blocked: ${err instanceof Error ? err.message : err}`);
+        if (typeof d.cancel === 'function') await d.cancel().catch(() => undefined);
       }
     });
 

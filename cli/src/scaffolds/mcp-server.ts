@@ -26,14 +26,13 @@ export function scaffoldMcpServer(opts: ScaffoldOptions): ScaffoldOutput {
   if (has("mund")) {
     lines.push(`import { scan } from "@weave_protocol/mund";`);
   }
-  if (has("domere")) {
-    lines.push(`import { ComplianceManager } from "@weave_protocol/domere";`);
-  }
   lines.push("");
 
   if (has("mund")) {
-    lines.push(`type ToolHandler = (args${t(": any")}) => ${t("Promise<any> | any")} ${isTS ? "" : ""};`);
-    lines.push("");
+    if (isTS) {
+      lines.push(`type ToolHandler = (args: any) => Promise<any> | any;`);
+      lines.push("");
+    }
     lines.push("/**");
     lines.push(" * Wraps an MCP tool handler with Mund input/output scanning.");
     lines.push(" *");
@@ -46,14 +45,12 @@ export function scaffoldMcpServer(opts: ScaffoldOptions): ScaffoldOutput {
     lines.push(`    // Scan inputs`);
     lines.push(`    const inputStr = JSON.stringify(args);`);
     lines.push(`    const inputScan = await scan(inputStr);`);
-    lines.push(`    if (!inputScan.safe) {`);
-    lines.push(`      const critical = inputScan.issues.filter((i${t(": any")}) => i.severity === "critical");`);
-    lines.push(`      if (critical.length > 0) {`);
-    lines.push(`        return {`);
-    lines.push(`          content: [{ type: "text", text: \`Blocked by Weave Mund: \${critical[0].description}\` }],`);
-    lines.push(`          isError: true,`);
-    lines.push("        };");
-    lines.push("      }");
+    lines.push(`    const inputCritical = inputScan.issues.filter((i${t(": any")}) => i.severity === "critical");`);
+    lines.push(`    if (inputCritical.length > 0) {`);
+    lines.push(`      return {`);
+    lines.push(`        content: [{ type: "text", text: \`Blocked by Weave Mund: \${inputCritical[0].rule_name}\` }],`);
+    lines.push(`        isError: true,`);
+    lines.push("      };");
     lines.push("    }");
     lines.push("");
     lines.push(`    // Run the actual tool`);
@@ -62,28 +59,16 @@ export function scaffoldMcpServer(opts: ScaffoldOptions): ScaffoldOutput {
     lines.push(`    // Scan outputs`);
     lines.push(`    const outputStr = JSON.stringify(result);`);
     lines.push(`    const outputScan = await scan(outputStr);`);
-    lines.push(`    if (!outputScan.safe) {`);
-    lines.push(`      const critical = outputScan.issues.filter((i${t(": any")}) => i.severity === "critical");`);
-    lines.push(`      if (critical.length > 0) {`);
-    lines.push(`        return {`);
-    lines.push(`          content: [{ type: "text", text: "Tool output blocked: contained sensitive data" }],`);
-    lines.push(`          isError: true,`);
-    lines.push("        };");
-    lines.push("      }");
+    lines.push(`    if (outputScan.issues.some((i${t(": any")}) => i.severity === "critical")) {`);
+    lines.push(`      return {`);
+    lines.push(`        content: [{ type: "text", text: "Tool output blocked: contained sensitive data" }],`);
+    lines.push(`        isError: true,`);
+    lines.push("      };");
     lines.push("    }");
     lines.push("");
     lines.push(`    return result;`);
     lines.push("  };");
     lines.push("}");
-    lines.push("");
-  }
-
-  if (has("domere")) {
-    lines.push("/**");
-    lines.push(" * Optional: log every tool call as a tamper-evident compliance checkpoint.");
-    lines.push(' * Configure frameworks based on your environment ("soc2", "hipaa", etc.).');
-    lines.push(" */");
-    lines.push(`export const compliance = new ComplianceManager(["soc2"]);`);
     lines.push("");
   }
 
@@ -107,8 +92,8 @@ export function scaffoldMcpServer(opts: ScaffoldOptions): ScaffoldOutput {
     nextSteps: [
       `Import the wrapper: import { secureToolHandler } from "./weave-security"`,
       `Wrap each tool handler: server.setRequestHandler(schema, secureToolHandler(myHandler))`,
-      ...(has("domere") ? [`Add compliance checkpoints in critical tool handlers`] : []),
-      ...(has("tollere") ? [`Run \`npx weave audit\` regularly to scan dependencies`] : []),
+      ...(has("domere") ? [`Record compliance checkpoints with the Dōmere MCP server (\`npx -p @weave_protocol/domere domere\`; see the Dōmere README)`] : []),
+      ...(has("tollere") ? [`Run \`npx @weave_protocol/cli audit\` regularly to scan dependencies`] : []),
     ],
   };
 }

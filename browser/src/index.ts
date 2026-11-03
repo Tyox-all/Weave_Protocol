@@ -15,6 +15,7 @@ export {
   evaluateNavigation,
   evaluateDownload,
   evaluateTaintedAction,
+  fileExtension,
 } from './policy.js';
 export type { ResolvedWard } from './policy.js';
 export {

@@ -109,7 +109,7 @@ Next steps
 ────────────────────────────────────────────────────────────
   → Import the security callback in your chains
   → Add it to any chain's `callbacks` array
-  → Run `npx weave audit` before each deploy
+  → Run `npx @weave_protocol/cli audit` before each deploy
 
 ✨  Weave Protocol initialized!
 ```

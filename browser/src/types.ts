@@ -177,7 +177,12 @@ export interface GuardOptions {
   wardPath?: string;
   /** Inline WARD.md content (for tests). */
   wardSource?: string;
-  /** Behavior when no WARD.md is found. Default: 'open' (warn + allow). */
+  /**
+   * Behavior when no WARD.md is configured or found anywhere.
+   * Default: 'open' (warn + allow); 'closed' throws. Since 0.2.0, a policy
+   * that is named explicitly but missing, or that exists but is invalid,
+   * always throws.
+   */
   failMode?: 'open' | 'closed';
   /**
    * IPI scanning strictness:

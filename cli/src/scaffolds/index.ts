@@ -17,8 +17,8 @@ export function scaffoldRaw(opts: ScaffoldOptions): ScaffoldOutput {
     ],
     nextSteps: [
       `Packages installed. Import them as needed.`,
-      ...(has("tollere") ? [`Run \`npx weave audit\` to scan your dependencies`] : []),
-      ...(has("api") ? [`Run \`npx weave dashboard\` to launch the monitoring UI`] : []),
+      ...(has("tollere") ? [`Run \`npx @weave_protocol/cli audit\` to scan your dependencies`] : []),
+      ...(has("api") ? [`Run \`npx @weave_protocol/cli dashboard\` to launch the monitoring UI`] : []),
     ],
   };
 }

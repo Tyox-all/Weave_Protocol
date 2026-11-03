@@ -24,9 +24,6 @@ export function scaffoldSDK(opts: ScaffoldOptions, vendor: "openai" | "anthropic
   if (has("mund")) {
     lines.push(`import { scan } from "@weave_protocol/mund";`);
   }
-  if (has("hord")) {
-    lines.push(`import { YoxallismusCipher } from "@weave_protocol/hord";`);
-  }
   lines.push("");
 
   // Generic scanInput/scanOutput helpers
@@ -36,16 +33,14 @@ export function scaffoldSDK(opts: ScaffoldOptions, vendor: "openai" | "anthropic
     lines.push(" * Throws if the content contains critical issues.");
     lines.push(" */");
     lines.push(`export async function scanContent(content${t(": string")})${t(": Promise<string>")} {`);
-    lines.push(`  const result = await scan(content);`);
-    lines.push(`  if (!result.safe) {`);
-    lines.push(`    const critical = result.issues.filter((i${t(": any")}) => i.severity === "critical");`);
-    lines.push(`    if (critical.length > 0) {`);
-    lines.push("      throw new Error(");
-    lines.push("        `Weave Mund blocked content: ${critical.map((c" + t(": any") + ") => c.type).join(\", \")}`");
-    lines.push("      );");
-    lines.push("    }");
-    lines.push(`    console.warn("⚠️  Weave Mund flagged:", result.issues);`);
+    lines.push(`  const { issues } = await scan(content);`);
+    lines.push(`  const critical = issues.filter((i${t(": any")}) => i.severity === "critical");`);
+    lines.push(`  if (critical.length > 0) {`);
+    lines.push("    throw new Error(");
+    lines.push("      `Weave Mund blocked content: ${critical.map((c" + t(": any") + ") => c.rule_name).join(\", \")}`");
+    lines.push("    );");
     lines.push("  }");
+    lines.push(`  if (issues.length > 0) console.warn("⚠️  Weave Mund flagged:", issues.map((i${t(": any")}) => i.rule_name));`);
     lines.push(`  return content;`);
     lines.push("}");
     lines.push("");
@@ -86,15 +81,6 @@ export function scaffoldSDK(opts: ScaffoldOptions, vendor: "openai" | "anthropic
     lines.push("");
   }
 
-  if (has("hord")) {
-    lines.push("/**");
-    lines.push(" * Encrypted storage for API keys and other secrets.");
-    lines.push(" * Replace `process.env.MASTER_KEY` with your KMS-derived key in production.");
-    lines.push(" */");
-    lines.push(`export const vault = new YoxallismusCipher(process.env.MASTER_KEY${t(" || \"\"")});`);
-    lines.push("");
-  }
-
   return {
     packages: [
       ...(has("mund") ? ["@weave_protocol/mund"] : []),
@@ -115,7 +101,8 @@ export function scaffoldSDK(opts: ScaffoldOptions, vendor: "openai" | "anthropic
     nextSteps: [
       `Import the wrapper: import { secure${vendor === "openai" ? "ChatCompletion" : "Messages"} } from "./weave-security"`,
       `Use it in place of direct SDK calls`,
-      ...(has("tollere") ? [`Run \`npx weave audit\` to scan your dependencies`] : []),
+      ...(has("hord") ? [`Keep API keys in a Hord vault: run \`npx -p @weave_protocol/hord hord-mcp\` with HORD_MASTER_KEY set (see the Hord README)`] : []),
+      ...(has("tollere") ? [`Run \`npx @weave_protocol/cli audit\` to scan your dependencies`] : []),
     ],
   };
 }

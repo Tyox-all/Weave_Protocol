@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/browser",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Weave Protocol browser-agent security — enforces WARD.md policies and detects indirect prompt injection (IPI) for Playwright, Puppeteer, and Stagehand-based AI agents",
   "type": "module",
   "main": "dist/index.js",
@@ -11,7 +11,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "test": "npm run build && node --test test/*.test.mjs"
   },
   "keywords": [
     "weave-protocol",
@@ -39,7 +40,7 @@
     "url": "https://github.com/Tyox-all/Weave_Protocol/issues"
   },
   "dependencies": {
-    "@weave_protocol/ward": "^0.1.2"
+    "@weave_protocol/ward": "^0.2.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
