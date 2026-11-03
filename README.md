@@ -74,6 +74,11 @@ The Claude Code, Antigravity and MSAF adapters each checked only part of a tool 
 
 An invalid WARD.md now blocks instead of switching enforcement off. **Upgrade to adapter-claudecode 0.3.0, adapter-antigravity 0.3.0 or adapter-msaf 0.2.0.**
 
+#### ⚖️ Dōmere 1.6.0: GDPR and CCPA records persist
+- **Records survive restarts.** With `DOMERE_STORAGE=sqlite`, consents, DSARs, breaches, opt-outs and consumer requests are stored in the same SQLite file as threads. Before, they were lost on every restart.
+- **Erasure removes the data from disk.**
+- **Edited records are caught.** The GDPR and CCPA checkpoint chains now recompute every hash, so a record edited in storage fails `domere_gdpr_verify_chain` / `ccpa_verify_chain`.
+
 #### 🛡️ Mund: 0.5 → 0.3
 [`@weave_protocol/mund`](https://www.npmjs.com/package/@weave_protocol/mund), our most-used package, newest release first.
 
@@ -364,7 +369,7 @@ The packages that keep your agent within policy: declare it, enforce it across e
 | [🛡️ @weave_protocol/mund](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund) | 0.5.0 | **Scanner** — secrets, PII, injection, MCP vetting, pre-install checks for skills + MCP (rug pulls), OSV dependency CVEs, SARIF, threat intel |
 | [🏛️ @weave_protocol/hord](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord) | 0.3.0 | **Vault** — encrypted storage, sandboxing, capability tokens, attestation |
 | [🔐 @weave_protocol/yoxallismus](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus) | **0.2.0-beta.0** | **Post-quantum cipher** — X25519 + ML-KEM-768 hybrid KEM · sealed boxes · cascade AEAD · Double Ratchet · locked `yoxall/2` format · ⚠️ NOT AUDITED |
-| [⚖️ @weave_protocol/domere](https://github.com/Tyox-all/Weave_Protocol/blob/main/domere) | 1.5.0 | **Judge** — compliance (PCI-DSS, ISO27001, SOC2, HIPAA, GDPR, CCPA), blockchain anchoring |
+| [⚖️ @weave_protocol/domere](https://github.com/Tyox-all/Weave_Protocol/blob/main/domere) | 1.6.0 | **Judge** — compliance (PCI-DSS, ISO27001, SOC2, HIPAA, GDPR, CCPA), blockchain anchoring |
 | [👥 @weave_protocol/witan](https://github.com/Tyox-all/Weave_Protocol/blob/main/witan) | **1.2.0** | **Council** — multi-agent consensus & governance, autonomous spending caps (Q4 v1.1) |
 | [🛂 @weave_protocol/tollere](https://github.com/Tyox-all/Weave_Protocol/blob/main/tollere) | 0.2.4 | **Customs** — supply chain security (npm, PyPI, Docker, IDE extensions, sandwich detection) |
 

@@ -9,15 +9,23 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
 import { DOMERE_TOOLS, DomereToolHandler } from './tools/index.js';
+import { join } from 'node:path';
+import { homedir } from 'node:os';
 import { createStorage } from './storage/index.js';
+import { SqliteRecordStore } from './storage/records.js';
 import { GDPRManager } from './gdpr-manager.js';
 import { gdprTools, createGDPRToolHandlers } from './gdpr-tools.js';
 import { CCPAManager } from './ccpa-manager.js';
 import { ccpaTools, createCCPAToolHandlers } from './ccpa-tools.js';
 
 const server = new Server({ name: 'domere', version: '1.0.0' }, { capabilities: { tools: {} } });
-const storage = createStorage(process.env.DOMERE_STORAGE === 'sqlite' ? 'sqlite' : 'memory');
+const useSqlite = process.env.DOMERE_STORAGE === 'sqlite';
+const storage = createStorage(useSqlite ? 'sqlite' : 'memory');
 const toolHandler = new DomereToolHandler(storage);
+// GDPR and CCPA records go in the same SQLite file as threads.
+const records = useSqlite
+  ? new SqliteRecordStore(process.env.DOMERE_DATABASE_URL || join(homedir(), '.weave', 'domere.sqlite'))
+  : undefined;
 
 // GDPR controller / CCPA business identity for records and reports. Unset
 // values say so plainly rather than inventing an organization.
@@ -28,7 +36,7 @@ const gdpr = new GDPRManager({
   email: env('DOMERE_ORG_EMAIL', UNSET),
   address: process.env.DOMERE_ORG_ADDRESS,
   dpoContact: process.env.DOMERE_DPO_CONTACT,
-});
+}, { store: records });
 const ccpa = new CCPAManager({
   id: env('DOMERE_ORG_ID', 'default'),
   name: env('DOMERE_ORG_NAME', UNSET),
@@ -39,7 +47,7 @@ const ccpa = new CCPAManager({
   meetsThreshold: process.env.DOMERE_CCPA_MEETS_THRESHOLD !== 'false',
   createdAt: new Date(),
   updatedAt: new Date(),
-});
+}, { store: records });
 
 type Handler = (args: any) => unknown;
 const extraHandlers: Record<string, Handler> = {
@@ -62,6 +70,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
   } catch (error) {
     return { content: [{ type: 'text', text: JSON.stringify({ error: String(error) }) }], isError: true };
+  } finally {
+    // Persist records the call changed in place before answering the next one
+    gdpr.flush();
+    ccpa.flush();
   }
 });
 

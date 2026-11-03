@@ -12,6 +12,7 @@
  */
 
 import { createHash, randomUUID } from 'crypto';
+import { recordMap, flushRecordMaps, type ComplianceRecordStore } from './storage/records.js';
 import {
   Consumer,
   OptOutRecord,
@@ -68,18 +69,27 @@ export class CCPAManager {
   private requestDeadlineDays: number = 45; // CCPA requires response within 45 days
   private extensionDays: number = 45; // Can extend by additional 45 days
 
-  constructor(business: Business) {
+  /**
+   * @param options.store persists every record (e.g. SqliteRecordStore);
+   *   omit it to keep records in memory only.
+   */
+  constructor(business: Business, options: { store?: ComplianceRecordStore } = {}) {
     this.business = business;
     this.storage = {
-      consumers: new Map(),
-      optOuts: new Map(),
-      requests: new Map(),
-      serviceProviders: new Map(),
-      saleDisclosures: new Map(),
-      incentives: new Map(),
-      enrollments: new Map(),
-      checkpoints: new Map(),
+      consumers: recordMap(options.store, 'ccpa.consumers'),
+      optOuts: recordMap(options.store, 'ccpa.optOuts'),
+      requests: recordMap(options.store, 'ccpa.requests'),
+      serviceProviders: recordMap(options.store, 'ccpa.serviceProviders'),
+      saleDisclosures: recordMap(options.store, 'ccpa.saleDisclosures'),
+      incentives: recordMap(options.store, 'ccpa.incentives'),
+      enrollments: recordMap(options.store, 'ccpa.enrollments'),
+      checkpoints: recordMap(options.store, 'ccpa.checkpoints'),
     };
+  }
+
+  /** Write any in-place record changes to the store now (no-op in memory). */
+  flush(): void {
+    flushRecordMaps(this.storage);
   }
 
   // ==========================================================================
@@ -622,8 +632,8 @@ export class CCPAManager {
     consumerId?: string;
     details: Record<string, unknown>;
   }): CCPACheckpoint {
-    const checkpoints = Array.from(this.storage.checkpoints.values());
-    const lastCheckpoint = checkpoints[checkpoints.length - 1];
+    let lastCheckpoint: CCPACheckpoint | undefined;
+    for (const c of this.storage.checkpoints.values()) lastCheckpoint = c;
 
     const checkpoint: CCPACheckpoint = {
       id: randomUUID(),
@@ -663,17 +673,26 @@ export class CCPAManager {
     return checkpoints.filter(c => c.consumerId === consumerId);
   }
 
-  verifyCheckpointChain(): { valid: boolean; brokenAt?: string } {
-    const checkpoints = Array.from(this.storage.checkpoints.values())
-      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-
-    for (let i = 1; i < checkpoints.length; i++) {
-      if (checkpoints[i].previousHash !== checkpoints[i - 1].hash) {
-        return { valid: false, brokenAt: checkpoints[i].id };
+  /**
+   * Check the checkpoint chain in insertion order: every hash must match its
+   * checkpoint's contents, and every checkpoint must link to the one before.
+   * (Before 1.6.0 only the links were checked, so an edited checkpoint still
+   * verified, and timestamp ties could reorder the chain.)
+   */
+  verifyCheckpointChain(): { valid: boolean; checked: number; brokenAt?: string; reason?: string } {
+    let previous: CCPACheckpoint | undefined;
+    let checked = 0;
+    for (const checkpoint of this.storage.checkpoints.values()) {
+      if (checkpoint.hash !== this.computeCheckpointHash(checkpoint)) {
+        return { valid: false, checked, brokenAt: checkpoint.id, reason: 'hash does not match contents' };
       }
+      if (checkpoint.previousHash !== previous?.hash) {
+        return { valid: false, checked, brokenAt: checkpoint.id, reason: 'does not link to the previous checkpoint' };
+      }
+      previous = checkpoint;
+      checked++;
     }
-
-    return { valid: true };
+    return { valid: true, checked };
   }
 
   // ==========================================================================

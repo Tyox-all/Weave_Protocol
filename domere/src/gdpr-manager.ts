@@ -12,6 +12,7 @@
  */
 
 import { createHash, randomUUID } from 'crypto';
+import { recordMap, flushRecordMaps, type ComplianceRecordStore } from './storage/records.js';
 import {
   DataSubject,
   ConsentRecord,
@@ -69,19 +70,28 @@ export class GDPRManager {
   private controller: DataController;
   private dsarDeadlineDays: number = 30; // GDPR requires response within 30 days
 
-  constructor(controller: DataController) {
+  /**
+   * @param options.store persists every record (e.g. SqliteRecordStore);
+   *   omit it to keep records in memory only.
+   */
+  constructor(controller: DataController, options: { store?: ComplianceRecordStore } = {}) {
     this.controller = controller;
     this.storage = {
-      subjects: new Map(),
-      consents: new Map(),
-      dsarRequests: new Map(),
-      processingRecords: new Map(),
-      breaches: new Map(),
-      retentionPolicies: new Map(),
-      retentionChecks: new Map(),
-      automatedDecisions: new Map(),
-      checkpoints: new Map(),
+      subjects: recordMap(options.store, 'gdpr.subjects'),
+      consents: recordMap(options.store, 'gdpr.consents'),
+      dsarRequests: recordMap(options.store, 'gdpr.dsarRequests'),
+      processingRecords: recordMap(options.store, 'gdpr.processingRecords'),
+      breaches: recordMap(options.store, 'gdpr.breaches'),
+      retentionPolicies: recordMap(options.store, 'gdpr.retentionPolicies'),
+      retentionChecks: recordMap(options.store, 'gdpr.retentionChecks'),
+      automatedDecisions: recordMap(options.store, 'gdpr.automatedDecisions'),
+      checkpoints: recordMap(options.store, 'gdpr.checkpoints'),
     };
+  }
+
+  /** Write any in-place record changes to the store now (no-op in memory). */
+  flush(): void {
+    flushRecordMaps(this.storage);
   }
 
   // ==========================================================================
@@ -821,8 +831,13 @@ export class GDPRManager {
       previousHash: lastCheckpoint?.hash,
     };
 
-    // Calculate hash
-    checkpoint.hash = createHash('sha256')
+    checkpoint.hash = this.computeCheckpointHash(checkpoint);
+    this.storage.checkpoints.set(checkpoint.id, checkpoint);
+    return checkpoint;
+  }
+
+  private computeCheckpointHash(checkpoint: Omit<GDPRCheckpoint, 'hash'>): string {
+    return createHash('sha256')
       .update(JSON.stringify({
         id: checkpoint.id,
         type: checkpoint.type,
@@ -834,19 +849,34 @@ export class GDPRManager {
         previousHash: checkpoint.previousHash,
       }))
       .digest('hex');
-
-    this.storage.checkpoints.set(checkpoint.id, checkpoint);
-    return checkpoint;
   }
 
+  /** The most recent checkpoint, by insertion order (timestamps can tie). */
   private getLastCheckpoint(): GDPRCheckpoint | undefined {
     let last: GDPRCheckpoint | undefined;
-    for (const checkpoint of this.storage.checkpoints.values()) {
-      if (!last || checkpoint.timestamp > last.timestamp) {
-        last = checkpoint;
-      }
-    }
+    for (const checkpoint of this.storage.checkpoints.values()) last = checkpoint;
     return last;
+  }
+
+  /**
+   * Check the checkpoint chain: every hash must match its checkpoint's
+   * contents, and every checkpoint must link to the one before it. A record
+   * edited or removed from storage breaks the chain.
+   */
+  verifyCheckpointChain(): { valid: boolean; checked: number; brokenAt?: string; reason?: string } {
+    let previous: GDPRCheckpoint | undefined;
+    let checked = 0;
+    for (const checkpoint of this.storage.checkpoints.values()) {
+      if (checkpoint.hash !== this.computeCheckpointHash(checkpoint)) {
+        return { valid: false, checked, brokenAt: checkpoint.id, reason: 'hash does not match contents' };
+      }
+      if (checkpoint.previousHash !== previous?.hash) {
+        return { valid: false, checked, brokenAt: checkpoint.id, reason: 'does not link to the previous checkpoint' };
+      }
+      previous = checkpoint;
+      checked++;
+    }
+    return { valid: true, checked };
   }
 
   getCheckpoints(filter?: {
