@@ -29,6 +29,7 @@ on:
           - adapter-msaf
           - adapter-geminicli
           - adapter-codex
+          - adapter-opencode
           - adversary
           - agentsecbench
   push:

@@ -1,0 +1,64 @@
+{
+  "name": "@weave_protocol/adapter-opencode",
+  "version": "0.1.0",
+  "description": "Weave Protocol plugin for OpenCode - enforces WARD.md policies on every tool call via tool.execute.before",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "weave-ward-opencode": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "weave-protocol",
+    "ward",
+    "opencode",
+    "opencode-plugin",
+    "agent-security",
+    "ai-security",
+    "plugin",
+    "harness-adapter",
+    "policy-enforcement",
+    "ward-md"
+  ],
+  "author": "Trent Yoxall",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tyox-all/Weave_Protocol.git",
+    "directory": "adapter-opencode"
+  },
+  "homepage": "https://github.com/Tyox-all/Weave_Protocol/tree/main/adapter-opencode#readme",
+  "bugs": {
+    "url": "https://github.com/Tyox-all/Weave_Protocol/issues"
+  },
+  "dependencies": {
+    "@weave_protocol/ward": "^0.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist/",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./lib": {
+      "types": "./dist/lib.d.ts",
+      "import": "./dist/lib.js"
+    }
+  }
+}
