@@ -14,7 +14,7 @@ function fail(res: Response, error: unknown) {
 }
 
 const router = Router();
-const domere = new DomereService();
+export const domere = new DomereService();
 
 // =============================================================================
 // Thread Management

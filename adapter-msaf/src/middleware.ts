@@ -33,6 +33,7 @@ import {
   WardDeniedError,
 } from './types.js';
 import { resolveWardForCwd, loadWardFromSource, evaluateCall, type ResolvedWard } from './policy.js';
+import { reportEvent } from '@weave_protocol/ward';
 
 // ============================================================================
 // WardMiddleware class
@@ -127,6 +128,8 @@ export class WardMiddleware {
       return { decision: 'allow', reasons: ['No WARD.md loaded'] };
     }
     const result = evaluateCall(this.resolved.policy, call, this.toolMappings, this.cwd);
+    // Dashboard reporting (only when WEAVE_DASHBOARD_URL is set; never blocks)
+    void reportEvent({ surface: 'msaf', decision: result.decision, subject: call.toolName, reason: result.reasons[0] });
     return { ...result, policySource: this.resolved.source };
   }
 

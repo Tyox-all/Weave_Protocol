@@ -9,15 +9,17 @@
  *   - ward:      currently-loaded WARD.md summary
  *   - stats:     24-hour aggregates
  *
- * v1.1.0 reads WARD.md from cwd for real, and returns realistic but
- * synthetic data for surface counts and events. Real telemetry integration
- * (collecting events from Hundredmen, adapters, and the browser package)
- * is still to do.
+ * Everything comes from real sources: surface counts, events and stats from
+ * the events surfaces report (POST /api/v1/events, sent by Ward's
+ * reportEvent when WEAVE_DASHBOARD_URL is set), and the WARD summary from
+ * WARD.md in cwd. A surface that hasn't reported shows as "off"; nothing is
+ * invented. (Before 1.4.0 the counts and events here were synthetic.)
  */
 
 import { Router } from 'express';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { events, SURFACES, type StoredEvent, type Surface } from '../services/events.js';
 
 const router = Router();
 
@@ -125,117 +127,64 @@ function countListItemsInSection(
   return (block.match(/^\s+-\s+\w/gm) || []).length;
 }
 
-// ─── Synthetic data (until real telemetry is wired up) ─
-function buildSurfaces() {
-  // Realistic-looking counts, jittered per-poll so the UI feels alive
-  // without requiring real telemetry plumbing yet.
-  const jitter = (n: number, pct = 0.05) =>
-    Math.round(n * (1 + (Math.random() * 2 - 1) * pct));
+// ─── Built from reported events ─────────────────────────────
+const SURFACE_INFO: Record<Surface, { name: string; vendor: string; icon: string }> = {
+  mcp: { name: 'Hundredmen', vendor: 'MCP layer', icon: '🔍' },
+  'claude-code': { name: 'adapter-claudecode', vendor: 'Anthropic', icon: '🛡️' },
+  antigravity: { name: 'adapter-antigravity', vendor: 'Google', icon: '🛡️' },
+  msaf: { name: 'adapter-msaf', vendor: 'Microsoft', icon: '🛡️' },
+  browser: { name: 'browser', vendor: 'Playwright + IPI', icon: '🌐' },
+};
 
-  return [
-    {
-      id: 'mcp',
-      name: 'Hundredmen',
-      vendor: 'MCP layer',
-      icon: '🔍',
-      status: 'live',
-      eventsToday: jitter(247),
-      delta: 12,
-    },
-    {
-      id: 'claude-code',
-      name: 'adapter-claudecode',
-      vendor: 'Anthropic',
-      icon: '🛡️',
-      status: 'live',
-      eventsToday: jitter(89),
-      delta: 23,
-    },
-    {
-      id: 'antigravity',
-      name: 'adapter-antigravity',
-      vendor: 'Google',
-      icon: '🛡️',
-      status: 'live',
-      eventsToday: jitter(34),
-      delta: 8,
-    },
-    {
-      id: 'msaf',
-      name: 'adapter-msaf',
-      vendor: 'Microsoft',
-      icon: '🛡️',
-      status: 'idle',
-      eventsToday: jitter(12),
-      delta: -4,
-    },
-    {
-      id: 'browser',
-      name: 'browser',
-      vendor: 'Playwright + IPI',
-      icon: '🌐',
-      status: 'live',
-      eventsToday: jitter(156),
-      delta: 41,
-    },
-  ];
+const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+
+export function buildSurfaces(day: StoredEvent[], now = Date.now()) {
+  return SURFACES.map((id) => {
+    const mine = day.filter((e) => e.surface === id);
+    const last = mine.reduce((t, e) => Math.max(t, e.timestamp), 0);
+    return {
+      id,
+      ...SURFACE_INFO[id],
+      // live: reported in the last 5 minutes; idle: in the last day; off: not reporting
+      status: last && now - last < 5 * MINUTE ? 'live' : last ? 'idle' : 'off',
+      eventsToday: mine.length,
+      lastHour: mine.filter((e) => now - e.timestamp < HOUR).length,
+      lastEventAt: last || null,
+    };
+  });
 }
 
-function buildRecentEvents() {
-  // Rotating sample events that look like real enforcement activity.
-  // To be replaced with reads from an actual event log.
-  const now = Date.now();
-  const templates = [
-    { kind: 'allow', surface: 'claude-code', subject: 'Bash: ls /tmp', reason: 'allowed by capability rule' },
-    { kind: 'allow', surface: 'mcp', subject: 'Read: /Users/me/projects/foo/index.ts', reason: 'matches filesystem allow' },
-    { kind: 'deny', surface: 'antigravity', subject: 'Bash: cat ~/.config/gcloud/credentials.db', reason: 'GCP credential path denied' },
-    { kind: 'ipi_detected', surface: 'browser', subject: 'https://blog.example.com/post-1234', reason: 'hidden_text_color + trigger_phrase' },
-    { kind: 'allow', surface: 'browser', subject: 'navigation: https://api.github.com/repos/foo', reason: 'network allow rule matched' },
-    { kind: 'require_approval', surface: 'mcp', subject: 'http_request: api.openai.com', reason: 'capability requires approval' },
-    { kind: 'deny', surface: 'msaf', subject: 'ShellExec: cat ~/.azure/credentials', reason: 'Azure credential path denied' },
-    { kind: 'scan', surface: 'browser', subject: 'https://docs.python.org/3/library/asyncio.html', reason: 'clean' },
-    { kind: 'allow', surface: 'claude-code', subject: 'Write: ./src/new-feature.ts', reason: 'filesystem write allowed in project root' },
-    { kind: 'ipi_detected', surface: 'browser', subject: 'https://recipes.example.com/lasagna', reason: 'aria_hidden_payload + html_comment_injection' },
-    { kind: 'deny', surface: 'mcp', subject: 'file_delete: /etc/hosts', reason: 'capability in deny list' },
-    { kind: 'allow', surface: 'antigravity', subject: 'Edit: ./README.md', reason: 'filesystem allow' },
-  ];
-
-  // Pick 12 events with realistic timestamps spread over the last ~30 min
-  return templates.slice(0, 12).map((t, i) => ({
-    id: `evt-${now}-${i}`,
-    timestamp: now - i * 60_000 - Math.floor(Math.random() * 30_000),
-    ...t,
-  }));
-}
-
-function buildStats(surfaces: ReturnType<typeof buildSurfaces>) {
-  // Derive from surface counts so the numbers stay self-consistent
-  const total = surfaces.reduce((sum, s) => sum + s.eventsToday, 0);
+export function buildStats(day: StoredEvent[]) {
+  const count = (d: string) => day.filter((e) => e.decision === d).length;
   return {
-    decisions: total,
-    allows: Math.round(total * 0.84),
-    denies: Math.round(total * 0.11),
-    approvalsRequested: Math.round(total * 0.05),
-    ipiDetected: surfaces.find((s) => s.id === 'browser')?.eventsToday
-      ? Math.round((surfaces.find((s) => s.id === 'browser')!.eventsToday) * 0.06)
-      : 0,
-    urlsScanned: surfaces.find((s) => s.id === 'browser')?.eventsToday || 0,
+    decisions: day.length,
+    allows: count('allow'),
+    denies: count('deny'),
+    approvalsRequested: count('require_approval'),
+    ipiDetected: count('ipi_detected'),
+    urlsScanned: day.filter((e) => e.surface === 'browser' && (e.decision === 'scan' || e.decision === 'ipi_detected')).length,
   };
 }
 
 // ─── Route ──────────────────────────────────────────────────
 router.get('/snapshot', (_req, res) => {
-  const surfaces = buildSurfaces();
+  const now = Date.now();
+  const day = events.since(now - DAY);
   res.json({
     status: 'ok',
-    timestamp: Date.now(),
-    surfaces,
-    events: buildRecentEvents(),
+    timestamp: now,
+    surfaces: buildSurfaces(day, now),
+    events: events.recent(12).map(({ id, surface, decision, subject, reason, timestamp }) => ({
+      id, surface, kind: decision, subject, reason: reason ?? '', timestamp,
+    })),
     ward: readWardSummary(),
-    stats: buildStats(surfaces),
+    stats: buildStats(day),
     notes: {
-      dataSource:
-        'Surface counts and events are synthetic; WARD.md is read from cwd. Real telemetry is not wired up yet.',
+      dataSource: day.length
+        ? 'Live: events reported by Weave surfaces in the last 24 hours (in memory since the API started).'
+        : 'No surface has reported yet. Set WEAVE_DASHBOARD_URL and WEAVE_API_KEY where your agents run to see their decisions here.',
     },
   });
 });

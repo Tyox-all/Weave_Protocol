@@ -20,7 +20,7 @@
 
 import { readFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { parseAndValidate, evaluateToolCall, type WardPolicy } from '@weave_protocol/ward';
+import { parseAndValidate, evaluateToolCall, reportEvent, type WardPolicy } from '@weave_protocol/ward';
 import {
   TOOL_MAPPINGS,
   type ClaudeCodeHookInput,
@@ -158,6 +158,9 @@ export async function runPreToolUseHook(failClosed: boolean): Promise<never> {
     process.stderr.write(`weave-claude-code: WARD eval failed (${msg}), allowing\n`);
     emit({});
   }
+
+  // Dashboard reporting (only when WEAVE_DASHBOARD_URL is set; at most 250ms)
+  await reportEvent({ surface: 'claude-code', decision: result.decision, subject: payload.tool_name, reason: result.reasons[0] });
 
   if (result.decision === 'deny') {
     emit({

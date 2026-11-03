@@ -26,7 +26,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { homedir } from 'node:os';
-import { parseAndValidate, evaluateToolCall, type WardPolicy } from '@weave_protocol/ward';
+import { parseAndValidate, evaluateToolCall, reportEvent, type WardPolicy } from '@weave_protocol/ward';
 import {
   TOOL_MAPPINGS,
   type AntigravityHookInput,
@@ -178,5 +178,7 @@ export async function runPreToolUseHook(failClosed: boolean): Promise<never> {
     emit();
   }
 
+  // Dashboard reporting (only when WEAVE_DASHBOARD_URL is set; at most 250ms)
+  await reportEvent({ surface: 'antigravity', decision: result.decision, subject: tool, reason: result.reasons[0] });
   emit(toHookOutput(result, resolved.source));
 }

@@ -1,6 +1,6 @@
 /**
  * Weave API - Universal REST Interface
- * @weave_protocol/api v1.3.0
+ * @weave_protocol/api v1.4.0
  * 
  * Platform-agnostic security for AI agents
  * Works with: OpenAI, Gemini, LangChain, Grok, Copilot, Siri, or ANY HTTP client
@@ -17,11 +17,13 @@ import { fileURLToPath } from 'url';
 // Import routes
 import { mundRoutes } from './routes/mund.js';
 import { hordRoutes } from './routes/hord.js';
-import { domereRoutes } from './routes/domere.js';
+import { domereRoutes, domere } from './routes/domere.js';
+import { threatIntel } from '@weave_protocol/mund';
 import { healthRoutes } from './routes/health.js';
 import hundredmenRoutes, { initHundredmen } from './routes/hundredmen.js';
 
 import dashboardSnapshotRouter from './routes/dashboard-snapshot.js';
+import { eventsRoutes } from './routes/events.js';
 // Import middleware
 import { errorHandler } from './middleware/error.js';
 import { requestLogger } from './middleware/logger.js';
@@ -43,11 +45,14 @@ export const PORT = Number(process.env.WEAVE_PORT || 3000);
 //   WEAVE_CORS_ORIGINS             comma-separated allowed origins (WEAVE_CORS_ORIGIN also read); default: no cross-origin access
 //   WEAVE_RATE_LIMIT               /api requests per minute per client; default 100
 //   WEAVE_DEMO=1                   enable /reset and /test/* (fake dashboard events)
+//   WEAVE_EVENTS_RATE_LIMIT        POST /api/v1/events per minute per client; default 3000
+//   WEAVE_EVENTS_MAX               events kept in memory for the dashboard; default 5000
 
 export const HOST = process.env.WEAVE_HOST || '127.0.0.1';
 export const API_KEY = process.env.WEAVE_API_KEY || '';
 export const DEMO = process.env.WEAVE_DEMO === '1';
 export const CORS_ORIGINS = (process.env.WEAVE_CORS_ORIGINS || process.env.WEAVE_CORS_ORIGIN || '').split(',').map((o) => o.trim()).filter(Boolean);
+const STARTED_AT = new Date().toISOString();
 export const LOOPBACK = HOST === '127.0.0.1' || HOST === '::1' || HOST === 'localhost';
 
 
@@ -191,29 +196,14 @@ app.get('/dashboard', (_req: Request, res: Response) => {
 app.get('/stats', (_req: Request, res: Response) => res.json(dashboardStats));
 app.get('/feed', (_req: Request, res: Response) => res.json(activityFeed));
 
+// Mund's threat-intel status, from the loaded patterns and sources.
 app.get('/mund/intel-status', (_req: Request, res: Response) => {
-  res.json({
-    patterns: 47, sources: 3, mitre_techniques: 10, mitre_tactics: 6,
-    lastUpdate: new Date().toISOString(),
-    sourceDetails: [
-      { name: 'weave_builtin', enabled: true, patterns: 20 },
-      { name: 'weave_community', enabled: true, patterns: 15 },
-      { name: 'mitre_llm', enabled: true, patterns: 12 },
-    ],
-  });
+  res.json(threatIntel.getStatus());
 });
 
+// Checkpoints recorded through this API since it started, per framework.
 app.get('/domere/compliance/status', (_req: Request, res: Response) => {
-  res.json({
-    frameworks: {
-      'soc2': { active: true, checkpoints: dashboardStats.checkpoints },
-      'hipaa': { active: true, checkpoints: 0 },
-      'pci-dss': { active: true, checkpoints: 0 },
-      'iso27001': { active: true, checkpoints: 0 },
-      'gdpr': { active: true, checkpoints: 0 },
-      'ccpa': { active: true, checkpoints: 0 },
-    },
-  });
+  res.json({ checkpoints: { ...domere.checkpointCounts }, since: STARTED_AT });
 });
 
 app.get('/hundredmen/servers', (_req: Request, res: Response) => {
@@ -226,11 +216,7 @@ app.get('/hundredmen/servers', (_req: Request, res: Response) => {
       blocked: s.blockedCalls,
     })));
   } catch {
-    res.json([
-      { name: 'filesystem', score: 85, calls: 42, blocked: 0 },
-      { name: 'browser', score: 72, calls: 28, blocked: 2 },
-      { name: 'github', score: 90, calls: 15, blocked: 0 },
-    ]);
+    res.json([]);
   }
 });
 
@@ -278,6 +264,14 @@ app.post('/test/mixed', (_req: Request, res: Response) => {
 
 app.use('/health', healthRoutes);
 
+// Surfaces report every decision, so events get their own, higher limit.
+const eventsLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: Number(process.env.WEAVE_EVENTS_RATE_LIMIT) || 3000,
+  message: { error: 'Too many events' },
+});
+app.use('/api/v1/events', eventsLimiter, eventsRoutes);
+
 app.use('/api', apiLimiter);
 
 app.use('/api/v1/mund', mundRoutes);
@@ -314,7 +308,7 @@ app.get('/api/v1/functions', (_req: Request, res: Response) => {
 app.get('/api', (_req: Request, res: Response) => {
   res.json({
     name: 'Weave Protocol API',
-    version: '1.3.0',
+    version: '1.4.0',
     dashboard: '/dashboard',
     health: '/health',
     ...(DEMO ? { test: { threat: 'POST /test/threat', activity: 'POST /test/activity', mixed: 'POST /test/mixed' } } : {}),

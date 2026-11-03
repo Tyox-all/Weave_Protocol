@@ -51,27 +51,40 @@ Clients send the key as `X-API-Key: your-key` or `Authorization: Bearer your-key
 
 ## 📊 Dashboard
 
-Real-time security monitoring UI with live activity feed.
+A live view of what your agents' Weave surfaces decided (1.4.0+): Hundredmen, the Claude Code / Antigravity / MSAF adapters, and the browser guard.
 
 **Access:** `http://localhost:3000/dashboard`
 
-### Features
+### Connecting your agents
 
-- **Stats Overview** - Scans, threats, intercepts, blocked, checkpoints, vault ops
-- **Live Activity Feed** - Real-time event stream (polls every 3s)
-- **Threat Intelligence** - Pattern counts, sources, MITRE coverage
-- **Compliance Status** - SOC2, HIPAA, PCI-DSS, ISO27001, GDPR, CCPA
-- **MCP Server Reputation** - Trust scores for connected MCP servers
+Surfaces report each allow / deny / approval / IPI decision to the API when two variables are set wherever your agents run:
+
+```bash
+export WEAVE_DASHBOARD_URL=http://localhost:3000
+export WEAVE_API_KEY=...        # the API's key, if it has one
+```
+
+- **Off by default.** Without `WEAVE_DASHBOARD_URL`, nothing is sent.
+- **What's sent:** the surface, the decision, the tool name or a URL without its query string, and a short reason. Command text and argument contents are never sent.
+- **Never in the way.** Reporting never changes a decision and gives up after 250 ms.
+- **What the dashboard shows:**
+  - each surface: **LIVE** (reported in the last 5 minutes), **IDLE** (in the last 24 hours) or **OFF** (not reporting);
+  - each surface's count for the last 24 hours and the last hour;
+  - the recent decisions;
+  - 24-hour totals.
+
+Nothing is synthetic. Events are kept in memory, the most recent 5,000 (`WEAVE_EVENTS_MAX`), so they reset when the API restarts.
 
 ### Dashboard API Endpoints
 
 ```bash
-GET /stats                    # Stats overview
-GET /feed                     # Activity feed
-GET /mund/intel-status        # Threat intel status
-GET /domere/compliance/status # Compliance status
-GET /hundredmen/servers       # MCP server reputation
-POST /reset                   # Reset stats
+GET  /api/dashboard/snapshot   # Surfaces, recent events, WARD summary, 24h stats
+POST /api/v1/events            # A surface reports one decision (Ward's reportEvent)
+GET  /api/v1/events?limit=50   # Recent events, newest first
+GET  /mund/intel-status        # Mund threat-intel status (patterns, sources, MITRE coverage)
+GET  /domere/compliance/status # Compliance checkpoints recorded through this API, per framework
+GET  /hundredmen/servers       # MCP server reputation ([] when none are known)
+GET  /stats, /feed             # Legacy v1 counters (fed by the demo endpoints below)
 ```
 
 ### Test Endpoints
@@ -308,6 +321,8 @@ POST /api/v1/functions/call  # Call a function
 | `WEAVE_ALLOW_UNAUTHENTICATED` | - | Set to `1` to bind publicly without a key (not recommended) |
 | `WEAVE_CORS_ORIGINS` | none | Comma-separated allowed origins (`WEAVE_CORS_ORIGIN` also works). Default: no cross-origin access |
 | `WEAVE_RATE_LIMIT` | `100` | `/api` requests per minute per client |
+| `WEAVE_EVENTS_RATE_LIMIT` | `3000` | `POST /api/v1/events` per minute per client |
+| `WEAVE_EVENTS_MAX` | `5000` | Events kept in memory for the dashboard |
 | `WEAVE_DEMO` | - | Set to `1` to enable `/reset` and `/test/*` |
 | `HORD_MASTER_KEY` | random per process | Hord vault master key: 64 hex chars or a passphrase. Without it, vault contents don't survive a restart |
 | `HORD_MASTER_KEY_FILE` | - | File containing the master key |

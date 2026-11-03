@@ -14,7 +14,7 @@
  * not per-call — to keep hot paths fast).
  */
 
-import type { WardPolicy } from '@weave_protocol/ward';
+import { reportEvent, type WardPolicy } from '@weave_protocol/ward';
 import {
   resolveWardForCwd,
   loadWardFromPath,
@@ -156,6 +156,7 @@ export class WardBrowserGuard {
     }
 
     const result = evaluateNavigation(this.resolved.policy, check.url);
+    void reportEvent({ surface: 'browser', decision: result.decision, subject: check.url, reason: result.reasons[0] });
     const detail = { url: check.url, source: check.source, sessionId };
 
     if (result.decision === 'allow') {
@@ -198,6 +199,12 @@ export class WardBrowserGuard {
     opts: { url?: string; sessionId?: string; isHtml?: boolean } = {},
   ): Promise<IpiScanResult> {
     const result = scanForIpi(content, { isHtml: opts.isHtml });
+    void reportEvent({
+      surface: 'browser',
+      decision: result.safe ? 'scan' : 'ipi_detected',
+      subject: opts.url ?? '(content without a URL)',
+      reason: result.safe ? 'clean' : `${result.riskLevel} risk: ${[...new Set(result.threats.map((t) => t.type))].join(', ')}`,
+    });
 
     // Record provenance. Content with no URL is of unknown origin; it still
     // taints the session if it carried an injection.
@@ -250,6 +257,7 @@ export class WardBrowserGuard {
       this.blockedExtensions,
       this.blockedMimeTypes,
     );
+    void reportEvent({ surface: 'browser', decision: result.decision, subject: check.url, reason: `download: ${result.reasons[0] ?? ''}` });
     const detail = { ...check };
 
     if (result.decision === 'allow') {
