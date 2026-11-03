@@ -178,7 +178,7 @@ The first agent security platform to publish its own offensive engine. Two new p
 
 | Package | Role | Version |
 |---|---|---|
-| [`@weave_protocol/adversary`](https://github.com/Tyox-all/Weave_Protocol/blob/main/adversary) | Offensive engine — 68 documented + novel attacks across 5 categories (IPI, tool-coercion, jailbreak, extraction, goal-corruption). Real Playwright browser target with 4 breach signal channels. Real-LLM demo mode against any provider (Claude, GPT, Gemini, DeepSeek, Kimi, Qwen, GLM, local Ollama). LLM-driven dynamic mutation retries half-blocked attacks with fresh variants. | ✅ **v0.4.0** ~! |
+| [`@weave_protocol/adversary`](https://github.com/Tyox-all/Weave_Protocol/blob/main/adversary) | Offensive engine — 68 documented + novel attacks across 5 categories (IPI, tool-coercion, jailbreak, extraction, goal-corruption). Real Playwright browser target with 4 breach signal channels. Real-LLM demo mode against any provider (Claude, GPT, Gemini, DeepSeek, Kimi, Qwen, GLM, local Ollama). LLM-driven dynamic mutation retries half-blocked attacks with fresh variants. | ✅ **v0.4.0** |
 | [`@weave_protocol/agentsecbench`](https://github.com/Tyox-all/Weave_Protocol/blob/main/agentsecbench) | Standardized benchmark — locked attack suites, tier grades A–F, paste-ready reports, side-by-side comparison, [public results page](https://tyox-all.github.io/Weave_Protocol/asb/). Grades live models on any provider. | ✅ **v0.3.0** |
 
 **Trophy attacks** — documented in-the-wild incidents reproduced in the corpus:
