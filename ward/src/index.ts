@@ -40,4 +40,6 @@ export {
 } from "./enforcer/index.js";
 export type { Decision, CheckResult, RuntimeState } from "./enforcer/index.js";
 export { evaluateToolCall } from "./enforcer/toolcall.js";
+export { reportEvent, dashboardUrl } from "./report.js";
+export type { EnforcementEvent, ReportOptions, ReportSurface, ReportDecision } from "./report.js";
 export type { ToolMapping, ToolCallCheck, ToolCallEvaluation, EvaluateOptions } from "./enforcer/toolcall.js";
