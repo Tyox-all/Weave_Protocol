@@ -72,6 +72,11 @@ Add to `claude_desktop_config.json`:
 
 Threads, hops, anchors and arbitration cases are kept in memory by default. For persistence, use SQLite (Node 22.5+, no extra dependency): set `DOMERE_STORAGE=sqlite` and optionally `DOMERE_DATABASE_URL` (default `~/.weave/domere.sqlite`, created with `0600` permissions). In code: `createStorage('sqlite', { path })`.
 
+**GDPR and CCPA records use the same file** (1.6.0+). With `DOMERE_STORAGE=sqlite`, consents, DSARs, breaches, opt-outs, consumer requests and both checkpoint chains survive a restart. In code, pass a store: `new GDPRManager(controller, { store: new SqliteRecordStore(path) })`, and call `flush()` after changing records you hold a reference to. The MCP server flushes after every call.
+
+- **Erasure erases.** A right-to-erasure request deletes the subject's records from disk. Dōmere uses SQLite's `secure_delete` and checkpoints the WAL afterward, so no copy remains in free pages or the write-ahead log.
+- **Edits are detected.** `domere_gdpr_verify_chain` and `ccpa_verify_chain` recompute every checkpoint hash and check each link, so a record edited or removed in the database fails verification. Removing only the newest checkpoint can't be detected from the chain alone, so anchor the latest hash (`domere_prepare_anchor`) or back it up if that matters to you.
+
 ## 🇪🇺 GDPR Compliance
 
 Domere includes comprehensive GDPR support with 11 MCP tools.
@@ -91,6 +96,7 @@ Domere includes comprehensive GDPR support with 11 MCP tools.
 | `domere_gdpr_retention_check` | Art 5(1)(e) | Enforce storage limitation |
 | `domere_gdpr_automated_decision` | Art 22 | Track AI decisions & human review |
 | `domere_gdpr_report` | Various | Generate compliance reports |
+| `domere_gdpr_verify_chain` | — | Verify checkpoint integrity (recomputes hashes) |
 
 ### Consent Management
 
@@ -165,7 +171,7 @@ Domere v1.3.4+ includes comprehensive California Consumer Privacy Act (CCPA) and
 | `ccpa_generate_report` | 1798.185 | Generate compliance report |
 | `ccpa_annual_metrics` | 1798.185(a)(7) | Required annual disclosure |
 | `ccpa_get_checkpoints` | — | Audit trail for compliance |
-| `ccpa_verify_chain` | — | Verify checkpoint integrity |
+| `ccpa_verify_chain` | — | Verify checkpoint integrity (recomputes hashes) |
 
 ### Consumer Opt-Out Management
 
@@ -327,7 +333,7 @@ The `domere` MCP server serves these 12 tools plus the GDPR (11) and CCPA (19) t
 | `DOMERE_PRIVACY_POLICY_URL`, `DOMERE_DO_NOT_SELL_URL` | CCPA business details |
 | `DOMERE_CCPA_MEETS_THRESHOLD` | `false` if the CCPA thresholds don't apply (default `true`) |
 
-Unset values appear as `(not configured)` rather than an invented organization. GDPR and CCPA records are kept in memory even when `DOMERE_STORAGE=sqlite`. A data subject access request (DSAR) can only be processed or completed after the requester's identity is verified (GDPR Art. 12(6)).
+Unset values appear as `(not configured)` rather than an invented organization. GDPR and CCPA records persist with threads when `DOMERE_STORAGE=sqlite` (1.6.0+). A data subject access request (DSAR) can only be processed or completed after the requester's identity is verified (GDPR Art. 12(6)).
 
 ### GDPR Tools
 
@@ -342,6 +348,7 @@ domere_gdpr_breach_notify       Breach management
 domere_gdpr_retention_check     Retention enforcement
 domere_gdpr_automated_decision  Article 22 tracking
 domere_gdpr_report              Compliance reporting
+domere_gdpr_verify_chain        Verify the checkpoint chain
 ```
 
 ### CCPA/CPRA Tools

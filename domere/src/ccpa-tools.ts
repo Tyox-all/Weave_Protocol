@@ -472,7 +472,7 @@ export function createCCPAToolHandlers(manager: CCPAManager) {
       return { 
         success: true, 
         ...result,
-        message: result.valid ? 'Checkpoint chain integrity verified' : 'Chain integrity broken',
+        message: result.valid ? 'Checkpoint chain integrity verified' : `Chain integrity broken: ${result.reason}`,
       };
     },
   };

@@ -653,6 +653,14 @@ Use when: preparing for audits, generating compliance dashboards, reviewing GDPR
       required: ['report_type', 'start_date', 'end_date'],
     },
   },
+
+  {
+    name: 'domere_gdpr_verify_chain',
+    description: `Verify the integrity of the GDPR checkpoint chain.
+Recomputes every checkpoint's hash and checks each links to the one before, so an edited or deleted record is detected.
+Use when: preparing for an audit, after restoring a backup, or checking stored records weren't altered.`,
+    inputSchema: { type: 'object', properties: {} },
+  },
 ];
 
 // ============================================================================
@@ -661,6 +669,15 @@ Use when: preparing for audits, generating compliance dashboards, reviewing GDPR
 
 export function createGDPRToolHandlers(manager: GDPRManager) {
   return {
+    domere_gdpr_verify_chain: async () => {
+      const result = manager.verifyCheckpointChain();
+      return {
+        success: true,
+        ...result,
+        message: result.valid ? 'Checkpoint chain integrity verified' : `Chain integrity broken: ${result.reason}`,
+      };
+    },
+
     domere_gdpr_record_consent: async (params: {
       subject_id: string;
       email?: string;
