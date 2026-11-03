@@ -8,6 +8,7 @@
 import { randomUUID } from 'crypto';
 import { EventEmitter } from 'events';
 import { WardPolicyManager, type WardCheckResult } from './ward.js';
+import { reportEvent } from '@weave_protocol/ward';
 import {
   InterceptedCall,
   CallStatus,
@@ -470,6 +471,13 @@ export class Interceptor extends EventEmitter {
     call.decision = decision.decision;
     call.decisionReason = decision.reason;
     call.decisionAt = new Date();
+    // Dashboard reporting (only when WEAVE_DASHBOARD_URL is set; never blocks)
+    void reportEvent({
+      surface: 'mcp',
+      decision: call.decision === 'auto_blocked' ? 'deny' : call.decision === 'pending_review' ? 'require_approval' : 'allow',
+      subject: call.tool,
+      reason: call.decisionReason,
+    });
     
     // Update status based on decision
     if (call.decision === 'auto_approved' || call.decision === 'manual_approved') {

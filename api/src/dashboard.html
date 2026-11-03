@@ -483,14 +483,14 @@
       const deltaEl = card.querySelector('.card-delta');
       const deltaLabelEl = card.querySelector('.card-delta-label');
 
-      if (active && surface) {
+      if (surface && surface.status !== 'off') {
         countEl.textContent = surface.eventsToday.toLocaleString();
-        countLabelEl.textContent = 'EVENTS TODAY';
-        deltaEl.textContent = `${surface.delta >= 0 ? '+' : ''}${surface.delta}%`;
-        deltaLabelEl.textContent = 'vs yesterday';
+        countLabelEl.textContent = 'EVENTS · 24H';
+        deltaEl.textContent = surface.lastHour.toLocaleString();
+        deltaLabelEl.textContent = 'last hour';
       } else if (surface) {
         countEl.textContent = '—';
-        countLabelEl.textContent = 'NOT CONFIGURED';
+        countLabelEl.textContent = 'NOT REPORTING';
         deltaEl.textContent = '';
         deltaLabelEl.textContent = '';
       }
@@ -498,10 +498,10 @@
   }
 
   // ─── Activity feed ─────────────────────────────────────
-  function renderActivity(events) {
+  function renderActivity(events, note) {
     const root = document.getElementById('activity-feed');
     if (!events || events.length === 0) {
-      root.innerHTML = '<div class="activity-empty">No activity recorded yet. Run an agent to populate the feed.</div>';
+      root.innerHTML = `<div class="activity-empty">${escapeHtml(note || 'No activity recorded yet.')}</div>`;
       return;
     }
     root.innerHTML = events.map(e => `
@@ -509,7 +509,7 @@
         <span class="event-icon">${ICONS[e.kind] || '·'}</span>
         <div class="event-body">
           <div class="event-line1">
-            <span class="event-kind">${e.kind.replace('_', ' ')}</span>
+            <span class="event-kind">${escapeHtml(e.kind.replace('_', ' '))}</span>
             <span class="event-time">${rel(e.timestamp)}</span>
           </div>
           <div class="event-subject">${escapeHtml(e.subject)}</div>
@@ -592,7 +592,7 @@
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const snap = await res.json();
       updateHierarchy(snap.surfaces, snap.ward);
-      renderActivity(snap.events);
+      renderActivity(snap.events, snap.notes && snap.notes.dataSource);
       renderWardPanel(snap.ward);
       renderStats(snap.stats);
       document.getElementById('last-updated').textContent =

@@ -135,11 +135,18 @@ export class DomereService {
   // Compliance
   // ==========================================================================
 
+  /** Checkpoints recorded through this API, per framework, since it started. */
+  readonly checkpointCounts: Record<string, number> = {};
+  private count(framework: string) {
+    this.checkpointCounts[framework] = (this.checkpointCounts[framework] || 0) + 1;
+  }
+
   async createCheckpoint(params: {
     thread_id: string; framework: string; control: string; event_type: string;
     event_description?: string; data_classification?: string; agent_id: string;
     user_id?: string; risk_level?: string; sign?: boolean;
   }): Promise<object> {
+    this.count(params.framework);
     return this.compliance.checkpoint({
       thread_id: params.thread_id, framework: params.framework as any,
       control: params.control, event_type: params.event_type as any,
@@ -154,6 +161,7 @@ export class DomereService {
     thread_id: string; agent_id: string; data_type: string; action: string;
     masked: boolean; encrypted: boolean; business_justification: string;
   }): Promise<object> {
+    this.count('PCI-DSS');
     return this.compliance.logCardholderDataAccess({
       thread_id: params.thread_id, agent_id: params.agent_id,
       data_type: params.data_type as any, action: params.action as any,
@@ -166,6 +174,7 @@ export class DomereService {
     thread_id: string; agent_id: string; incident_id: string; incident_type: string;
     severity: string; status: string; affected_assets: string[]; description?: string;
   }): Promise<object> {
+    this.count('ISO27001');
     return this.compliance.logSecurityIncident({
       thread_id: params.thread_id, agent_id: params.agent_id,
       incident_id: params.incident_id, incident_type: params.incident_type as any,
@@ -178,6 +187,7 @@ export class DomereService {
     thread_id: string; agent_id: string; asset_id: string;
     asset_type: string; action: string; classification: string;
   }): Promise<object> {
+    this.count('ISO27001');
     return this.compliance.logAssetEvent({
       thread_id: params.thread_id, agent_id: params.agent_id,
       asset_id: params.asset_id, asset_type: params.asset_type as any,
