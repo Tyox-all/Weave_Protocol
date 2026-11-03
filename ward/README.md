@@ -160,6 +160,19 @@ const result = evaluateToolCall(policy, "Bash", { command: "curl https://a.examp
 - **Relative paths** resolve against `cwd`.
 - **Strictness:** the strictest result wins (deny, then require_approval, then allow).
 
+### Reporting decisions to the dashboard (0.3.0+)
+
+`reportEvent()` sends an enforcement decision to a local Weave API (`@weave_protocol/api`), which shows it on its dashboard. The Weave adapters, browser guard and Hundredmen call it for you.
+
+```bash
+export WEAVE_DASHBOARD_URL=http://localhost:3000   # where the API runs
+export WEAVE_API_KEY=...                            # the API's key
+```
+
+- **Off by default.** Nothing is sent unless `WEAVE_DASHBOARD_URL` is set.
+- **Sent:** the surface, the decision, the tool name or a URL with its query string removed, and a truncated reason with any argument value stripped. Command text and argument contents are never sent.
+- **Never in the way.** A report never changes a decision, gives up after 250 ms, and never throws.
+
 ---
 
 ## Policy sections
