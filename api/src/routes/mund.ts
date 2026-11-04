@@ -5,6 +5,7 @@
 
 import { Router, Request, Response } from 'express';
 import { MundService } from '../services/mund.js';
+import { param } from './params.js';
 
 /** Bad input (unknown scan type, malformed rule) is a 400; anything else a 500. */
 function fail(res: Response, error: unknown) {
@@ -170,7 +171,7 @@ router.post('/rules', async (req: Request, res: Response) => {
  */
 router.put('/rules/:id/enable', async (req: Request, res: Response) => {
   try {
-    const result = await mund.enableRule(req.params.id);
+    const result = await mund.enableRule(param(req, 'id'));
     res.json(result);
   } catch (error) {
     fail(res, error);
@@ -183,7 +184,7 @@ router.put('/rules/:id/enable', async (req: Request, res: Response) => {
  */
 router.put('/rules/:id/disable', async (req: Request, res: Response) => {
   try {
-    const result = await mund.disableRule(req.params.id);
+    const result = await mund.disableRule(param(req, 'id'));
     res.json(result);
   } catch (error) {
     fail(res, error);

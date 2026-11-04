@@ -5,6 +5,7 @@
 
 import { Router, Request, Response } from 'express';
 import { HordService, NotSupportedError } from '../services/hord.js';
+import { param } from './params.js';
 
 /** Hord scopes vaults, secrets and capabilities to an agent. */
 const agentOf = (req: Request) => (req.get('x-agent-id') || 'api').slice(0, 128);
@@ -64,7 +65,7 @@ router.get('/vaults', async (req: Request, res: Response) => {
  */
 router.get('/vaults/:id', async (req: Request, res: Response) => {
   try {
-    const vault = await hord.getVault(req.params.id);
+    const vault = await hord.getVault(param(req, 'id'));
     res.json(vault);
   } catch (error) {
     fail(res, error);
@@ -77,7 +78,7 @@ router.get('/vaults/:id', async (req: Request, res: Response) => {
  */
 router.delete('/vaults/:id', async (req: Request, res: Response) => {
   try {
-    const result = await hord.deleteVault(req.params.id, agentOf(req));
+    const result = await hord.deleteVault(param(req, 'id'), agentOf(req));
     res.json(result);
   } catch (error) {
     fail(res, error);
@@ -100,7 +101,7 @@ router.post('/vaults/:id/secrets', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'key and value are required' });
     }
     
-    const result = await hord.storeSecret(req.params.id, key, value, metadata, agentOf(req));
+    const result = await hord.storeSecret(param(req, 'id'), key, value, metadata, agentOf(req));
     res.json(result);
   } catch (error) {
     fail(res, error);
@@ -114,7 +115,7 @@ router.post('/vaults/:id/secrets', async (req: Request, res: Response) => {
 router.get('/vaults/:id/secrets/:key', async (req: Request, res: Response) => {
   try {
     const token = req.headers['x-capability-token'] as string;
-    const result = await hord.retrieveSecret(req.params.id, req.params.key, token, agentOf(req));
+    const result = await hord.retrieveSecret(param(req, 'id'), param(req, 'key'), token, agentOf(req));
     res.json(result);
   } catch (error) {
     fail(res, error);
@@ -127,7 +128,7 @@ router.get('/vaults/:id/secrets/:key', async (req: Request, res: Response) => {
  */
 router.delete('/vaults/:id/secrets/:key', async (req: Request, res: Response) => {
   try {
-    const result = await hord.deleteSecret(req.params.id, req.params.key);
+    const result = await hord.deleteSecret(param(req, 'id'), param(req, 'key'));
     res.json(result);
   } catch (error) {
     fail(res, error);
@@ -312,7 +313,7 @@ router.post('/attest/verify', async (req: Request, res: Response) => {
  * Hord's v1 YoxallismusCipher output can never be decrypted (advisory
  * YOXALL-2026-003). Use @weave_protocol/yoxallismus instead.
  */
-router.all('/yoxallismus/*', (_req: Request, res: Response) => {
+router.all('/yoxallismus/*path', (_req: Request, res: Response) => {
   res.status(410).json({
     error: 'The Yoxallismus v1 cipher endpoints are removed: its output could never be decrypted.',
     advisory: 'https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus/SECURITY_ADVISORIES.md',

@@ -5,6 +5,7 @@
 
 import { Router, Request, Response } from 'express';
 import { DomereService, NotSupportedError } from '../services/domere.js';
+import { param } from './params.js';
 
 /** Map Dōmere errors to HTTP statuses instead of a blanket 500. */
 function fail(res: Response, error: unknown) {
@@ -69,7 +70,7 @@ router.get('/threads', async (req: Request, res: Response) => {
  */
 router.get('/threads/:id', async (req: Request, res: Response) => {
   try {
-    const thread = await domere.getThread(req.params.id);
+    const thread = await domere.getThread(param(req, 'id'));
     res.json(thread);
   } catch (error) {
     fail(res, error);
@@ -91,7 +92,7 @@ router.post('/threads/:id/hops', async (req: Request, res: Response) => {
     }
     
     const result = await domere.addHop({
-      thread_id: req.params.id,
+      thread_id: param(req, 'id'),
       agent_id,
       agent_type,
       received_intent,
@@ -115,7 +116,7 @@ router.post('/threads/:id/close', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'outcome is required (success, failure, abandoned)' });
     }
     
-    const result = await domere.closeThread(req.params.id, outcome);
+    const result = await domere.closeThread(param(req, 'id'), outcome);
     res.json(result);
   } catch (error) {
     fail(res, error);
@@ -128,7 +129,7 @@ router.post('/threads/:id/close', async (req: Request, res: Response) => {
  */
 router.post('/threads/:id/verify', async (req: Request, res: Response) => {
   try {
-    const result = await domere.verifyThread(req.params.id);
+    const result = await domere.verifyThread(param(req, 'id'));
     res.json(result);
   } catch (error) {
     fail(res, error);
@@ -343,7 +344,7 @@ router.post('/anchor/verify', async (req: Request, res: Response) => {
  */
 router.get('/anchor/:thread_id/status', async (req: Request, res: Response) => {
   try {
-    const result = await domere.getAnchorStatus(req.params.thread_id);
+    const result = await domere.getAnchorStatus(param(req, 'thread_id'));
     res.json(result);
   } catch (error) {
     fail(res, error);
