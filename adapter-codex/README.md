@@ -60,6 +60,10 @@ weave-ward-codex hook pre-tool-use                                    # what Cod
 
 `init` writes to `$CODEX_HOME/hooks.json` (default `~/.codex/hooks.json`). It backs the file up, edits it atomically, and finds its own entry by its status message, so your other hooks are untouched.
 
+## Dashboard
+
+Set `WEAVE_DASHBOARD_URL` (and `WEAVE_API_KEY`) where you run the agent, and each decision is reported to a local [Weave API](https://github.com/Tyox-all/Weave_Protocol/tree/main/api) dashboard (0.2.0+). Only the decision and the tool name are sent, never command or argument contents. Reporting never changes a decision and gives up after 250 ms.
+
 ## Verified
 
 Built against Codex's [hooks documentation](https://developers.openai.com/codex/hooks): the `PreToolUse` payload, deny output, `apply_patch` and MCP tool naming. 12 fixture tests.

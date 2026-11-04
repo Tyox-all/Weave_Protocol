@@ -170,3 +170,49 @@ describe('CLI end to end (isolated HOME)', () => {
     assert.equal(run(['test', 'read_file', `--input=${JSON.stringify({ file_path: join(ws, 'a') })}`]).status, 0);
   });
 });
+
+async function runAsync(cmd, args, { input, ...opts }) {
+  const { spawn } = await import('node:child_process');
+  return new Promise((resolve) => {
+    const child = spawn(cmd, args, opts);
+    let stdout = '', stderr = '';
+    child.stdout.on('data', (d) => (stdout += d));
+    child.stderr.on('data', (d) => (stderr += d));
+    child.on('close', (status) => resolve({ status, stdout, stderr }));
+    child.stdin.end(input);
+  });
+}
+
+async function fakeDashboard() {
+  const { createServer } = await import('node:http');
+  const received = [];
+  const server = createServer((req, res) => {
+    let raw = '';
+    req.on('data', (c) => (raw += c));
+    req.on('end', () => { received.push(JSON.parse(raw)); res.writeHead(201); res.end('{}'); });
+  });
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  return { url: `http://127.0.0.1:${server.address().port}`, received, close: () => server.close() };
+}
+
+test('reports the decision to the dashboard when WEAVE_DASHBOARD_URL is set', async () => {
+  const dash = await fakeDashboard();
+  try {
+    const home = mkdtempSync(join(tmpdir(), 'report-home-'));
+    const ws = mkdtempSync(join(tmpdir(), 'report-ws-'));
+    writeFileSync(join(ws, 'WARD.md'), WARD(ws));
+    // Async spawn: spawnSync would block this process, so the fake dashboard
+    // couldn't accept the hook's report before the hook gave up.
+    const r = await runAsync(process.execPath, [resolve('dist/cli.js'), ...['hook', 'before-tool']], {
+      input: JSON.stringify({ hook_event_name: 'BeforeTool', session_id: 's', cwd: ws, tool_name: 'read_file', tool_input: { file_path: join(ws, 'secrets', 'k') } }),
+      env: { PATH: process.env.PATH, HOME: home, WEAVE_DASHBOARD_URL: dash.url }, encoding: 'utf8', cwd: ws,
+    });
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(dash.received.length, 1);
+    assert.equal(dash.received[0].surface, 'gemini-cli');
+    assert.equal(dash.received[0].decision, 'deny');
+    assert.equal(dash.received[0].subject, 'read_file');
+  } finally {
+    dash.close();
+  }
+});

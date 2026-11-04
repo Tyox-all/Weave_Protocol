@@ -24,7 +24,7 @@
 
 import { readFileSync, existsSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
-import { parseAndValidate, evaluateToolCall, type WardPolicy } from '@weave_protocol/ward';
+import { parseAndValidate, evaluateToolCall, reportEvent, type WardPolicy } from '@weave_protocol/ward';
 import { TOOL_MAPPINGS, type GeminiHookInput, type GeminiHookOutput } from './types.js';
 import { userWardPath } from './config.js';
 
@@ -151,5 +151,7 @@ export async function runBeforeToolHook(failClosed: boolean): Promise<never> {
     emit({});
   }
 
+  // Dashboard reporting (only when WEAVE_DASHBOARD_URL is set; at most 250ms)
+  await reportEvent({ surface: 'gemini-cli', decision: result.decision, subject: payload.tool_name, reason: result.reasons[0] });
   emit(toHookOutput(result, resolved.source));
 }

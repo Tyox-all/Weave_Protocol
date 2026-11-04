@@ -68,6 +68,10 @@ weave-gemini hook before-tool                                        # what Gemi
 
 `init` backs up `settings.json`, edits it atomically, and finds its own entry by the hook name `weave-ward`, so your other hooks are untouched. It installs at user level. Gemini CLI fingerprints project-level hooks and warns when one changes, but a user-level hook covers every project.
 
+## Dashboard
+
+Set `WEAVE_DASHBOARD_URL` (and `WEAVE_API_KEY`) where you run the agent, and each decision is reported to a local [Weave API](https://github.com/Tyox-all/Weave_Protocol/tree/main/api) dashboard (0.2.0+). Only the decision and the tool name are sent, never command or argument contents. Reporting never changes a decision and gives up after 250 ms.
+
 ## Verified
 
 Built against the [hooks reference](https://geminicli.com/docs/hooks/reference) and [tools reference](https://geminicli.com/docs/reference/tools). Live-checked in Gemini CLI 0.66.0: a `read_file` of a denied path was blocked with the WARD reason, and an allowed read went through.

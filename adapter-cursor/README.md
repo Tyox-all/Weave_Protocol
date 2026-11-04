@@ -59,6 +59,10 @@ weave-ward-cursor hook                                               # what Curs
 
 `init` backs up `hooks.json` and edits it atomically. It adds one entry per event and leaves your other hooks alone. The command is `weave-ward-cursor`, matching `weave-ward-codex` and `weave-ward-opencode`.
 
+## Dashboard
+
+Set `WEAVE_DASHBOARD_URL` (and `WEAVE_API_KEY`) where you run the agent, and each decision is reported to a local [Weave API](https://github.com/Tyox-all/Weave_Protocol/tree/main/api) dashboard (0.2.0+). Only the decision and the tool name are sent, never command or argument contents. Reporting never changes a decision and gives up after 250 ms.
+
 ## Verified
 
 Built against Cursor's [agent hooks documentation](https://cursor.com/docs/agent/hooks), with 11 fixture tests. It hasn't been live-checked in Cursor yet. Cursor's docs don't say whether the `cursor-agent` CLI runs agent hooks, so for now treat this as an IDE adapter.

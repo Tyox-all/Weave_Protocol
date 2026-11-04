@@ -19,7 +19,7 @@
 
 import { readFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { parseAndValidate, evaluateToolCall, type WardPolicy } from '@weave_protocol/ward';
+import { parseAndValidate, evaluateToolCall, reportEvent, type WardPolicy } from '@weave_protocol/ward';
 import { TOOL_MAPPINGS, type CodexHookInput, type CodexHookOutput } from './types.js';
 import { patchTargets } from './patch.js';
 import { userWardPath } from './config.js';
@@ -147,5 +147,7 @@ export async function runPreToolUseHook(failClosed: boolean): Promise<never> {
     emit();
   }
 
+  // Dashboard reporting (only when WEAVE_DASHBOARD_URL is set; at most 250ms)
+  await reportEvent({ surface: 'codex', decision: result.decision, subject: payload.tool_name, reason: result.reasons[0] });
   emit(toHookOutput(result, resolved.source));
 }
