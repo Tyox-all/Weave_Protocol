@@ -1,6 +1,6 @@
 /**
  * Weave API - Universal REST Interface
- * @weave_protocol/api v1.5.0
+ * @weave_protocol/api v1.5.1
  * 
  * Platform-agnostic security for AI agents
  * Works with: OpenAI, Gemini, LangChain, Grok, Copilot, Siri, or ANY HTTP client
@@ -308,7 +308,7 @@ app.get('/api/v1/functions', (_req: Request, res: Response) => {
 app.get('/api', (_req: Request, res: Response) => {
   res.json({
     name: 'Weave Protocol API',
-    version: '1.5.0',
+    version: '1.5.1',
     dashboard: '/dashboard',
     health: '/health',
     ...(DEMO ? { test: { threat: 'POST /test/threat', activity: 'POST /test/activity', mixed: 'POST /test/mixed' } } : {}),
