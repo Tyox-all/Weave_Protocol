@@ -81,7 +81,7 @@ An invalid WARD.md now blocks instead of switching enforcement off. **Upgrade to
 [`@weave_protocol/adapter-opencode`](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-opencode) is an OpenCode plugin that enforces WARD.md on every tool call, so the same policy covers whichever model OpenCode runs, including DeepSeek, Kimi, Qwen or a local model. Add `"@weave_protocol/adapter-opencode"` to `plugin` in opencode.json. It's live-checked in OpenCode 1.19.5: a read of a denied file and a write outside the allowed folder were both blocked.
 
 #### 🛡️ New: WARD.md in Codex CLI
-[`@weave_protocol/adapter-codex`](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-codex) enforces WARD.md in OpenAI's Codex CLI through its `PreToolUse` hook. It checks shell commands, MCP calls, and the files each `apply_patch` edit touches. Set it up with `weave-ward-codex init`, then trust the hook with `/hooks` in Codex.
+[`@weave_protocol/adapter-codex`](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-codex) enforces WARD.md in OpenAI's Codex CLI through its `PreToolUse` hook. It checks shell commands, MCP calls, and the files each `apply_patch` edit touches. It's live-checked in Codex CLI 0.166.0: a denied `cat` and a denied `apply_patch` were both blocked. Set it up with `weave-ward-codex init`, then trust the hook with `/hooks` in Codex.
 
 #### 🛡️ New: WARD.md in Gemini CLI
 [`@weave_protocol/adapter-geminicli`](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-geminicli) enforces the same WARD.md in Gemini CLI through its `BeforeTool` hook. `npm i -g @weave_protocol/adapter-geminicli && weave-gemini init` sets it up. It's live-checked in Gemini CLI 0.66.0, where a read of a denied file was blocked before the model saw it.
