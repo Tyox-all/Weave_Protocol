@@ -134,6 +134,10 @@ const SURFACE_INFO: Record<Surface, { name: string; vendor: string; icon: string
   antigravity: { name: 'adapter-antigravity', vendor: 'Google', icon: '🛡️' },
   msaf: { name: 'adapter-msaf', vendor: 'Microsoft', icon: '🛡️' },
   browser: { name: 'browser', vendor: 'Playwright + IPI', icon: '🌐' },
+  'gemini-cli': { name: 'adapter-geminicli', vendor: 'Google', icon: '🛡️' },
+  codex: { name: 'adapter-codex', vendor: 'OpenAI', icon: '🛡️' },
+  opencode: { name: 'adapter-opencode', vendor: 'OpenCode', icon: '🛡️' },
+  cursor: { name: 'adapter-cursor', vendor: 'Cursor', icon: '🛡️' },
 };
 
 const MINUTE = 60_000;

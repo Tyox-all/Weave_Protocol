@@ -1,11 +1,11 @@
 /**
  * Enforcement events reported by Weave surfaces (Ward's reportEvent):
- * Hundredmen, the Claude Code / Antigravity / MSAF adapters, and the
- * browser guard. Kept in memory, newest last, capped; the dashboard
+ * Hundredmen, the Claude Code / Antigravity / MSAF / Gemini CLI / Codex /
+ * OpenCode / Cursor adapters, and the browser guard. Kept in memory, newest last, capped; the dashboard
  * snapshot is built from them. Nothing here is synthetic.
  */
 
-export const SURFACES = ['mcp', 'claude-code', 'antigravity', 'msaf', 'browser'] as const;
+export const SURFACES = ['mcp', 'claude-code', 'antigravity', 'msaf', 'browser', 'gemini-cli', 'codex', 'opencode', 'cursor'] as const;
 export const DECISIONS = ['allow', 'deny', 'require_approval', 'ipi_detected', 'scan'] as const;
 export type Surface = (typeof SURFACES)[number];
 export type EventDecision = (typeof DECISIONS)[number];

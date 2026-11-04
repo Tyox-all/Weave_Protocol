@@ -162,7 +162,7 @@ const result = evaluateToolCall(policy, "Bash", { command: "curl https://a.examp
 
 ### Reporting decisions to the dashboard (0.3.0+)
 
-`reportEvent()` sends an enforcement decision to a local Weave API (`@weave_protocol/api`), which shows it on its dashboard. The Weave adapters, browser guard and Hundredmen call it for you.
+`reportEvent()` sends an enforcement decision to a local Weave API (`@weave_protocol/api`), which shows it on its dashboard. The Weave adapters, browser guard and Hundredmen call it for you. Its surfaces are `mcp`, `claude-code`, `antigravity`, `msaf`, `browser`, `gemini-cli`, `codex`, `opencode` and `cursor` (the last four from 0.3.1).
 
 ```bash
 export WEAVE_DASHBOARD_URL=http://localhost:3000   # where the API runs
