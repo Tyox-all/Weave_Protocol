@@ -7,6 +7,7 @@
  */
 
 import { Router, Request, Response } from 'express';
+import { param } from './params.js';
 
 // Types for interceptor (will be imported from @weave_protocol/hundredmen)
 interface InterceptorConfig {
@@ -244,7 +245,7 @@ router.get('/pending', (_req: Request, res: Response) => {
  * Approve a pending call.
  */
 router.post('/approve/:id', (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = param(req, 'id');
   const { approved_by } = req.body || {};
   
   const call = calls.find(c => c.id === id && c.status === 'pending');
@@ -275,7 +276,7 @@ router.post('/approve/:id', (req: Request, res: Response) => {
  * Block a pending call.
  */
 router.post('/block/:id', (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = param(req, 'id');
   const { blocked_by, reason } = req.body || {};
   
   const call = calls.find(c => c.id === id && c.status === 'pending');
@@ -339,7 +340,7 @@ router.post('/session', (req: Request, res: Response) => {
  * Declare intent for a session.
  */
 router.post('/session/:id/intent', (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = param(req, 'id');
   const { intent } = req.body;
   
   if (!intent) {
@@ -373,7 +374,7 @@ router.post('/session/:id/intent', (req: Request, res: Response) => {
  * Get drift analysis for a session.
  */
 router.get('/session/:id/drift', (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = param(req, 'id');
   
   const session = sessions.get(id);
   
@@ -411,7 +412,7 @@ router.get('/session/:id/drift', (req: Request, res: Response) => {
  * End a session and get summary.
  */
 router.delete('/session/:id', (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = param(req, 'id');
   
   const session = sessions.get(id);
   
@@ -448,7 +449,7 @@ router.delete('/session/:id', (req: Request, res: Response) => {
  * Get reputation score for an MCP server.
  */
 router.get('/reputation/:serverId', (req: Request, res: Response) => {
-  const { serverId } = req.params;
+  const serverId = param(req, 'serverId');
   
   let reputation = reputations.get(serverId);
   
@@ -498,7 +499,7 @@ router.get('/reputation/:serverId', (req: Request, res: Response) => {
  * Report suspicious behavior from a server.
  */
 router.post('/reputation/:serverId/report', (req: Request, res: Response) => {
-  const { serverId } = req.params;
+  const serverId = param(req, 'serverId');
   const { report_type, description, evidence, reported_by } = req.body;
   
   if (!report_type || !description) {
