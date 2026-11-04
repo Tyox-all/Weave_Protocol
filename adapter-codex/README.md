@@ -66,7 +66,12 @@ Set `WEAVE_DASHBOARD_URL` (and `WEAVE_API_KEY`) where you run the agent, and eac
 
 ## Verified
 
-Built against Codex's [hooks documentation](https://developers.openai.com/codex/hooks): the `PreToolUse` payload, deny output, `apply_patch` and MCP tool naming. 12 fixture tests.
+Built against Codex's [hooks documentation](https://developers.openai.com/codex/hooks): the `PreToolUse` payload, deny output, `apply_patch` and MCP tool naming. 13 fixture tests.
+
+Live-checked in Codex CLI 0.166.0, signed in with a ChatGPT account:
+- `cat secrets/key` was blocked, and Codex reported `Command blocked by PreToolUse hook: WARD: Denied by filesystem rule …`;
+- `cat notes.txt` went through;
+- an `apply_patch` adding `secrets/new.txt` was blocked by its file target, and no file was created, even in the `workspace-write` sandbox.
 
 ## License
 
