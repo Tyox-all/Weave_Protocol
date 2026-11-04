@@ -10,6 +10,20 @@ Part of the [Weave Protocol](https://github.com/Tyox-all/Weave_Protocol) securit
 
 ---
 
+## 🆕 What's new
+
+**1.6.0: GDPR and CCPA records survive restarts.** With `DOMERE_STORAGE=sqlite`:
+- consents, DSARs, breaches and opt-outs persist in the same database file as threads;
+- erased data is removed from disk too, using `secure_delete` and a WAL checkpoint after deletes.
+
+Checkpoint-chain verification now recomputes every hash, so an edited record fails. A new tool, `domere_gdpr_verify_chain`, runs that check.
+
+**1.5.0: the MCP server serves all the GDPR and CCPA tools.** That makes 42 tools, now 43. A DSAR can't be processed or completed until the requester's identity is verified (GDPR Art. 12(6)).
+
+**1.4.1: real blockchain anchoring.** Dōmere prepares real Ethereum calldata (Keccak-256, ABI-encoded) and Solana instructions (real PDAs) for you to sign and submit. It no longer fakes submissions or verification.
+
+**1.4.0: SQLite storage.** Threads, hops and evidence persist with `DOMERE_STORAGE=sqlite`.
+
 ## ✨ Features
 
 | Category | Features |
@@ -380,6 +394,28 @@ ccpa_verify_chain           Verify checkpoint integrity
 **Skill name:** `compliance-auditing`
 
 **Triggers:** audit, checkpoint, SOC2, HIPAA, PCI-DSS, ISO27001, GDPR, CCPA, CPRA, blockchain, consent, DSAR, consumer request, opt-out, breach, retention
+
+---
+
+## 🕸️ Part of Weave Protocol
+
+One [WARD.md](https://github.com/Tyox-all/Weave_Protocol) policy for every agent you run, locally or at scale, plus the tools around it.
+
+| Package | What it does |
+|---|---|
+| [Ward](https://www.npmjs.com/package/@weave_protocol/ward) | The WARD.md policy standard and the tool-call evaluator every adapter shares |
+| [Mund](https://www.npmjs.com/package/@weave_protocol/mund) | Scans content for prompt injection, secrets, PII and exfiltration |
+| [Hord](https://www.npmjs.com/package/@weave_protocol/hord) | Encrypted vaults, PII tokenization, sandboxes, capability tokens, attestations |
+| [Dōmere](https://www.npmjs.com/package/@weave_protocol/domere) | Audit threads, compliance checkpoints, GDPR and CCPA records, anchoring |
+| [Witan](https://www.npmjs.com/package/@weave_protocol/witan) | Multi-agent consensus and spending caps |
+| [Hundredmen](https://www.npmjs.com/package/@weave_protocol/hundredmen) | MCP proxy that enforces WARD.md on tool calls |
+| [Tollere](https://www.npmjs.com/package/@weave_protocol/tollere) | Supply-chain checks: typosquats, CVEs, suspicious version diffs |
+| [Browser](https://www.npmjs.com/package/@weave_protocol/browser) | WARD.md and injection scanning for Playwright browser agents |
+| Adapters | WARD.md in [Claude Code](https://www.npmjs.com/package/@weave_protocol/adapter-claudecode), [Antigravity](https://www.npmjs.com/package/@weave_protocol/adapter-antigravity), [MSAF](https://www.npmjs.com/package/@weave_protocol/adapter-msaf), [Gemini CLI](https://www.npmjs.com/package/@weave_protocol/adapter-geminicli), [Codex](https://www.npmjs.com/package/@weave_protocol/adapter-codex), [OpenCode](https://www.npmjs.com/package/@weave_protocol/adapter-opencode) and [Cursor](https://www.npmjs.com/package/@weave_protocol/adapter-cursor) |
+| [Adversary](https://www.npmjs.com/package/@weave_protocol/adversary) · [AgentSecBench](https://www.npmjs.com/package/@weave_protocol/agentsecbench) | Red-team engine and locked benchmark |
+| [API](https://www.npmjs.com/package/@weave_protocol/api) · [CLI](https://www.npmjs.com/package/@weave_protocol/cli) · [LangChain](https://www.npmjs.com/package/@weave_protocol/langchain) | REST API and dashboard, setup CLI, LangChain.js integration |
+| [full](https://www.npmjs.com/package/@weave_protocol/full) | Every defensive package in one install |
+| [Yoxallismus](https://www.npmjs.com/package/@weave_protocol/yoxallismus) | Post-quantum hybrid cipher (experimental beta) |
 
 ---
 

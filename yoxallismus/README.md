@@ -29,7 +29,7 @@
 
 **Read [THREAT_MODEL.md](THREAT_MODEL.md) and [SECURITY.md](SECURITY.md) before using this library for anything.**
 
-The version is `0.1.0-beta.0` for a reason. The wire format may break between v0.1 and v0.2. Formal external audit is not currently planned — the library is being validated by public use, forks, community verification, and a coordinated-disclosure program. Your judgment as an adopter is your only safety net; make it well.
+It's a beta for a reason. The `yoxall/2` wire format is locked from 0.2.0-beta.0 (see below), but the API may still change before 1.0. Formal external audit is not currently planned — the library is being validated by public use, forks, community verification, and a coordinated-disclosure program. Your judgment as an adopter is your only safety net; make it well.
 
 ---
 
@@ -234,6 +234,28 @@ The full research scope is intentionally proprietary until Q1 2027 IP position i
 - **v0.3.0-beta** — Threshold encryption (multi-agent m-of-n), verifiable delay functions, ZK state-transition proofs (experimental), QRNG integration hook
 - **v0.4.0-beta** — Homomorphic bounded arithmetic (FHE integration)
 - **v1.0** — Once the community has hammered on it enough that we're confident the primitives compose correctly. No time table.
+
+## 🕸️ Part of Weave Protocol
+
+One [WARD.md](https://github.com/Tyox-all/Weave_Protocol) policy for every agent you run, locally or at scale, plus the tools around it.
+
+| Package | What it does |
+|---|---|
+| [Ward](https://www.npmjs.com/package/@weave_protocol/ward) | The WARD.md policy standard and the tool-call evaluator every adapter shares |
+| [Mund](https://www.npmjs.com/package/@weave_protocol/mund) | Scans content for prompt injection, secrets, PII and exfiltration |
+| [Hord](https://www.npmjs.com/package/@weave_protocol/hord) | Encrypted vaults, PII tokenization, sandboxes, capability tokens, attestations |
+| [Dōmere](https://www.npmjs.com/package/@weave_protocol/domere) | Audit threads, compliance checkpoints, GDPR and CCPA records, anchoring |
+| [Witan](https://www.npmjs.com/package/@weave_protocol/witan) | Multi-agent consensus and spending caps |
+| [Hundredmen](https://www.npmjs.com/package/@weave_protocol/hundredmen) | MCP proxy that enforces WARD.md on tool calls |
+| [Tollere](https://www.npmjs.com/package/@weave_protocol/tollere) | Supply-chain checks: typosquats, CVEs, suspicious version diffs |
+| [Browser](https://www.npmjs.com/package/@weave_protocol/browser) | WARD.md and injection scanning for Playwright browser agents |
+| Adapters | WARD.md in [Claude Code](https://www.npmjs.com/package/@weave_protocol/adapter-claudecode), [Antigravity](https://www.npmjs.com/package/@weave_protocol/adapter-antigravity), [MSAF](https://www.npmjs.com/package/@weave_protocol/adapter-msaf), [Gemini CLI](https://www.npmjs.com/package/@weave_protocol/adapter-geminicli), [Codex](https://www.npmjs.com/package/@weave_protocol/adapter-codex), [OpenCode](https://www.npmjs.com/package/@weave_protocol/adapter-opencode) and [Cursor](https://www.npmjs.com/package/@weave_protocol/adapter-cursor) |
+| [Adversary](https://www.npmjs.com/package/@weave_protocol/adversary) · [AgentSecBench](https://www.npmjs.com/package/@weave_protocol/agentsecbench) | Red-team engine and locked benchmark |
+| [API](https://www.npmjs.com/package/@weave_protocol/api) · [CLI](https://www.npmjs.com/package/@weave_protocol/cli) · [LangChain](https://www.npmjs.com/package/@weave_protocol/langchain) | REST API and dashboard, setup CLI, LangChain.js integration |
+| [full](https://www.npmjs.com/package/@weave_protocol/full) | Every defensive package in one install |
+| [Yoxallismus](https://www.npmjs.com/package/@weave_protocol/yoxallismus) | Post-quantum hybrid cipher (experimental beta) |
+
+---
 
 ## License
 

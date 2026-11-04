@@ -23,7 +23,7 @@ import { loadWardPolicy, wardAwareSort, scoreAttackForPolicy } from './ward.js';
 import { DynamicAttackMutator, classifyEngagement } from './dynamic.js';
 
 // Read version from package.json without bundler ceremony.
-const ADVERSARY_VERSION = '0.4.1';
+const ADVERSARY_VERSION = '0.4.2';
 
 const HOSTILE_TOOL_NAMES = new Set([
   'send_email',

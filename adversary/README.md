@@ -36,6 +36,8 @@ npx @weave_protocol/adversary list --severity=critical
 
 ## What's new in v0.4
 
+**0.4.1:** a run now exits as soon as it finishes. A leftover per-attack timer used to keep the process alive for 30 seconds. Weave's CI also runs this corpus through Mund and Ward on every push. See the self red-team in the [main README](https://github.com/Tyox-all/Weave_Protocol).
+
 - **Any model provider.** `--provider=<id> --model=<id>` runs the target (and, with `--dynamic-provider`, the mutation model) on any of these:
 
   | Provider | `--provider` | Key variable |
@@ -273,10 +275,33 @@ This schema is consumed unchanged by AgentSecBench.
 - **v0.2** — Real Playwright browser target + `attack` CLI command + four breach signal channels (network/form/DOM/console) + red callouts
 - **v0.2.1** — Real-LLM demo mode via Anthropic API + cost reporting + sensitive-output redaction flag + warning callouts
 - **v0.3** — LLM-driven dynamic attack mode (`--mode=dynamic`) — adversary improvises against target responses
-- **v0.4** *(this release)* — Any model provider: OpenAI-compatible presets for Gemini, DeepSeek, Kimi, Qwen, GLM, OpenRouter, Groq, Together, and local models
+- **v0.4** — Any model provider: OpenAI-compatible presets for Gemini, DeepSeek, Kimi, Qwen, GLM, OpenRouter, Groq, Together, and local models
+- **v0.4.1** — Runs exit as soon as they finish (a leftover per-attack timer kept the process alive for 30s)
 - **v0.5** — Multi-turn / stateful attacks
 - **v0.6** — User-defined custom attack packs
 - **AgentSecBench** (separate package) — interpretation layer + tier grading built on Adversary's scorecard schema
+
+---
+
+## 🕸️ Part of Weave Protocol
+
+One [WARD.md](https://github.com/Tyox-all/Weave_Protocol) policy for every agent you run, locally or at scale, plus the tools around it.
+
+| Package | What it does |
+|---|---|
+| [Ward](https://www.npmjs.com/package/@weave_protocol/ward) | The WARD.md policy standard and the tool-call evaluator every adapter shares |
+| [Mund](https://www.npmjs.com/package/@weave_protocol/mund) | Scans content for prompt injection, secrets, PII and exfiltration |
+| [Hord](https://www.npmjs.com/package/@weave_protocol/hord) | Encrypted vaults, PII tokenization, sandboxes, capability tokens, attestations |
+| [Dōmere](https://www.npmjs.com/package/@weave_protocol/domere) | Audit threads, compliance checkpoints, GDPR and CCPA records, anchoring |
+| [Witan](https://www.npmjs.com/package/@weave_protocol/witan) | Multi-agent consensus and spending caps |
+| [Hundredmen](https://www.npmjs.com/package/@weave_protocol/hundredmen) | MCP proxy that enforces WARD.md on tool calls |
+| [Tollere](https://www.npmjs.com/package/@weave_protocol/tollere) | Supply-chain checks: typosquats, CVEs, suspicious version diffs |
+| [Browser](https://www.npmjs.com/package/@weave_protocol/browser) | WARD.md and injection scanning for Playwright browser agents |
+| Adapters | WARD.md in [Claude Code](https://www.npmjs.com/package/@weave_protocol/adapter-claudecode), [Antigravity](https://www.npmjs.com/package/@weave_protocol/adapter-antigravity), [MSAF](https://www.npmjs.com/package/@weave_protocol/adapter-msaf), [Gemini CLI](https://www.npmjs.com/package/@weave_protocol/adapter-geminicli), [Codex](https://www.npmjs.com/package/@weave_protocol/adapter-codex), [OpenCode](https://www.npmjs.com/package/@weave_protocol/adapter-opencode) and [Cursor](https://www.npmjs.com/package/@weave_protocol/adapter-cursor) |
+| [Adversary](https://www.npmjs.com/package/@weave_protocol/adversary) · [AgentSecBench](https://www.npmjs.com/package/@weave_protocol/agentsecbench) | Red-team engine and locked benchmark |
+| [API](https://www.npmjs.com/package/@weave_protocol/api) · [CLI](https://www.npmjs.com/package/@weave_protocol/cli) · [LangChain](https://www.npmjs.com/package/@weave_protocol/langchain) | REST API and dashboard, setup CLI, LangChain.js integration |
+| [full](https://www.npmjs.com/package/@weave_protocol/full) | Every defensive package in one install |
+| [Yoxallismus](https://www.npmjs.com/package/@weave_protocol/yoxallismus) | Post-quantum hybrid cipher (experimental beta) |
 
 ---
 
