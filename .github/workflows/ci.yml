@@ -47,6 +47,29 @@ jobs:
       - name: Audit (production deps)
         run: npm audit --omit=dev --audit-level=high
 
+  # Self red-team: Weave's own attack corpus through Mund and Ward, offline
+  # (no model, no keys). Fails if a rate drops below scripts/redteam-baseline.json;
+  # the scorecard goes to the job summary and a downloadable artifact.
+  redteam:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Build the defenses and the corpus
+        run: |
+          for p in mund ward adversary agentsecbench; do
+            (cd $p && npm ci && npm run build)
+          done
+      - name: Run
+        run: node scripts/self-redteam.mjs --out=redteam-report
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: redteam-scorecard
+          path: redteam-report/
+
   python:
     runs-on: ubuntu-latest
     defaults:

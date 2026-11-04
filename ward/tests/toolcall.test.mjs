@@ -177,3 +177,68 @@ test('missing or odd arguments do not throw', () => {
   assert.equal(decide('Read', { file_path: 42 }), 'allow');
   assert.equal(decide('Read', { file_path: '' }), 'allow');
 });
+
+// Ward 0.3.3: an agent can't quietly rewrite its own policy or harness config
+// (the CurXecute class, Cursor CVE-2025-54135), even under a broad write rule.
+describe('self-protection', () => {
+  const broad = parseWard(`---
+ward: "1.0"
+agent: self-protect
+---
+
+## Filesystem
+
+allow:
+  - read: /repo/**
+  - write: /repo/**
+  - delete: /repo/**
+  - write: /repo/.cursor/mcp.json
+default: deny
+
+## Capabilities
+
+allow:
+  - file_read
+  - file_write
+  - shell_exec
+default: deny
+`);
+  const write = (path, cwd) => evaluateToolCall(broad, 'file_write', { path }, { cwd });
+  const sh = (command) => evaluateToolCall(broad, 'Bash', { command }, { cwd: '/repo', mappings: { Bash: { capability: 'shell_exec', commandField: 'command' } } });
+
+  test('writes to policy and harness config need approval', () => {
+    for (const p of ['/repo/WARD.md', '/repo/.weave/WARD.md', '/repo/.claude/settings.json', '/repo/.claude/settings.local.json',
+      '/repo/.cursor/hooks.json', '/repo/.codex/hooks.json', '/repo/.codex/config.toml', '/repo/.gemini/settings.json',
+      '/repo/opencode.json', '/repo/.opencode/plugins/x.js', '/repo/.mcp.json', '/repo/.vscode/mcp.json', '/repo/.git/hooks/pre-commit']) {
+      const r = write(p);
+      assert.equal(r.decision, 'require_approval', p);
+      assert.match(r.reasons[0], /self-protection/);
+    }
+  });
+
+  test('ordinary files, reads and look-alikes are untouched', () => {
+    assert.equal(write('/repo/src/a.ts').decision, 'allow');
+    assert.equal(write('/repo/docs/ward.md.bak').decision, 'allow');
+    assert.equal(write('/repo/settings.json').decision, 'allow');
+    assert.equal(evaluateToolCall(broad, 'file_read', { path: '/repo/WARD.md' }).decision, 'allow');
+  });
+
+  test('relative paths, traversal and ~ are caught', () => {
+    assert.equal(write('.cursor/hooks.json', '/repo').decision, 'require_approval');
+    assert.equal(write('/repo/src/../.claude/settings.json').decision, 'require_approval');
+    assert.equal(write('~/.codex/hooks.json').decision, 'deny', 'outside the policy is still a plain deny');
+  });
+
+  test('shell writes and deletes are caught, including relative targets', () => {
+    assert.equal(sh('echo "{}" > .cursor/hooks.json').decision, 'require_approval');
+    assert.equal(sh('cp /tmp/evil.json /repo/.mcp.json').decision, 'deny', 'reading /tmp is denied too');
+    assert.equal(sh('rm WARD.md').decision, 'require_approval');
+    assert.equal(sh('cat WARD.md').decision, 'allow');
+  });
+
+  test('an allow rule naming the exact file lifts it; a deny still wins', () => {
+    assert.equal(write('/repo/.cursor/mcp.json').decision, 'allow');
+    const denied = parseWard(`---\nward: "1.0"\nagent: d\n---\n\n## Filesystem\n\nallow:\n  - write: /repo/**\ndeny:\n  - write: /repo/WARD.md\ndefault: deny\n`);
+    assert.equal(evaluateToolCall(denied, 'file_write', { path: '/repo/WARD.md' }).decision, 'deny');
+  });
+});

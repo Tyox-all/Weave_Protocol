@@ -3,6 +3,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
+import { request } from 'node:http';
 
 const KEY = 'test-key-not-a-secret';
 
@@ -79,5 +80,36 @@ test('CORS allows only listed origins', async () => {
     assert.equal(ok.headers.get('access-control-allow-origin'), 'https://app.example');
     const no = await fetch(url('/health'), { headers: { Origin: 'https://evil.example' } });
     assert.equal(no.headers.get('access-control-allow-origin'), null);
+  });
+});
+
+// DNS rebinding (the class behind Playwright MCP CVE-2025-9611): a web page
+// resolves its own domain to 127.0.0.1 and calls the API "same-origin". The
+// browser still sends the page's domain as Host, so the API refuses it.
+describe('Host check', () => {
+
+  const get = (url, host) => new Promise((resolve, reject) => {
+    const u = new URL(url);
+    const req = request({ hostname: u.hostname, port: u.port, path: u.pathname, headers: host ? { Host: host } : {} }, (res) => { res.resume(); resolve(res.statusCode); });
+    req.on('error', reject);
+    req.end();
+  });
+
+  test('loopback bind answers only loopback names', async () => {
+    await withServer({}, async (url) => {
+      const port = new URL(url('/')).port;
+      for (const host of [`localhost:${port}`, `127.0.0.1:${port}`, `[::1]:${port}`, 'LOCALHOST']) assert.equal(await get(url('/health'), host), 200, host);
+      for (const host of [`evil.example:${port}`, 'attacker.test', '127.0.0.1.evil.example']) {
+        assert.equal(await get(url('/health'), host), 421, host);
+        assert.equal(await get(url('/api/dashboard/snapshot'), host), 421, host);
+      }
+    });
+  });
+
+  test('WEAVE_ALLOWED_HOSTS adds names', async () => {
+    await withServer({ WEAVE_ALLOWED_HOSTS: 'weave.internal' }, async (url) => {
+      assert.equal(await get(url('/health'), 'weave.internal:8080'), 200);
+      assert.equal(await get(url('/health'), 'other.internal'), 421);
+    });
   });
 });

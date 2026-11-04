@@ -1,6 +1,6 @@
 /**
  * Weave API - Universal REST Interface
- * @weave_protocol/api v1.5.1
+ * @weave_protocol/api v1.6.0
  * 
  * Platform-agnostic security for AI agents
  * Works with: OpenAI, Gemini, LangChain, Grok, Copilot, Siri, or ANY HTTP client
@@ -47,6 +47,8 @@ export const PORT = Number(process.env.WEAVE_PORT || 3000);
 //   WEAVE_DEMO=1                   enable /reset and /test/* (fake dashboard events)
 //   WEAVE_EVENTS_RATE_LIMIT        POST /api/v1/events per minute per client; default 3000
 //   WEAVE_EVENTS_MAX               events kept in memory for the dashboard; default 5000
+//   WEAVE_ALLOWED_HOSTS            comma-separated Host names to accept; on a loopback bind,
+//                                  localhost, 127.0.0.1 and [::1] are always accepted
 
 export const HOST = process.env.WEAVE_HOST || '127.0.0.1';
 export const API_KEY = process.env.WEAVE_API_KEY || '';
@@ -54,6 +56,23 @@ export const DEMO = process.env.WEAVE_DEMO === '1';
 export const CORS_ORIGINS = (process.env.WEAVE_CORS_ORIGINS || process.env.WEAVE_CORS_ORIGIN || '').split(',').map((o) => o.trim()).filter(Boolean);
 const STARTED_AT = new Date().toISOString();
 export const LOOPBACK = HOST === '127.0.0.1' || HOST === '::1' || HOST === 'localhost';
+
+// DNS rebinding: a web page can point its own domain at 127.0.0.1 and then
+// call this API from the browser as if same-origin (the class behind
+// Playwright MCP CVE-2025-9611). The Host header still carries the page's
+// domain, so a loopback API only answers requests addressed to a loopback name.
+export const ALLOWED_HOSTS = new Set([
+  ...(LOOPBACK ? ['localhost', '127.0.0.1', '::1'] : []),
+  ...(process.env.WEAVE_ALLOWED_HOSTS || '').split(',').map((h) => h.trim().toLowerCase()).filter(Boolean),
+]);
+
+/** The host name from a Host header, without the port or IPv6 brackets. */
+export function hostName(header: string | undefined): string {
+  if (!header) return '';
+  const h = header.trim().toLowerCase();
+  if (h.startsWith('[')) return h.slice(1, h.indexOf(']'));
+  return h.replace(/:\d+$/, '');
+}
 
 
 // =============================================================================
@@ -151,6 +170,13 @@ export const trackVaultOp = (operation: string) => {
 // =============================================================================
 // Middleware
 // =============================================================================
+
+// Host check first: a rebinding page gets nothing, not even /health.
+// Enforced on a loopback bind, or anywhere WEAVE_ALLOWED_HOSTS is set.
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (ALLOWED_HOSTS.size === 0 || ALLOWED_HOSTS.has(hostName(req.headers.host))) return next();
+  res.status(421).json({ error: 'Misdirected request: Host not allowed. Add it to WEAVE_ALLOWED_HOSTS if this is intended.' });
+});
 
 // Disable CSP for local dashboard (needs CDN scripts)
 app.use(helmet({ contentSecurityPolicy: false }));
@@ -308,7 +334,7 @@ app.get('/api/v1/functions', (_req: Request, res: Response) => {
 app.get('/api', (_req: Request, res: Response) => {
   res.json({
     name: 'Weave Protocol API',
-    version: '1.5.1',
+    version: '1.6.0',
     dashboard: '/dashboard',
     health: '/health',
     ...(DEMO ? { test: { threat: 'POST /test/threat', activity: 'POST /test/activity', mixed: 'POST /test/mixed' } } : {}),

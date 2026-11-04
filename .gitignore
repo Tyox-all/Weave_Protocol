@@ -44,3 +44,6 @@ solana/
 .mcpregistry*
 .internal/
 .claude/
+
+# Self red-team output (scripts/self-redteam.mjs)
+redteam-report/

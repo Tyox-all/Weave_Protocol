@@ -42,7 +42,7 @@
 
 Make agent behavior verifiable, auditable, and cryptographically provable across any harness, any platform. Built as a TypeScript monorepo with MCP integration, blockchain anchoring, and — as of Q4 — a **published red-team engine that tests our own defenses**.
 
-> **The thesis:** every security platform claims its defenses work. We're the first to publish the attacks that prove it. Same suite. Same scorecard. Same locked benchmark — applied to our own packages, every release.
+> **The thesis:** every security platform claims its defenses work. We're the first to publish the attacks that prove it. Same suite. Same scorecard. Same locked benchmark — applied to our own packages on every push and release, with the scorecard published in CI.
 
 ---
 
@@ -61,6 +61,21 @@ npm install @weave_protocol/full
 ---
 
 ## 🆕 What's New
+
+### 🗓️ November 2026 update — hardening
+
+#### 🛡️ Agents can't switch off their own guardrails (Ward 0.3.3)
+An agent with a broad write rule could rewrite the files that control it: WARD.md, its harness's hook and settings files, MCP server lists, or git hooks. This is the pattern behind Cursor's CurXecute (CVE-2025-54135), where injected content rewrote `mcp.json`. Every adapter now asks a human before an agent writes or deletes one of these, even when a rule like `write: /repo/**` covers it. To let an agent edit one, name that exact file in an allow rule.
+
+#### 🛡️ The API refuses DNS-rebinding requests (api 1.6.0)
+A web page can point its own domain at `127.0.0.1` and call a local server from your browser. This is the class behind the Playwright MCP DNS-rebinding issue (CVE-2025-9611). On its default loopback bind, the API now answers only requests addressed to `localhost`, `127.0.0.1` or `[::1]`. Add other names with `WEAVE_ALLOWED_HOSTS`.
+
+#### ⚔️ Self red-team on every push
+CI now runs our own attack corpus through our own defenses, offline. Mund scans every Adversary payload, and Ward decides the tool calls a coerced agent would make. The scorecard goes to the job summary, and CI fails if either rate falls below its committed baseline. First numbers:
+- Ward decided all 21 coerced tool calls correctly.
+- Mund flagged 39.7% of the 68 attack payloads.
+
+The Mund number is low, and improving it is next. These are regression numbers on our own corpus, not a measure against unseen attacks.
 
 ### 🗓️ October 2026 update — what landed
 
@@ -379,7 +394,7 @@ The packages that keep your agent within policy: declare it, enforce it across e
 
 | Package | Version | Description |
 |---|---|---|
-| [🛡️ @weave_protocol/ward](https://github.com/Tyox-all/Weave_Protocol/blob/main/ward) | 0.3.0 | **WARD.md** — agent security policy standard (parser, validator, runtime checks, shared tool-call evaluator, dashboard reporting) |
+| [🛡️ @weave_protocol/ward](https://github.com/Tyox-all/Weave_Protocol/blob/main/ward) | 0.3.3 | **WARD.md** — agent security policy standard (parser, validator, runtime checks, shared tool-call evaluator, dashboard reporting) |
 | [🛡️ @weave_protocol/adapter-claudecode](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-claudecode) | 0.4.0 | **Claude Code adapter** — enforces WARD.md via PreToolUse hooks; Mund pre-install hooks for skills + MCP |
 | [🛡️ @weave_protocol/adapter-antigravity](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-antigravity) | 0.4.0 | **Google Antigravity adapter** — enforces WARD.md across desktop, `agy` CLI, and SDK; Mund pre-install hooks |
 | [🛡️ @weave_protocol/adapter-msaf](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-msaf) | 0.3.0 | **Microsoft Agent Framework adapter** — middleware-based WARD enforcement |
@@ -402,7 +417,7 @@ The red team. We attack what we defend.
 
 | Package | Version | Description |
 |---|---|---|
-| [⚔️ @weave_protocol/adversary](https://github.com/Tyox-all/Weave_Protocol/blob/main/adversary) | **0.4.0** | **Offensive engine** — 68 attacks · any model provider · LLM dynamic mutation · real Playwright browser target · real-LLM demo mode · WARD-aware attack selection |
+| [⚔️ @weave_protocol/adversary](https://github.com/Tyox-all/Weave_Protocol/blob/main/adversary) | **0.4.1** | **Offensive engine** — 68 attacks · any model provider · LLM dynamic mutation · real Playwright browser target · real-LLM demo mode · WARD-aware attack selection |
 | [🎯 @weave_protocol/agentsecbench](https://github.com/Tyox-all/Weave_Protocol/blob/main/agentsecbench) | **0.3.0** | **Standardized benchmark** — locked suites (ASB-Browser-v1), any model provider, tier grading A–F, trophy attacks, WARD delta, paste-ready reports |
 
 ### 🔧 Operations & Integrations (5 packages, plus 1 PyPI)
@@ -413,7 +428,7 @@ The front door, the dashboard, the bridges to other frameworks.
 |---|---|---|
 | [🕸️ @weave_protocol/cli](https://github.com/Tyox-all/Weave_Protocol/blob/main/cli) | 0.1.0 | **The `weave` CLI** — `init`, `audit`, `dashboard`, `doctor` |
 | [📦 @weave_protocol/full](https://github.com/Tyox-all/Weave_Protocol/blob/main/full) | 0.4.0 | **Bundle** — installs all packages in one command |
-| [🔌 @weave_protocol/api](https://github.com/Tyox-all/Weave_Protocol/blob/main/api) | 1.5.1 | **REST API + Operator Dashboard** — `npx @weave_protocol/api` → http://localhost:3000/dashboard |
+| [🔌 @weave_protocol/api](https://github.com/Tyox-all/Weave_Protocol/blob/main/api) | 1.6.0 | **REST API + Operator Dashboard** — `npx @weave_protocol/api` → http://localhost:3000/dashboard |
 | [🔗 @weave_protocol/langchain](https://github.com/Tyox-all/Weave_Protocol/blob/main/langchain) | **1.0.2** | **LangChain.js** security callbacks & tool wrappers (0 audit vulnerabilities via npm overrides) |
 | [🐍 weave-protocol-llamaindex](https://github.com/Tyox-all/Weave_Protocol/blob/main/llamaindex-py) | 0.1.0 | **Python/LlamaIndex** security callbacks & tools (on PyPI) |
 

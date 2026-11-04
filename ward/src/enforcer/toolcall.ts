@@ -77,7 +77,10 @@ export function evaluateToolCall(
   for (const { key, value } of pathArgs(input, mapping)) {
     const op: FilesystemOp =
       key === mapping.pathField ? defaultOp : DEST_KEY.test(key) ? "write" : SOURCE_KEY.test(key) ? "read" : defaultOp;
-    checks.push({ type: "filesystem", subject: `${key}=${value}`, ...checkFilesystem(policy, op, resolvePath(value, opts.cwd)) });
+    const path = resolvePath(value, opts.cwd);
+    checks.push({ type: "filesystem", subject: `${key}=${value}`, ...checkFilesystem(policy, op, path) });
+    const guard = selfProtect(policy, op, path);
+    if (guard) checks.push({ type: "filesystem", subject: `${key}=${value}`, ...guard });
   }
 
   // 3. Every URL argument
@@ -158,8 +161,12 @@ function scanCommand(policy: WardPolicy, command: string, cwd?: string): ToolCal
   const writes = new Set([...withoutUrls.matchAll(REDIRECT)].map((m) => m[2]));
   const deletes = /(?:^|[\s;|&(])(rm|rmdir|unlink|shred)\s/.test(withoutUrls);
   const copies = /(?:^|[\s;|&(])(cp|mv|install|rsync|ln)\s/.test(withoutUrls) || /\bsed\s+-i/.test(withoutUrls);
-  const tokens = [...new Set(withoutUrls.match(PATH_TOKEN) ?? [])];
-  const last = tokens[tokens.length - 1];
+  // Bare names like "WARD.md" or "opencode.json" have no "/", so add any word
+  // that names a protected file, and every redirect target.
+  const bare = (withoutUrls.match(/[^\s'"`<>|;&()]+/g) ?? []).filter((w) => protectedConfig(resolvePath(w, cwd)));
+  const pathTokens = withoutUrls.match(PATH_TOKEN) ?? [];
+  const tokens = [...new Set([...pathTokens, ...writes, ...bare])];
+  const last = pathTokens[pathTokens.length - 1] ?? bare[bare.length - 1];
 
   for (const token of tokens) {
     const ops = new Set<FilesystemOp>(["read"]);
@@ -168,6 +175,8 @@ function scanCommand(policy: WardPolicy, command: string, cwd?: string): ToolCal
     const explicitPath = token.startsWith("/") || token.startsWith("~");
     const path = resolvePath(token, cwd);
     for (const op of ops) {
+      const guard = selfProtect(policy, op, path);
+      if (guard) checks.push({ type: "command", subject: `${op} ${token}`, ...guard });
       const result = checkFilesystem(policy, op, path);
       // Relative tokens are often not paths at all (a commit message, a
       // regex), so they only trip explicit rules, not the policy default.
@@ -176,6 +185,53 @@ function scanCommand(policy: WardPolicy, command: string, cwd?: string): ToolCal
     }
   }
   return checks;
+}
+
+// ─────────────────────────────────────────────────────────
+// Self-protection (Ward 0.3.3)
+// ─────────────────────────────────────────────────────────
+
+/**
+ * Files that change what an agent may do or that run code on their own: the
+ * WARD policy itself, harness hook and settings files, MCP server lists and
+ * git hooks. An agent that can rewrite them can turn its own guardrails off
+ * or plant a command that runs later (Cursor CVE-2025-54135 "CurXecute",
+ * where injected content rewrote mcp.json). Writing or deleting one needs
+ * human approval even when a broad rule like `write: /repo/**` covers it.
+ */
+const PROTECTED: { label: string; test: RegExp }[] = [
+  { label: "the WARD policy", test: /(^|\/)ward\.md$/i },
+  { label: "Claude Code settings", test: /(^|\/)\.claude\/settings(\.local)?\.json$/ },
+  { label: "Cursor hooks", test: /(^|\/)\.cursor\/hooks\.json$/ },
+  { label: "Codex config", test: /(^|\/)\.codex\/(hooks\.json|config\.toml)$/ },
+  { label: "Gemini settings", test: /(^|\/)\.gemini\/(settings\.json|config\/hooks\.json)$/ },
+  { label: "OpenCode config", test: /(^|\/)(opencode\.jsonc?|\.opencode\/plugins?\/.*)$/ },
+  { label: "an MCP server list", test: /(^|\/)(\.?mcp\.json|claude_desktop_config\.json)$/ },
+  { label: "a git hook", test: /(^|\/)\.git\/hooks\/.+/ },
+];
+
+/** Which protected file a path is, if any. */
+export function protectedConfig(path: string): string | undefined {
+  const normalized = normalizePath(path);
+  return PROTECTED.find((p) => p.test.test(normalized))?.label;
+}
+
+/**
+ * An approval check for a write or delete of a protected file. A WARD allow
+ * rule naming the exact file (no wildcard) lifts it.
+ */
+function selfProtect(policy: WardPolicy, op: FilesystemOp, path: string): CheckResult | undefined {
+  if (op !== "write" && op !== "delete") return undefined;
+  const label = protectedConfig(path);
+  if (!label) return undefined;
+  const target = normalizePath(path);
+  const named = (policy.filesystem?.allow ?? []).some((r) => r.op === op && normalizePath(r.path) === target);
+  if (named) return undefined;
+  return {
+    decision: "require_approval",
+    reason: `Changing ${label} requires human approval (Ward self-protection; allow the exact file in WARD.md to lift this)`,
+    severity: "high",
+  };
 }
 
 // ─────────────────────────────────────────────────────────

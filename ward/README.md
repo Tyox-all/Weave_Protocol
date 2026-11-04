@@ -159,6 +159,13 @@ const result = evaluateToolCall(policy, "Bash", { command: "curl https://a.examp
   This scanning is best effort. To draw a hard line on shell use, gate `shell_exec` itself with `requireApproval` or `deny`.
 - **Relative paths** resolve against `cwd`.
 - **Strictness:** the strictest result wins (deny, then require_approval, then allow).
+- **Self-protection (0.3.3):** writing or deleting a file that controls the agent needs human approval, even when a broad rule like `write: /repo/**` covers it. These files are:
+  - `WARD.md`;
+  - harness hooks and settings: `.claude/settings*.json`, `.cursor/hooks.json`, `.codex/hooks.json` and `config.toml`, `.gemini/settings.json`, `opencode.json` and `.opencode/plugins/`;
+  - MCP server lists: `mcp.json`, `.mcp.json`, `claude_desktop_config.json`;
+  - git hooks.
+
+  An agent that can rewrite them can turn its own guardrails off, as in Cursor's CurXecute (CVE-2025-54135). To allow edits to one, name that exact file in an allow rule (`- write: /repo/.cursor/mcp.json`). `protectedConfig(path)` tells you whether a path is one of them.
 
 ### Reporting decisions to the dashboard (0.3.0+)
 
