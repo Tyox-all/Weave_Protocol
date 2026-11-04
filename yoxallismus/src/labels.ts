@@ -55,7 +55,7 @@ export function showBetaBanner(): void {
  * Consumed by CLI, by import-time banner, and by test harness.
  */
 export const STATUS = {
-  version: '0.2.0-beta.0',
+  version: '0.2.0-beta.1',
   wireFormat: 'yoxall/2 (locked through 1.0)',
   audited: false,
   auditPlanned: false,
