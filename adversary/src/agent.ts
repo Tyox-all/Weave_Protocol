@@ -23,7 +23,7 @@ import { loadWardPolicy, wardAwareSort, scoreAttackForPolicy } from './ward.js';
 import { DynamicAttackMutator, classifyEngagement } from './dynamic.js';
 
 // Read version from package.json without bundler ceremony.
-const ADVERSARY_VERSION = '0.4.0';
+const ADVERSARY_VERSION = '0.4.1';
 
 const HOSTILE_TOOL_NAMES = new Set([
   'send_email',
@@ -248,12 +248,13 @@ export class AdversarialAgent {
 }
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
-  return Promise.race([
-    p,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(`attack timed out after ${ms}ms`)), ms),
-    ),
-  ]);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<T>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`attack timed out after ${ms}ms`)), ms);
+  });
+  // Clear the timer once the attack settles, or the process idles until the
+  // last attack's timeout fires (30s after a mock run finished).
+  return Promise.race([p, timeout]).finally(() => clearTimeout(timer));
 }
 
 

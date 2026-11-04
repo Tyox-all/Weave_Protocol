@@ -323,6 +323,7 @@ POST /api/v1/functions/call  # Call a function
 | `WEAVE_RATE_LIMIT` | `100` | `/api` requests per minute per client |
 | `WEAVE_EVENTS_RATE_LIMIT` | `3000` | `POST /api/v1/events` per minute per client |
 | `WEAVE_EVENTS_MAX` | `5000` | Events kept in memory for the dashboard |
+| `WEAVE_ALLOWED_HOSTS` | - | Comma-separated `Host` names to accept. On a loopback bind, `localhost`, `127.0.0.1` and `[::1]` are always accepted and any other `Host` gets `421`, which blocks DNS-rebinding attacks from web pages. On other binds the check runs only when this is set |
 | `WEAVE_DEMO` | - | Set to `1` to enable `/reset` and `/test/*` |
 | `HORD_MASTER_KEY` | random per process | Hord vault master key: 64 hex chars or a passphrase. Without it, vault contents don't survive a restart |
 | `HORD_MASTER_KEY_FILE` | - | File containing the master key |
