@@ -19,7 +19,7 @@ import { assertValidSuite, suiteManifestHash } from './suites/validate.js';
 import { buildCategoryGaps, buildTrophyResults, gradeTier } from './tier.js';
 import { generateInterpretation } from './report/interpret.js';
 
-const AGENTSECBENCH_VERSION = '0.3.0';
+const AGENTSECBENCH_VERSION = '0.3.1';
 
 export interface RunSuiteOptions {
   /** Target to attack */

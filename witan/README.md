@@ -9,6 +9,15 @@ Part of the [Weave Protocol Security Suite](https://github.com/Tyox-all/Weave_Pr
 
 *Witan* = Old English for "council of advisors" (the Witenagemot advised Anglo-Saxon kings)
 
+## 🆕 What's new
+
+**1.2.0: spending caps fail closed.**
+- Current Claude models are priced: Fable 5.1 and 5; Opus 5.5, 5, 4.8 and 4.6; Sonnet 5.5, 5 and 4.6; Haiku 5.5 and 4.5. Before this, USD caps never triggered for them.
+- Opus 4.7 pricing is corrected.
+- A model with no price now fails closed under a USD cap, instead of costing $0.
+
+**1.1.0: autonomous spending caps.** Per-window budgets for LLM and tool calls can block or require approval. See [Autonomous Spending Caps](#-autonomous-spending-caps-v110).
+
 ## ✨ Features
 
 | Module | Capabilities |
@@ -464,13 +473,25 @@ await council.stop();
 
 ---
 
-## 🔗 Related Packages
+## 🕸️ Part of Weave Protocol
 
-| Package | Description |
-|---------|-------------|
-| [@weave_protocol/domere](https://www.npmjs.com/package/@weave_protocol/domere) | Judge Protocol - Orchestration & verification |
-| [@weave_protocol/mund](https://www.npmjs.com/package/@weave_protocol/mund) | Guardian Protocol - Threat scanning |
-| [@weave_protocol/hord](https://www.npmjs.com/package/@weave_protocol/hord) | Vault Protocol - Secure storage |
+One [WARD.md](https://github.com/Tyox-all/Weave_Protocol) policy for every agent you run, locally or at scale, plus the tools around it.
+
+| Package | What it does |
+|---|---|
+| [Ward](https://www.npmjs.com/package/@weave_protocol/ward) | The WARD.md policy standard and the tool-call evaluator every adapter shares |
+| [Mund](https://www.npmjs.com/package/@weave_protocol/mund) | Scans content for prompt injection, secrets, PII and exfiltration |
+| [Hord](https://www.npmjs.com/package/@weave_protocol/hord) | Encrypted vaults, PII tokenization, sandboxes, capability tokens, attestations |
+| [Dōmere](https://www.npmjs.com/package/@weave_protocol/domere) | Audit threads, compliance checkpoints, GDPR and CCPA records, anchoring |
+| [Witan](https://www.npmjs.com/package/@weave_protocol/witan) | Multi-agent consensus and spending caps |
+| [Hundredmen](https://www.npmjs.com/package/@weave_protocol/hundredmen) | MCP proxy that enforces WARD.md on tool calls |
+| [Tollere](https://www.npmjs.com/package/@weave_protocol/tollere) | Supply-chain checks: typosquats, CVEs, suspicious version diffs |
+| [Browser](https://www.npmjs.com/package/@weave_protocol/browser) | WARD.md and injection scanning for Playwright browser agents |
+| Adapters | WARD.md in [Claude Code](https://www.npmjs.com/package/@weave_protocol/adapter-claudecode), [Antigravity](https://www.npmjs.com/package/@weave_protocol/adapter-antigravity), [MSAF](https://www.npmjs.com/package/@weave_protocol/adapter-msaf), [Gemini CLI](https://www.npmjs.com/package/@weave_protocol/adapter-geminicli), [Codex](https://www.npmjs.com/package/@weave_protocol/adapter-codex), [OpenCode](https://www.npmjs.com/package/@weave_protocol/adapter-opencode) and [Cursor](https://www.npmjs.com/package/@weave_protocol/adapter-cursor) |
+| [Adversary](https://www.npmjs.com/package/@weave_protocol/adversary) · [AgentSecBench](https://www.npmjs.com/package/@weave_protocol/agentsecbench) | Red-team engine and locked benchmark |
+| [API](https://www.npmjs.com/package/@weave_protocol/api) · [CLI](https://www.npmjs.com/package/@weave_protocol/cli) · [LangChain](https://www.npmjs.com/package/@weave_protocol/langchain) | REST API and dashboard, setup CLI, LangChain.js integration |
+| [full](https://www.npmjs.com/package/@weave_protocol/full) | Every defensive package in one install |
+| [Yoxallismus](https://www.npmjs.com/package/@weave_protocol/yoxallismus) | Post-quantum hybrid cipher (experimental beta) |
 
 ## 📄 License
 

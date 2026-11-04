@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/adapter-claudecode",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Weave Protocol adapter for Claude Code - enforces WARD.md policies via Claude Code's hook system",
   "type": "module",
   "main": "dist/index.js",

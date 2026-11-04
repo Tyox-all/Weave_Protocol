@@ -6,6 +6,8 @@
 // Re-export for API integration
 export { Interceptor } from './interceptor.js';
 export { ReputationManager } from './reputation.js';
+export { WardPolicyManager } from './ward.js';
+export type { WardCheckResult, WardCheckBreakdown, WardManagerStatus } from './ward.js';
 export * from './types.js';
 
 // Importing this module has no side effects. Run directly (`node dist/index.js`,

@@ -10,6 +10,15 @@
 
 ---
 
+## 🆕 What's new
+
+**0.3.0: decisions on the dashboard.** Set `WEAVE_DASHBOARD_URL` and every allow and deny decision goes to a local [Weave API](https://www.npmjs.com/package/@weave_protocol/api) dashboard. It's off by default.
+
+**0.2.0: Playwright blocking is real.**
+- `wrapPlaywrightPage` aborts denied navigations with `page.route()` before the request is sent, and cancels denied downloads. Before this, they were only logged.
+- Download checks use the name the OS will save, so `a.exe.` counts as `.exe`. Script hosts, shortcuts and macOS scripts are blocked by default.
+- A missing or invalid WARD.md now throws instead of running with no policy.
+
 ## Why this exists
 
 In April 2026, **Google reported a 32% increase** in indirect prompt injection (IPI) payloads on the public web between November 2025 and February 2026. Forcepoint's X-Labs has telemetry of real attacks triggering on patterns like "Ignore previous instructions" and "If you are an LLM."
@@ -310,15 +319,15 @@ The OpenAI, Anthropic, and Google DeepMind 2025 publications all acknowledge: pr
 
 ## What this package does NOT do (yet)
 
-v0.1 deliberately ships a tight scope. **Deferred to v0.2:**
+The scope is deliberately tight. **Not included yet:**
 
-- Native browser extension (massive undertaking — out of v0.1 scope)
+- Native browser extension
 - Cookie / session token protection (block cookies leaving allowlisted origins)
 - Form submission gating with PII detection
 - MCP server interface (so cross-language agents can call this enforcement)
-- Puppeteer / Stagehand-specific wrappers (v0.1 has docs + manual hook patterns; Playwright is a one-liner)
+- Puppeteer / Stagehand-specific wrappers (there are manual hook recipes; Playwright is a one-liner)
 
-The IPI scanner is the core value of v0.1. Everything else hangs off WARD primitives we already shipped in `@weave_protocol/ward`.
+The IPI scanner is the core of the package. Everything else hangs off WARD primitives we already shipped in `@weave_protocol/ward`.
 
 ---
 
@@ -334,32 +343,56 @@ The IPI scanner is the core value of v0.1. Everything else hangs off WARD primit
 | Microsoft Agent Framework | Microsoft | [adapter-msaf](../adapter-msaf) |
 | **Browser agents (Playwright / Puppeteer / Stagehand)** | **Generic** | **`@weave_protocol/browser`** |
 
-Same `WARD.md` file. Five completely different runtimes. One policy.
+Same `WARD.md` file across all of them, plus the [Gemini CLI](https://www.npmjs.com/package/@weave_protocol/adapter-geminicli), [Codex](https://www.npmjs.com/package/@weave_protocol/adapter-codex), [OpenCode](https://www.npmjs.com/package/@weave_protocol/adapter-opencode) and [Cursor](https://www.npmjs.com/package/@weave_protocol/adapter-cursor) adapters. One policy.
 
 ---
 
 ## Roadmap
 
-**v0.1 (this release):**
+**Shipped:**
 - ✅ `WardBrowserGuard` class (navigation / IPI scan / download / tainted-action gates)
 - ✅ 33 IPI detection patterns (regex + HTML structure)
 - ✅ Provenance tracking with session-level taint propagation
 - ✅ Playwright auto-wrap helper
 - ✅ Manual hook recipes for Puppeteer and Stagehand
 - ✅ CLI: init / status / test-url / scan
-- ✅ 30/30 tests passing against documented in-the-wild attack samples
+- ✅ Tests against documented in-the-wild attack samples
+- ✅ Playwright blocking via `page.route()` and download cancellation (0.2.0)
+- ✅ Decision reporting to the Weave dashboard (0.3.0)
 
-**v0.2 (planned):**
+**Planned:**
 - [ ] Native Puppeteer + Stagehand auto-wrap helpers
 - [ ] Cookie / session token egress protection
 - [ ] Form submission gating with PII detection
 - [ ] MCP server interface (cross-language adoption)
 - [ ] Threat intelligence feed integration (auto-update patterns from `@weave_protocol/mund`)
 
-**v1.0 (future):**
+**Later:**
 - Native browser extension (Chrome / Firefox)
 - Real-time IPI dashboard
 - Custom user-defined pattern packs
+
+---
+
+## 🕸️ Part of Weave Protocol
+
+One [WARD.md](https://github.com/Tyox-all/Weave_Protocol) policy for every agent you run, locally or at scale, plus the tools around it.
+
+| Package | What it does |
+|---|---|
+| [Ward](https://www.npmjs.com/package/@weave_protocol/ward) | The WARD.md policy standard and the tool-call evaluator every adapter shares |
+| [Mund](https://www.npmjs.com/package/@weave_protocol/mund) | Scans content for prompt injection, secrets, PII and exfiltration |
+| [Hord](https://www.npmjs.com/package/@weave_protocol/hord) | Encrypted vaults, PII tokenization, sandboxes, capability tokens, attestations |
+| [Dōmere](https://www.npmjs.com/package/@weave_protocol/domere) | Audit threads, compliance checkpoints, GDPR and CCPA records, anchoring |
+| [Witan](https://www.npmjs.com/package/@weave_protocol/witan) | Multi-agent consensus and spending caps |
+| [Hundredmen](https://www.npmjs.com/package/@weave_protocol/hundredmen) | MCP proxy that enforces WARD.md on tool calls |
+| [Tollere](https://www.npmjs.com/package/@weave_protocol/tollere) | Supply-chain checks: typosquats, CVEs, suspicious version diffs |
+| [Browser](https://www.npmjs.com/package/@weave_protocol/browser) | WARD.md and injection scanning for Playwright browser agents |
+| Adapters | WARD.md in [Claude Code](https://www.npmjs.com/package/@weave_protocol/adapter-claudecode), [Antigravity](https://www.npmjs.com/package/@weave_protocol/adapter-antigravity), [MSAF](https://www.npmjs.com/package/@weave_protocol/adapter-msaf), [Gemini CLI](https://www.npmjs.com/package/@weave_protocol/adapter-geminicli), [Codex](https://www.npmjs.com/package/@weave_protocol/adapter-codex), [OpenCode](https://www.npmjs.com/package/@weave_protocol/adapter-opencode) and [Cursor](https://www.npmjs.com/package/@weave_protocol/adapter-cursor) |
+| [Adversary](https://www.npmjs.com/package/@weave_protocol/adversary) · [AgentSecBench](https://www.npmjs.com/package/@weave_protocol/agentsecbench) | Red-team engine and locked benchmark |
+| [API](https://www.npmjs.com/package/@weave_protocol/api) · [CLI](https://www.npmjs.com/package/@weave_protocol/cli) · [LangChain](https://www.npmjs.com/package/@weave_protocol/langchain) | REST API and dashboard, setup CLI, LangChain.js integration |
+| [full](https://www.npmjs.com/package/@weave_protocol/full) | Every defensive package in one install |
+| [Yoxallismus](https://www.npmjs.com/package/@weave_protocol/yoxallismus) | Post-quantum hybrid cipher (experimental beta) |
 
 ---
 

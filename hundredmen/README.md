@@ -4,7 +4,7 @@
 [![npm](https://img.shields.io/npm/dm/@weave_protocol/hundredmen.svg)](https://www.npmjs.com/package/@weave_protocol/hundredmen)
 [![license](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-**Real-time MCP security proxy** that intercepts, scans, and gates AI agent tool calls. **v1.1.0 enforces [WARD.md](https://www.npmjs.com/package/@weave_protocol/ward) policies at the interception layer.**
+**Real-time MCP security proxy** that intercepts, scans, and gates AI agent tool calls, and enforces [WARD.md](https://www.npmjs.com/package/@weave_protocol/ward) policies at the interception layer.
 
 > *Old English "hundredmen" — the watchers of a hundred. Local officials who knew everyone passing through and could stop trouble before it spread.*
 
@@ -12,9 +12,19 @@ Part of the [Weave Protocol](https://github.com/Tyox-all/Weave_Protocol) securit
 
 ---
 
-## 🆕 v1.1.0 — WARD.md enforcement
+## 🆕 What's new
 
-Hundredmen now reads your project's [`WARD.md`](https://www.npmjs.com/package/@weave_protocol/ward) and **enforces it at the MCP interception layer**. Calls that violate the declared policy are blocked before they ever reach the underlying MCP server.
+**1.3.0: decisions on the dashboard.** Set `WEAVE_DASHBOARD_URL` and Hundredmen sends each allow and deny decision to a local [Weave API](https://www.npmjs.com/package/@weave_protocol/api) dashboard. It's off by default.
+
+**1.2.0: whole-call checks.**
+- Every path and URL argument of a call is checked against WARD.md, not just one field, using Ward's shared evaluator.
+- Calls in a terminated session are blocked.
+
+**1.1.0: WARD.md enforcement**, described below.
+
+## WARD.md enforcement
+
+Hundredmen reads your project's [`WARD.md`](https://www.npmjs.com/package/@weave_protocol/ward) and **enforces it at the MCP interception layer**. Calls that violate the declared policy are blocked before they ever reach the underlying MCP server.
 
 ```
 my-agent/
@@ -49,7 +59,7 @@ When a call requires human approval per WARD:
 }
 ```
 
-If no `WARD.md` is present, Hundredmen behaves exactly as v1.0 did — zero impact.
+If no `WARD.md` is present, Hundredmen runs its own interception rules only.
 
 ---
 
@@ -193,6 +203,28 @@ maxRuntimeSeconds: 300
 ```
 
 See [@weave_protocol/ward](https://www.npmjs.com/package/@weave_protocol/ward) for the full WARD.md specification.
+
+---
+
+## 🕸️ Part of Weave Protocol
+
+One [WARD.md](https://github.com/Tyox-all/Weave_Protocol) policy for every agent you run, locally or at scale, plus the tools around it.
+
+| Package | What it does |
+|---|---|
+| [Ward](https://www.npmjs.com/package/@weave_protocol/ward) | The WARD.md policy standard and the tool-call evaluator every adapter shares |
+| [Mund](https://www.npmjs.com/package/@weave_protocol/mund) | Scans content for prompt injection, secrets, PII and exfiltration |
+| [Hord](https://www.npmjs.com/package/@weave_protocol/hord) | Encrypted vaults, PII tokenization, sandboxes, capability tokens, attestations |
+| [Dōmere](https://www.npmjs.com/package/@weave_protocol/domere) | Audit threads, compliance checkpoints, GDPR and CCPA records, anchoring |
+| [Witan](https://www.npmjs.com/package/@weave_protocol/witan) | Multi-agent consensus and spending caps |
+| [Hundredmen](https://www.npmjs.com/package/@weave_protocol/hundredmen) | MCP proxy that enforces WARD.md on tool calls |
+| [Tollere](https://www.npmjs.com/package/@weave_protocol/tollere) | Supply-chain checks: typosquats, CVEs, suspicious version diffs |
+| [Browser](https://www.npmjs.com/package/@weave_protocol/browser) | WARD.md and injection scanning for Playwright browser agents |
+| Adapters | WARD.md in [Claude Code](https://www.npmjs.com/package/@weave_protocol/adapter-claudecode), [Antigravity](https://www.npmjs.com/package/@weave_protocol/adapter-antigravity), [MSAF](https://www.npmjs.com/package/@weave_protocol/adapter-msaf), [Gemini CLI](https://www.npmjs.com/package/@weave_protocol/adapter-geminicli), [Codex](https://www.npmjs.com/package/@weave_protocol/adapter-codex), [OpenCode](https://www.npmjs.com/package/@weave_protocol/adapter-opencode) and [Cursor](https://www.npmjs.com/package/@weave_protocol/adapter-cursor) |
+| [Adversary](https://www.npmjs.com/package/@weave_protocol/adversary) · [AgentSecBench](https://www.npmjs.com/package/@weave_protocol/agentsecbench) | Red-team engine and locked benchmark |
+| [API](https://www.npmjs.com/package/@weave_protocol/api) · [CLI](https://www.npmjs.com/package/@weave_protocol/cli) · [LangChain](https://www.npmjs.com/package/@weave_protocol/langchain) | REST API and dashboard, setup CLI, LangChain.js integration |
+| [full](https://www.npmjs.com/package/@weave_protocol/full) | Every defensive package in one install |
+| [Yoxallismus](https://www.npmjs.com/package/@weave_protocol/yoxallismus) | Post-quantum hybrid cipher (experimental beta) |
 
 ---
 

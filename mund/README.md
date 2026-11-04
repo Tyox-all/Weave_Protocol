@@ -5,25 +5,51 @@
 [![npm version](https://img.shields.io/npm/v/@weave_protocol/mund.svg)](https://www.npmjs.com/package/@weave_protocol/mund)
 [![npm downloads](https://img.shields.io/npm/dm/@weave_protocol/mund.svg)](https://www.npmjs.com/package/@weave_protocol/mund)
 [![MCP Registry](https://img.shields.io/badge/MCP-Registry-blue)](https://registry.modelcontextprotocol.io/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 Mund (Old English: "protection, guardian") is a real-time security scanner for AI agent systems. It detects prompt injection, secrets, PII, dangerous code patterns, and data exfiltration attempts.
 
-**🆕 New in v0.3.1:** [Canary tokens](#-canary-tokens-system-prompt-leakage) catch leaked system prompts, and [rug-pull detection](#rug-pull-detection) flags MCP servers whose tools change after you approved them.
+## 🆕 What's new
 
-**v0.3.0:** `mund-mcp scan` scans files on disk and outputs text, JSON, or **SARIF for GitHub code scanning**. It checks npm dependencies against **OSV.dev**, with an offline cache. Every scan gets a **0–100 risk score**, and the README adds [OWASP coverage tables](#️-owasp-coverage). This release also fixes 23 secret rules that had never matched anything.
+**0.5.2: injection detection by intent.** Mund now looks for what an injection is trying to do, not one fixed phrase. That covers:
+- overriding instructions, in six languages;
+- hijacking the task;
+- text written to an AI reader;
+- hiding actions from the user;
+- false authority;
+- persona jailbreaks;
+- extracting the system prompt;
+- payment and exfiltration directives.
 
-**v0.2.0:** Automated threat intelligence with MITRE ATT&CK mapping and community feeds.
+It also reads text a person never sees: hidden HTML, base64, Unicode tag characters, and words split by zero-width characters.
+
+| Detected at medium or higher | 0.5.1 | 0.5.2 |
+|---|---|---|
+| [Lakera Gandalf](https://huggingface.co/datasets/Lakera/gandalf_ignore_instructions) injections | 17.9% | **65.2%** |
+| [jackhhao](https://huggingface.co/datasets/jackhhao/jailbreak-classification) jailbreaks | 30.9% | **58.3%** |
+| [deepset](https://huggingface.co/datasets/deepset/prompt-injections) prompt injections (mostly German) | 4.9% | **24.6%** |
+| False positives, 466 benign prompts from those sets | 0 | **0** |
+
+These sets were not used to write the rules. A fix to the `shell_injection` rule also stops it flagging every line that contains braces. See [what the injection rules look for](#what-the-injection-rules-look-for-052).
+
+**0.5.0: library API.** `scan(content)` returns findings and a 0–100 risk score, using the same analyzers and rules as the MCP tool.
+
+**0.4.0: pre-install checks.** Mund checks skills and MCP servers before they're installed. See [pre-install checks](#-pre-install-checks-for-skills-and-mcp-servers).
+
+**Earlier:**
+- 0.3.1 added [canary tokens](#-canary-tokens-system-prompt-leakage) and [rug-pull detection](#rug-pull-detection).
+- 0.3.0 added `mund-mcp scan` with SARIF output, OSV.dev dependency checks and risk scores.
+- 0.2.0 added threat intelligence with MITRE ATT&CK mapping.
 
 ## ✨ Features
 
 | Category | What It Detects |
 |----------|-----------------|
-| **Prompt Injection** | Role manipulation, instruction override, jailbreak attempts, hidden Unicode |
+| **Prompt Injection** | Instruction override in six languages, task hijack, concealment, false authority, persona jailbreaks, system-prompt extraction, and text hidden in HTML, base64, Unicode tags or zero-width characters |
 | **Secrets** | API keys (OpenAI, Anthropic, AWS, GitHub, Stripe), tokens, private keys, database URLs |
 | **PII** | SSN, credit cards, emails, phone numbers, IP addresses |
-| **Code Patterns** | Shell injection, SQL injection, dangerous chmod, curl\|bash, eval |
-| **Exfiltration** | Suspicious URLs, DNS tunneling, base64-encoded data blocks |
+| **Code Patterns** | Shell injection, SQL injection, dangerous chmod, curl\|bash, eval, plus requests to read credential files, dump the environment, clear security logs or escalate privileges |
+| **Exfiltration** | Directives to send private data to a URL or address, URLs with `{SESSION_TOKEN}`-style placeholders, suspicious URLs, DNS tunneling, encoded data blocks |
 | **MCP Servers** | Malicious tool descriptions, typosquatting, dangerous permissions, embedded secrets |
 | **Dependencies** | Known-vulnerable npm packages in `package-lock.json`, via OSV.dev with an offline cache |
 | **Threat Intel** | 20+ built-in patterns, MITRE ATT&CK mapping, auto-updating community feeds |
@@ -60,15 +86,20 @@ Restart Claude Desktop. Mund's security tools are now available.
 ### Programmatic Usage
 
 ```typescript
-import { AnalyzerEngine, getAnalyzers } from '@weave_protocol/mund';
+import { scan } from '@weave_protocol/mund';
 
-const engine = new AnalyzerEngine(getAnalyzers());
-const issues = await engine.analyzeAll(content, rules);
+const { issues, risk } = await scan(untrustedText);
+// risk: { score: 0-100, label: 'none' | 'low' | 'medium' | 'high' | 'critical', counts }
 
-if (issues.some(i => i.severity === 'critical')) {
-  console.error('Critical security issues detected!');
+if (risk.label === 'high' || risk.label === 'critical') {
+  throw new Error(`Blocked: ${issues.map(i => i.rule_name).join(', ')}`);
 }
+
+// Only some analyzers, or your own rules
+await scan(text, { types: ['injection', 'exfiltration'] });
 ```
+
+Treat findings at `medium` or higher as actionable. `AnalyzerEngine`, the individual analyzers, `DEFAULT_RULES` and `computeRiskScore` are exported for lower-level use.
 
 ### Scan Files and Upload to GitHub Code Scanning
 
@@ -127,7 +158,7 @@ for severe findings and never goes past 100.
 
 ## 🧠 Automated Threat Intelligence
 
-**New in v0.2.0:** Mund includes automated threat intelligence with MITRE ATT&CK mapping and auto-updating community feeds.
+Mund includes automated threat intelligence with MITRE ATT&CK mapping and auto-updating community feeds.
 
 ### Built-in Detection Patterns
 
@@ -527,25 +558,26 @@ MUND_WEBHOOK_URL=https://api.company.com/alerts
 
 ## 📜 Detection Rules
 
-Mund uses YAML-based rules in `rules/default.yaml`. Example:
+Mund's rules are built in and exported as `DEFAULT_RULES`. Add your own with the `mund_add_rule` tool, or pass them to `scan()`:
 
-```yaml
-- id: openai_api_key
-  name: OpenAI API Key
-  type: secret
-  severity: critical
-  pattern: 'sk-[a-zA-Z0-9]{48}'
-  action: alert
-  enabled: true
+```typescript
+import { scan, DEFAULT_RULES, type DetectionRule } from '@weave_protocol/mund';
 
-- id: prompt_injection_ignore
-  name: Instruction Override Attempt
-  type: injection
-  severity: high
-  pattern: 'ignore\s+(previous|all|prior)\s+instructions'
-  action: alert
-  enabled: true
+const internalHost: DetectionRule = {
+  id: 'internal_hostname',
+  name: 'Internal hostname',
+  description: 'Mentions of our internal network',
+  type: 'exfiltration',
+  pattern: '(?i)\\b[a-z0-9-]+\\.corp\\.example\\.com\\b',
+  severity: 'medium',
+  action: 'alert',
+  enabled: true,
+};
+
+await scan(text, { rules: [...DEFAULT_RULES, internalHost] });
 ```
+
+Patterns are JavaScript regular expressions. A leading `(?i)` makes one case-insensitive.
 
 ### What the injection rules look for (0.5.2)
 
@@ -602,14 +634,14 @@ Treat a hit at `medium` or higher as actionable. That is the threshold Weave's C
 │  ├── mund_scan_mcp_server    MCP server scanning              │
 │  ├── mund_check_typosquatting   Name verification             │
 │  ├── mund_audit_mcp_permissions Permission audit              │
-│  ├── mund_update_threat_intel   Pull latest patterns   [NEW]  │
-│  ├── mund_intel_status          Health & coverage      [NEW]  │
-│  ├── mund_list_intel_sources    Show intel sources     [NEW]  │
-│  ├── mund_threat_scan           Scan with intel        [NEW]  │
-│  ├── mund_add_intel_source      Add custom feed        [NEW]  │
-│  ├── mund_remove_intel_source   Remove feed            [NEW]  │
-│  ├── mund_list_patterns         Browse patterns        [NEW]  │
-│  └── mund_toggle_pattern        Enable/disable         [NEW]  │
+│  ├── mund_update_threat_intel   Pull latest patterns          │
+│  ├── mund_intel_status          Health & coverage             │
+│  ├── mund_list_intel_sources    Show intel sources            │
+│  ├── mund_threat_scan           Scan with intel               │
+│  ├── mund_add_intel_source      Add custom feed               │
+│  ├── mund_remove_intel_source   Remove feed                   │
+│  ├── mund_list_patterns         Browse patterns               │
+│  └── mund_toggle_pattern        Enable/disable                │
 ├───────────────────────────────────────────────────────────────┤
 │  Analyzers                                                    │
 │  ├── SecretScanner           API keys, tokens, credentials    │
@@ -618,7 +650,7 @@ Treat a hit at `medium` or higher as actionable. That is the threshold Weave's C
 │  ├── CodeAnalyzer            Dangerous code patterns          │
 │  ├── ExfiltrationDetector    Data exfiltration attempts       │
 │  ├── McpServerAnalyzer       MCP manifest security            │
-│  └── ThreatIntelManager      MITRE ATT&CK patterns     [NEW]  │
+│  └── ThreatIntelManager      MITRE ATT&CK patterns            │
 ├───────────────────────────────────────────────────────────────┤
 │  Notifications                                                │
 │  └── Slack, Teams, Email, Webhooks                            │
@@ -627,24 +659,31 @@ Treat a hit at `medium` or higher as actionable. That is the threshold Weave's C
 
 ---
 
-## 🔗 Part of Weave Protocol
+## 🕸️ Part of Weave Protocol
 
-Mund is the security layer of the [Weave Protocol](https://github.com/Tyox-all/Weave_Protocol) security suite:
+One [WARD.md](https://github.com/Tyox-all/Weave_Protocol) policy for every agent you run, locally or at scale, plus the tools around it.
 
-| Package | Purpose |
-|---------|---------|
-| **🛡️ Mund** | Security scanning, MCP server vetting, threat intelligence |
-| **🏛️ Hord** | Encrypted vault storage (Yoxallismus cipher) |
-| **⚖️ Domere** | Compliance & verification (PCI-DSS, ISO27001, GDPR) |
-| **👥 Witan** | Multi-agent consensus & governance |
-| **🔍 Hundredmen** | Real-time MCP proxy & drift detection |
-| **🔌 API** | REST interface for all packages |
+| Package | What it does |
+|---|---|
+| [Ward](https://www.npmjs.com/package/@weave_protocol/ward) | The WARD.md policy standard and the tool-call evaluator every adapter shares |
+| [Mund](https://www.npmjs.com/package/@weave_protocol/mund) | Scans content for prompt injection, secrets, PII and exfiltration |
+| [Hord](https://www.npmjs.com/package/@weave_protocol/hord) | Encrypted vaults, PII tokenization, sandboxes, capability tokens, attestations |
+| [Dōmere](https://www.npmjs.com/package/@weave_protocol/domere) | Audit threads, compliance checkpoints, GDPR and CCPA records, anchoring |
+| [Witan](https://www.npmjs.com/package/@weave_protocol/witan) | Multi-agent consensus and spending caps |
+| [Hundredmen](https://www.npmjs.com/package/@weave_protocol/hundredmen) | MCP proxy that enforces WARD.md on tool calls |
+| [Tollere](https://www.npmjs.com/package/@weave_protocol/tollere) | Supply-chain checks: typosquats, CVEs, suspicious version diffs |
+| [Browser](https://www.npmjs.com/package/@weave_protocol/browser) | WARD.md and injection scanning for Playwright browser agents |
+| Adapters | WARD.md in [Claude Code](https://www.npmjs.com/package/@weave_protocol/adapter-claudecode), [Antigravity](https://www.npmjs.com/package/@weave_protocol/adapter-antigravity), [MSAF](https://www.npmjs.com/package/@weave_protocol/adapter-msaf), [Gemini CLI](https://www.npmjs.com/package/@weave_protocol/adapter-geminicli), [Codex](https://www.npmjs.com/package/@weave_protocol/adapter-codex), [OpenCode](https://www.npmjs.com/package/@weave_protocol/adapter-opencode) and [Cursor](https://www.npmjs.com/package/@weave_protocol/adapter-cursor) |
+| [Adversary](https://www.npmjs.com/package/@weave_protocol/adversary) · [AgentSecBench](https://www.npmjs.com/package/@weave_protocol/agentsecbench) | Red-team engine and locked benchmark |
+| [API](https://www.npmjs.com/package/@weave_protocol/api) · [CLI](https://www.npmjs.com/package/@weave_protocol/cli) · [LangChain](https://www.npmjs.com/package/@weave_protocol/langchain) | REST API and dashboard, setup CLI, LangChain.js integration |
+| [full](https://www.npmjs.com/package/@weave_protocol/full) | Every defensive package in one install |
+| [Yoxallismus](https://www.npmjs.com/package/@weave_protocol/yoxallismus) | Post-quantum hybrid cipher (experimental beta) |
 
 ---
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE)
+Apache-2.0 — see [LICENSE](LICENSE)
 
 ---
 

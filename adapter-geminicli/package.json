@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/adapter-geminicli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Weave Protocol adapter for Gemini CLI - enforces WARD.md policies via Gemini CLI's BeforeTool hook",
   "type": "module",
   "main": "dist/index.js",

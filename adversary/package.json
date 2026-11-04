@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/adversary",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Offensive engine for AI agent security testing. 68 attacks + LLM-driven dynamic variants. Any model provider (v0.4): Claude, GPT, Gemini, DeepSeek, Kimi, Qwen, GLM, Ollama. Real Playwright browser target. Test engine for AgentSecBench.",
   "type": "module",
   "main": "./dist/index.js",

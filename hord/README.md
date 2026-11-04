@@ -7,16 +7,27 @@
 
 Part of the [Weave Protocol Security Suite](https://github.com/Tyox-all/Weave_Protocol).
 
+## 🆕 What's new
+
+**0.3.0: vaults survive restarts.** `createStorage('sqlite')` uses Node's built-in SQLite, with no native dependency. Vault keys are stored wrapped with your master key, so a vault reopens after a restart only with the same `HORD_MASTER_KEY`. Database files are created with mode `0600`. See [Storage](#-storage).
+
+**0.2.0: library API and a key-derivation fix.**
+- Everything below is importable.
+- [HORD-2026-001](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord/SECURITY_ADVISORIES.md) is fixed: every non-hex master key used to derive the same key. Upgrade if you set `HORD_MASTER_KEY` to a passphrase.
+- Sealed vaults can be reopened.
+
+**0.1.9: real sandbox isolation.** See [Sandbox Executor](#️-sandbox-executor).
+
 ## ✨ Features
 
 | Category | Features |
 |----------|----------|
-| **Vault** | AES-256-GCM encryption, key rotation, secure storage |
+| **Vault** | AES-256-GCM encrypted credentials, memories, state and artifacts; SQLite or in-memory storage |
 | **Yoxallismus v1** | ⚠️ Deprecated: output can't be decrypted. Use [`@weave_protocol/yoxallismus`](https://github.com/Tyox-all/Weave_Protocol/tree/main/yoxallismus) |
-| **Redaction** | PII/PHI masking, reversible tokenization |
+| **Redaction** | Policy-based masking, hashing and tokenization; reversible PII tokens |
 | **Sandbox** | OS-level isolation (network, filesystem, env), memory/CPU limits, process-group kill |
-| **Capability** | Token-based access control, delegation chains |
-| **Attestation** | Cryptographic proof of agent actions |
+| **Capability** | Scoped, expiring access tokens with attenuated delegation |
+| **Attestation** | Signed, chained records of agent actions, verifiable later |
 
 ## 📦 Installation
 
@@ -27,13 +38,20 @@ npm install @weave_protocol/hord
 ## 🚀 Quick Start
 
 ```typescript
-import { VaultManager } from '@weave_protocol/hord';
+import { createStorage, keyStore, VaultManager } from '@weave_protocol/hord';
 
-// Encrypted vault storage
-const vault = new VaultManager({ encryption_key: 'your-secret-key' });
-await vault.store('api-keys', { openai: 'sk-xxx' }, { encrypt: true });
-const secrets = await vault.retrieve('api-keys');
+keyStore.initialize(process.env.HORD_MASTER_KEY!); // 64 hex chars, or a passphrase
+const vaults = new VaultManager(createStorage('sqlite')); // or 'memory'
+
+const vault = await vaults.createVault({ agent_id: 'billing-agent', name: 'api-keys', access_policy: {} });
+await vaults.openVault(vault.id, 'billing-agent');
+await vaults.storeCredential(vault.id, 'billing-agent', { name: 'stripe', type: 'api_key', value: 'sk_test_example' });
+
+const key = await vaults.retrieveCredential(vault.id, 'billing-agent', 'stripe');
+await vaults.sealVault(vault.id, 'billing-agent'); // wipes the vault key from memory
 ```
+
+Every operation is written to an access log. As an MCP server, `hord-mcp` exposes the same functions as tools (`hord_create_vault`, `hord_store_secret`, `hord_retrieve_secret`, …).
 
 ---
 
@@ -84,57 +102,37 @@ Vault keys are stored wrapped with the master key, so a persisted vault opens on
 
 ## 🔒 Vault Manager
 
-Encrypted storage with key rotation.
+A vault belongs to an agent and holds encrypted credentials, memories, state and artifacts. It must be opened before use and sealed after; sealing wipes its key from memory.
 
-```typescript
-import { VaultManager } from '@weave_protocol/hord';
-
-const vault = new VaultManager({
-  encryption_key: 'your-256-bit-key',
-  key_rotation_days: 90
-});
-
-// Store encrypted data
-await vault.store('credentials', {
-  api_key: 'sk-xxx',
-  database_url: 'postgres://...'
-}, { 
-  encrypt: true,
-  ttl_ms: 3600000  // 1 hour expiry
-});
-
-// Retrieve and decrypt
-const creds = await vault.retrieve('credentials');
-
-// Rotate encryption keys
-await vault.rotateKey('new-encryption-key');
-```
+| Method | Description |
+|--------|-------------|
+| `createVault({ agent_id, name, access_policy })` | Create a vault with its own encryption key |
+| `openVault(vaultId, agentId)` / `sealVault(vaultId, agentId)` | Unlock or lock a vault |
+| `storeCredential(vaultId, agentId, { name, type, value })` | Encrypt and store a secret |
+| `retrieveCredential(vaultId, agentId, name)` | Decrypt a secret |
+| `storeMemory` / `retrieveMemories` / `storeState` / `retrieveState` / `storeArtifact` | Other vault contents |
+| `listVaults(agentId)` / `getVaultInfo(vaultId)` / `deleteVault(vaultId, agentId)` | Manage vaults |
 
 ---
 
 ## ✂️ Redaction Engine
 
-Mask sensitive data with reversible tokenization.
+Tokenize PII before text reaches a model, and restore it afterwards:
 
 ```typescript
-import { RedactionEngine } from '@weave_protocol/hord';
+import { createStorage, RedactionEngine } from '@weave_protocol/hord';
 
-const redactor = new RedactionEngine({ signing_key: 'redaction-key' });
-
-// Redact PII
-const result = await redactor.redact(
-  'Contact john@example.com or call 555-1234',
-  { patterns: ['email', 'phone'] }
-);
-// "Contact [REDACTED:email:abc123] or call [REDACTED:phone:def456]"
-
-// Restore original
-const original = await redactor.restore(result.redacted_text, result.tokens);
+const redactor = new RedactionEngine(createStorage('memory'));
+const { tokenized } = await redactor.tokenizePII('Email jane@example.com about the invoice');
+// The email is replaced by a token; send `tokenized` to the model
+const restored = await redactor.deTokenize(modelOutput);
 ```
+
+For structured data, `createPolicy()` defines rules that mask, hash, tokenize, generalize or encrypt fields. `redact(data, policyId)` applies them, and `deRedact()` reverses the reversible ones.
 
 ---
 
-## 🏖️ Sandbox Executor (real isolation as of 0.1.9)
+## 🏖️ Sandbox Executor
 
 Runs code or commands in an isolated child process, using what the host OS provides:
 
@@ -163,55 +161,43 @@ This is process-level isolation, not a VM: kernel exploits and side channels are
 
 ## 🎫 Capability Tokens
 
-Token-based access control with delegation.
+Scoped, expiring permissions an agent can delegate in narrower form:
 
 ```typescript
-import { CapabilityTokenService } from '@weave_protocol/hord';
+import { createStorage, CapabilityManager, ActionType } from '@weave_protocol/hord';
 
-const caps = new CapabilityTokenService('signing-key');
-
-// Issue token
-const token = await caps.issue({
-  subject: 'agent-1',
-  capabilities: ['read:vault', 'write:logs'],
-  expires_in_ms: 3600000
+const caps = new CapabilityManager(createStorage('memory'));
+const token = await caps.createCapabilityToken({
+  agent_id: 'agent-1',
+  resource: { type: 'vault', id: 'api-keys' },
+  actions: [ActionType.READ],
+  delegatable: true,
 });
 
-// Verify token
-const verified = await caps.verify(token.token);
-if (verified.valid) {
-  console.log(verified.capabilities);
-}
+await caps.verifyCapabilityToken(token.id, 'agent-1', { type: 'vault', id: 'api-keys' }, ActionType.READ);  // { valid: true }
+await caps.verifyCapabilityToken(token.id, 'agent-1', { type: 'vault', id: 'api-keys' }, ActionType.WRITE); // { valid: false, reason }
 
-// Delegate subset
-const delegated = await caps.delegate(token.token, {
-  to: 'agent-2',
-  capabilities: ['read:vault']
-});
+await caps.delegateCapability({ parent_token_id: token.id, delegate_to_agent: 'agent-2', justification: 'read-only helper' });
 ```
+
+`revokeCapability()` and `listCapabilities()` complete the set. Tokens need `keyStore.initialize()` first.
 
 ---
 
 ## ✅ Attestation Service
 
-Cryptographic proof of agent actions.
+A signed, chained record of what an agent did:
 
 ```typescript
-import { AttestationService } from '@weave_protocol/hord';
+import { createStorage, AttestationService } from '@weave_protocol/hord';
 
-const attestation = new AttestationService('signing-key');
+const attest = new AttestationService(createStorage('sqlite'));
+const proof = await attest.attestAction('agent-1', 'api_call', 'Charged invoice 1042', ['stripe:invoices'], { result: 'success' });
 
-// Attest an action
-const proof = await attestation.attest({
-  agent_id: 'agent-1',
-  action: 'api_call',
-  resource: 'openai',
-  context: { model: 'gpt-4' }
-});
-
-// Verify later
-const valid = await attestation.verify(proof.attestation_id);
+const check = await attest.verify(proof.id); // signature, timestamp and chain checks
 ```
+
+`getAttestationChain()` walks the chain, and `exportForAudit()` exports a time range.
 
 ---
 
@@ -229,7 +215,7 @@ const valid = await attestation.verify(proof.attestation_id);
 │  │ • Watches     │  │ • Encrypts    │  │ • Verifies    │           │
 │  │ • Scans       │  │ • Isolates    │  │ • Orchestrates│           │
 │  │ • Alerts      │  │ • Contains    │  │ • Attests     │           │
-│  │               │  │ • Yoxallismus │  │ • Compliance  │           │
+│  │               │  │               │  │ • Compliance  │           │
 │  └───────────────┘  └───────────────┘  └───────────────┘           │
 │          │                  │                   │                   │
 │          └──────────────────┴───────────────────┘                   │
@@ -257,50 +243,41 @@ const valid = await attestation.verify(proof.attestation_id);
 
 Use `seal()` / `open()` from `@weave_protocol/yoxallismus` for encryption.
 
-### VaultManager
+### Classes
 
-| Method | Description |
-|--------|-------------|
-| `store(key, data, options)` | Store encrypted data |
-| `retrieve(key)` | Retrieve and decrypt |
-| `delete(key)` | Remove from vault |
-| `rotateKey(newKey)` | Rotate encryption key |
-| `list()` | List stored keys |
+Each takes a storage backend from `createStorage('sqlite' | 'memory')`.
 
-### RedactionEngine
+| Class | Main methods |
+|-------|--------------|
+| `VaultManager` | See [Vault Manager](#-vault-manager) |
+| `RedactionEngine` | `createPolicy`, `redact`, `deRedact`, `tokenizePII`, `deTokenize` |
+| `SandboxManager` | `createSandbox`, `execute`, `promote`, `destroy`, `getResults` |
+| `CapabilityManager` | `createCapabilityToken`, `verifyCapabilityToken`, `useCapabilityToken`, `delegateCapability`, `revokeCapability` |
+| `AttestationService` | `attest`, `attestAction`, `verify`, `getAttestationChain`, `exportForAudit` |
 
-| Method | Description |
-|--------|-------------|
-| `redact(text, options)` | Redact sensitive patterns |
-| `restore(text, tokens)` | Restore original text |
-| `addPattern(name, regex)` | Add custom pattern |
-
-### SandboxExecutor
-
-| Method | Description |
-|--------|-------------|
-| `execute(params)` | Execute code in sandbox |
-| `validateCode(code)` | Check code safety |
-
-### CapabilityTokenService
-
-| Method | Description |
-|--------|-------------|
-| `issue(params)` | Issue capability token |
-| `verify(token)` | Verify token validity |
-| `delegate(token, params)` | Delegate to another agent |
-| `revoke(tokenId)` | Revoke a token |
+These examples are run as tests (`tests/readme-examples.test.ts`).
 
 ---
 
-## 🔗 Related Packages
+## 🕸️ Part of Weave Protocol
 
-| Package | Description |
-|---------|-------------|
-| [@weave_protocol/mund](https://www.npmjs.com/package/@weave_protocol/mund) | Secret & threat scanning |
-| [@weave_protocol/domere](https://www.npmjs.com/package/@weave_protocol/domere) | Verification & orchestration |
-| [@weave_protocol/witan](https://www.npmjs.com/package/@weave_protocol/witan) | Consensus & governance |
-| [@weave_protocol/api](https://www.npmjs.com/package/@weave_protocol/api) | Universal REST API |
+One [WARD.md](https://github.com/Tyox-all/Weave_Protocol) policy for every agent you run, locally or at scale, plus the tools around it.
+
+| Package | What it does |
+|---|---|
+| [Ward](https://www.npmjs.com/package/@weave_protocol/ward) | The WARD.md policy standard and the tool-call evaluator every adapter shares |
+| [Mund](https://www.npmjs.com/package/@weave_protocol/mund) | Scans content for prompt injection, secrets, PII and exfiltration |
+| [Hord](https://www.npmjs.com/package/@weave_protocol/hord) | Encrypted vaults, PII tokenization, sandboxes, capability tokens, attestations |
+| [Dōmere](https://www.npmjs.com/package/@weave_protocol/domere) | Audit threads, compliance checkpoints, GDPR and CCPA records, anchoring |
+| [Witan](https://www.npmjs.com/package/@weave_protocol/witan) | Multi-agent consensus and spending caps |
+| [Hundredmen](https://www.npmjs.com/package/@weave_protocol/hundredmen) | MCP proxy that enforces WARD.md on tool calls |
+| [Tollere](https://www.npmjs.com/package/@weave_protocol/tollere) | Supply-chain checks: typosquats, CVEs, suspicious version diffs |
+| [Browser](https://www.npmjs.com/package/@weave_protocol/browser) | WARD.md and injection scanning for Playwright browser agents |
+| Adapters | WARD.md in [Claude Code](https://www.npmjs.com/package/@weave_protocol/adapter-claudecode), [Antigravity](https://www.npmjs.com/package/@weave_protocol/adapter-antigravity), [MSAF](https://www.npmjs.com/package/@weave_protocol/adapter-msaf), [Gemini CLI](https://www.npmjs.com/package/@weave_protocol/adapter-geminicli), [Codex](https://www.npmjs.com/package/@weave_protocol/adapter-codex), [OpenCode](https://www.npmjs.com/package/@weave_protocol/adapter-opencode) and [Cursor](https://www.npmjs.com/package/@weave_protocol/adapter-cursor) |
+| [Adversary](https://www.npmjs.com/package/@weave_protocol/adversary) · [AgentSecBench](https://www.npmjs.com/package/@weave_protocol/agentsecbench) | Red-team engine and locked benchmark |
+| [API](https://www.npmjs.com/package/@weave_protocol/api) · [CLI](https://www.npmjs.com/package/@weave_protocol/cli) · [LangChain](https://www.npmjs.com/package/@weave_protocol/langchain) | REST API and dashboard, setup CLI, LangChain.js integration |
+| [full](https://www.npmjs.com/package/@weave_protocol/full) | Every defensive package in one install |
+| [Yoxallismus](https://www.npmjs.com/package/@weave_protocol/yoxallismus) | Post-quantum hybrid cipher (experimental beta) |
 
 ## 📄 License
 
