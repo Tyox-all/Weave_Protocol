@@ -43,15 +43,15 @@ The design principle: **novel architecture, standardized primitives.** The primi
 
 - **Not a replacement for liboqs, PQClean, or BoringSSL.** Those libraries are the primitive layer. This library composes them for agent use cases.
 - **Not audited.** Signal, Cloudflare, Google, and every serious PQ-crypto deployment has been externally audited. This library has not.
-- **Not production-ready.** 0.2.0-beta.0 explicitly.
+- **Not production-ready.** Every 0.x release is a beta.
 
 ## Installation
 
 ```bash
-npm install @weave_protocol/yoxallismus@beta
+npm install @weave_protocol/yoxallismus
 ```
 
-The `@beta` tag is required: `latest` intentionally points at a stub until the library is audited.
+From 0.2.0-beta.1, `latest` is the current beta. Before that, `latest` was an empty 0.0.1 stub and installs needed `@beta`. Either way, it's an unaudited beta, and the runtime banner says so.
 
 To silence the runtime beta banner:
 
@@ -131,7 +131,7 @@ weave-yoxall audit-self
 weave-yoxall benchmark
 ```
 
-## What's inside (v0.2.0-beta.0)
+## What's inside (v0.2)
 
 | Component | Primitive | Size / Cost |
 |---|---|---|

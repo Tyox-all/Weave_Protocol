@@ -190,7 +190,7 @@ Security hardening in the same release:
 - **Also fixed:** Dōmere threads with hops failed verification (1.3.8), Witan couldn't be imported (1.1.2), and Tollere missed `react-dom` typosquats (0.2.4).
 
 #### 🔐 Yoxallismus 0.2.0-beta.0: Double Ratchet, and a wire format you can build on
-[`@weave_protocol/yoxallismus@beta`](https://www.npmjs.com/package/@weave_protocol/yoxallismus) moves from a cipher toward a messaging protocol:
+[`@weave_protocol/yoxallismus`](https://www.npmjs.com/package/@weave_protocol/yoxallismus) moves from a cipher toward a messaging protocol:
 
 - **Signal's Double Ratchet, started post-quantum.** Conversations get fresh keys every message, and a stolen session stops working after one round trip (post-compromise security). Messages can arrive out of order or go missing. Sessions start from the hybrid X25519 + ML-KEM-768 key exchange, so no setup is needed beyond the recipient's public key.
 - **`seal()` / `open()`** for one-shot encryption to a public key, with an optional **cascade mode** that layers AES-256-GCM inside ChaCha20-Poly1305 so data stays safe if either cipher falls.
@@ -321,7 +321,7 @@ Backward compatible with the existing `behavioral_limits.maxCostUSD`. In-memory 
 
 ```bash
 # Explicit opt-in required — the beta tag is NOT installed by default
-npm install @weave_protocol/yoxallismus@beta
+npm install @weave_protocol/yoxallismus
 ```
 
 ```typescript
@@ -342,9 +342,9 @@ const { session: bobSession } = acceptSession(bob, drEncrypt(alice, plaintext));
 **Verify every claim yourself:**
 
 ```bash
-npx @weave_protocol/yoxallismus@beta --package weave-yoxall test         # 20 reproducible-claims tests
-npx @weave_protocol/yoxallismus@beta --package weave-yoxall audit-self   # 5 known-attack vectors
-npx @weave_protocol/yoxallismus@beta --package weave-yoxall benchmark    # perf micro-benchmarks
+npx -p @weave_protocol/yoxallismus weave-yoxall test         # 20 reproducible-claims tests
+npx -p @weave_protocol/yoxallismus weave-yoxall audit-self   # 5 known-attack vectors
+npx -p @weave_protocol/yoxallismus weave-yoxall benchmark    # perf micro-benchmarks
 ```
 
 Measured on Node 22, single-threaded: **3.1 ms hybrid keypair generation · 2.4 ms encap+decap · 0.024 ms AEAD (1 KB)** — comfortably under the <5 ms target.
@@ -430,7 +430,7 @@ The packages that keep your agent within policy: declare it, enforce it across e
 | [🔍 @weave_protocol/hundredmen](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen) | 1.3.1 | **MCP proxy** — intercept, scan, gate tool calls; enforces WARD.md as first gate |
 | [🛡️ @weave_protocol/mund](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund) | 0.5.3 | **Scanner** — secrets, PII, injection, MCP vetting, pre-install checks for skills + MCP (rug pulls), OSV dependency CVEs, SARIF, threat intel |
 | [🏛️ @weave_protocol/hord](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord) | 0.3.2 | **Vault** — encrypted storage, sandboxing, capability tokens, attestation |
-| [🔐 @weave_protocol/yoxallismus](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus) | **0.2.0-beta.0** | **Post-quantum cipher** — X25519 + ML-KEM-768 hybrid KEM · sealed boxes · cascade AEAD · Double Ratchet · locked `yoxall/2` format · ⚠️ NOT AUDITED |
+| [🔐 @weave_protocol/yoxallismus](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus) | **0.2.0-beta.1** | **Post-quantum cipher** — X25519 + ML-KEM-768 hybrid KEM · sealed boxes · cascade AEAD · Double Ratchet · locked `yoxall/2` format · ⚠️ NOT AUDITED |
 | [⚖️ @weave_protocol/domere](https://github.com/Tyox-all/Weave_Protocol/blob/main/domere) | 1.6.1 | **Judge** — compliance (PCI-DSS, ISO27001, SOC2, HIPAA, GDPR, CCPA), blockchain anchoring |
 | [👥 @weave_protocol/witan](https://github.com/Tyox-all/Weave_Protocol/blob/main/witan) | **1.2.1** | **Council** — multi-agent consensus & governance, autonomous spending caps (Q4 v1.1) |
 | [🛂 @weave_protocol/tollere](https://github.com/Tyox-all/Weave_Protocol/blob/main/tollere) | 0.2.5 | **Customs** — supply chain security (npm, PyPI, Docker, IDE extensions, sandwich detection) |
@@ -650,7 +650,7 @@ Standalone post-quantum cryptographic composition layer. NIST FIPS 203 (ML-KEM-7
 
 ```bash
 # Explicit opt-in required — beta tag not installed by default
-npm install @weave_protocol/yoxallismus@beta
+npm install @weave_protocol/yoxallismus
 
 # CLI subcommands
 weave-yoxall status         # library posture + known limitations

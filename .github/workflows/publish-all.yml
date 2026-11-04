@@ -7,8 +7,10 @@
 # Publisher on npmjs.com pointing at this workflow (publish-all.yml) with
 # "Allow npm publish" checked; packages without one fail their job.
 #
-# For yoxallismus: published with --tag beta to preserve the stub-as-latest
-# labeling strategy. All other packages published as latest.
+# Every package is published as latest. Yoxallismus versions are prereleases
+# (x.y.z-beta.N), which npm only publishes with an explicit tag, so its step
+# passes --tag latest. (Until 0.2.0-beta.1 it went to @beta and an empty 0.0.1
+# stub stayed latest, so its npm page showed no README.)
 #
 # Supply-chain artifacts per package:
 #   - CycloneDX SBOM (npm sbom), uploaded as the `sbom-<package>` artifact
@@ -140,10 +142,10 @@ jobs:
 
       # Publish the attested tarball itself so the attestation digest
       # matches what lands on the registry byte-for-byte.
-      - name: Publish (yoxallismus → @beta tag)
+      - name: Publish (yoxallismus prerelease → latest)
         if: matrix.package == 'yoxallismus'
         working-directory: ${{ matrix.package }}
-        run: npm publish "./${{ steps.pack.outputs.tarball }}" --tag beta --provenance --access public --loglevel verbose
+        run: npm publish "./${{ steps.pack.outputs.tarball }}" --tag latest --provenance --access public --loglevel verbose
         env:
           # Trusted Publishing (OIDC): clear setup-node's placeholder token
           # so npm doesn't send it instead of exchanging an OIDC token.
