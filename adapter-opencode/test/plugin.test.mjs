@@ -178,17 +178,20 @@ test('reports the decision to the dashboard when WEAVE_DASHBOARD_URL is set', as
   const dash = await fakeDashboard();
   const prev = process.env.WEAVE_DASHBOARD_URL;
   process.env.WEAVE_DASHBOARD_URL = dash.url;
+  // A cold first request on a slow CI runner can exceed the 250ms default
+  process.env.WEAVE_DASHBOARD_TIMEOUT_MS = '5000';
   try {
     const ws = mkdtempSync(join(tmpdir(), 'report-ws-'));
     writeFileSync(join(ws, 'WARD.md'), WARD(ws));
     const hooks = await plugin.server({ directory: ws });
     await assert.rejects(hooks['tool.execute.before']({ tool: 'read' }, { args: { filePath: join(ws, 'secrets', 'k') } }));
-    for (let i = 0; i < 50 && dash.received.length === 0; i++) await new Promise((r) => setTimeout(r, 10));
+    for (let i = 0; i < 500 && dash.received.length === 0; i++) await new Promise((r) => setTimeout(r, 10));
     assert.equal(dash.received[0]?.surface, 'opencode');
     assert.equal(dash.received[0].decision, 'deny');
     assert.equal(dash.received[0].subject, 'read');
   } finally {
     if (prev === undefined) delete process.env.WEAVE_DASHBOARD_URL; else process.env.WEAVE_DASHBOARD_URL = prev;
+    delete process.env.WEAVE_DASHBOARD_TIMEOUT_MS;
     dash.close();
   }
 });

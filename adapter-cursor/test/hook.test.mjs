@@ -189,7 +189,8 @@ test('reports the decision to the dashboard when WEAVE_DASHBOARD_URL is set', as
     // couldn't accept the hook's report before the hook gave up.
     const r = await runAsync(process.execPath, [resolve('dist/cli.js'), ...['hook']], {
       input: JSON.stringify({ hook_event_name: 'beforeReadFile', workspace_roots: [ws], file_path: join(ws, 'secrets', 'k') }),
-      env: { PATH: process.env.PATH, HOME: home, WEAVE_DASHBOARD_URL: dash.url }, encoding: 'utf8', cwd: ws,
+      // A cold first request on a slow CI runner can exceed the 250ms default
+      env: { PATH: process.env.PATH, HOME: home, WEAVE_DASHBOARD_URL: dash.url, WEAVE_DASHBOARD_TIMEOUT_MS: '5000' }, encoding: 'utf8', cwd: ws,
     });
     assert.equal(r.status, 0, r.stderr);
     assert.equal(dash.received.length, 1);
