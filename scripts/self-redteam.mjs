@@ -4,7 +4,10 @@
  * AgentSecBench suites) through Weave's defenses, offline and with no model:
  *
  *   - Mund scans every attack payload, the way it would scan a page, tool
- *     result or message before an agent sees it.
+ *     result or message before an agent sees it, and a benign corpus
+ *     (mund/tests/fixtures/benign) to measure false positives. "Flagged"
+ *     means at least one finding at medium severity or higher, the level
+ *     at which Mund's risk label becomes actionable.
  *   - Ward evaluates the tool calls a coerced agent would make (from
  *     scripts/redteam-toolcalls.json) against a reference WARD policy.
  *
@@ -32,10 +35,18 @@ const pkg = (name) => JSON.parse(readFileSync(join(root, name, 'package.json'), 
 
 // ── Mund over every payload ────────────────────────────────
 const corpus = ALL_ATTACKS.map((a) => ({ id: a.id, category: a.category, payload: typeof a.payload === 'function' ? a.payload() : a.payload }));
+const ACTIONABLE = new Set(['medium', 'high', 'critical']);
+const flagged = async (text) => (await scan(text)).issues.filter((i) => ACTIONABLE.has(i.severity));
 const mundRows = [];
 for (const a of corpus) {
-  const { issues } = await scan(a.payload);
-  mundRows.push({ ...a, detected: issues.length > 0, issues: [...new Set(issues.map((i) => i.type ?? i.ruleId ?? 'issue'))].slice(0, 5) });
+  const issues = await flagged(a.payload);
+  mundRows.push({ ...a, detected: issues.length > 0 });
+}
+const benign = JSON.parse(readFileSync(join(root, 'mund', 'tests', 'fixtures', 'benign', 'corpus.json'), 'utf8'));
+const falsePositives = [];
+for (const b of benign) {
+  const issues = await flagged(b.text);
+  if (issues.length) falsePositives.push(`${b.id}: ${[...new Set(issues.map((i) => i.rule_id))].join(', ')}`);
 }
 const rate = (rows, key) => (rows.length ? rows.filter((r) => r[key]).length / rows.length : 0);
 const byCategory = {};
@@ -62,6 +73,9 @@ const scorecard = {
       return [suite.id, { payloads: rows.length, detectionRate: rate(rows, 'detected') }];
     })),
     missed: mundRows.filter((r) => !r.detected).map((r) => r.id),
+    benign: benign.length,
+    falsePositiveRate: benign.length ? falsePositives.length / benign.length : 0,
+    falsePositives,
   },
   ward: {
     calls: wardRows.length,
@@ -77,12 +91,14 @@ const pct = (x) => `${(x * 100).toFixed(1)}%`;
 const md = [
   '## Weave self red-team',
   '',
-  `Mund flagged **${pct(scorecard.mund.detectionRate)}** of ${scorecard.mund.payloads} attack payloads; Ward decided **${pct(scorecard.ward.correctRate)}** of ${scorecard.ward.calls} coerced tool calls correctly.`,
+  `Mund flagged **${pct(scorecard.mund.detectionRate)}** of ${scorecard.mund.payloads} attack payloads and **${pct(scorecard.mund.falsePositiveRate)}** of ${scorecard.mund.benign} benign texts (medium severity or higher). Ward decided **${pct(scorecard.ward.correctRate)}** of ${scorecard.ward.calls} coerced tool calls correctly.`,
   '',
   '| Mund by category | Payloads | Flagged |',
   '|---|---|---|',
   ...Object.entries(scorecard.mund.byCategory).map(([k, v]) => `| ${k} | ${v.payloads} | ${pct(v.detectionRate)} |`),
   ...Object.entries(scorecard.mund.bySuite).map(([k, v]) => `| _suite ${k}_ | ${v.payloads} | ${pct(v.detectionRate)} |`),
+  '',
+  scorecard.mund.falsePositives.length ? `Mund false positives: ${scorecard.mund.falsePositives.join('; ')}` : 'Mund: no false positives on the benign corpus.',
   '',
   scorecard.ward.wrong.length ? `Ward misses: ${scorecard.ward.wrong.join('; ')}` : 'Ward: every call decided as expected.',
   '',
@@ -96,13 +112,17 @@ if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMM
 console.log(md);
 
 const baselinePath = join(root, 'scripts', 'redteam-baseline.json');
-const current = { mundDetectionRate: scorecard.mund.detectionRate, wardCorrectRate: scorecard.ward.correctRate };
+const current = { mundDetectionRate: scorecard.mund.detectionRate, mundFalsePositiveRate: scorecard.mund.falsePositiveRate, wardCorrectRate: scorecard.ward.correctRate };
+// Rates that must not rise (everything else must not fall)
+const CEILINGS = new Set(['mundFalsePositiveRate']);
 if (flags['update-baseline']) {
   writeFileSync(baselinePath, JSON.stringify(current, null, 2) + '\n');
   console.log(`\nBaseline updated: ${baselinePath}`);
 } else {
   const baseline = JSON.parse(readFileSync(baselinePath, 'utf8'));
-  const drops = Object.entries(baseline).filter(([k, v]) => current[k] + 1e-9 < v).map(([k, v]) => `${k} ${pct(current[k])} < baseline ${pct(v)}`);
+  const drops = Object.entries(baseline)
+    .filter(([k, v]) => (CEILINGS.has(k) ? current[k] > v + 1e-9 : current[k] + 1e-9 < v))
+    .map(([k, v]) => `${k} ${pct(current[k])} ${CEILINGS.has(k) ? '>' : '<'} baseline ${pct(v)}`);
   if (drops.length) {
     console.error(`\nRegression: ${drops.join('; ')}`);
     process.exit(1);

@@ -70,12 +70,36 @@ An agent with a broad write rule could rewrite the files that control it: WARD.m
 #### 🛡️ The API refuses DNS-rebinding requests (api 1.6.0)
 A web page can point its own domain at `127.0.0.1` and call a local server from your browser. This is the class behind the Playwright MCP DNS-rebinding issue (CVE-2025-9611). On its default loopback bind, the API now answers only requests addressed to `localhost`, `127.0.0.1` or `[::1]`. Add other names with `WEAVE_ALLOWED_HOSTS`.
 
-#### ⚔️ Self red-team on every push
-CI now runs our own attack corpus through our own defenses, offline. Mund scans every Adversary payload, and Ward decides the tool calls a coerced agent would make. The scorecard goes to the job summary, and CI fails if either rate falls below its committed baseline. First numbers:
-- Ward decided all 21 coerced tool calls correctly.
-- Mund flagged 39.7% of the 68 attack payloads.
+#### 🛡️ Mund catches far more prompt injection (0.5.2)
+Mund now looks for what an injection is trying to do, not one fixed phrase. The patterns cover:
+- overriding instructions, in English, German, Spanish, French, Italian and Portuguese;
+- hijacking the task;
+- text addressed to an AI reader;
+- hiding actions from the user;
+- false authority;
+- persona jailbreaks;
+- extracting the system prompt;
+- payment and data-exfiltration directives.
 
-The Mund number is low, and improving it is next. These are regression numbers on our own corpus, not a measure against unseen attacks.
+It also reads text a person never sees: hidden HTML, base64, invisible Unicode tag characters, and words split by zero-width characters. A precedence bug in the `shell_injection` rule, which flagged any line containing braces, is fixed.
+
+| Measured on | Before (0.5.1) | After (0.5.2) | False positives |
+|---|---|---|---|
+| [Lakera Gandalf](https://huggingface.co/datasets/Lakera/gandalf_ignore_instructions) injections, 112 | 17.9% | **65.2%** | – |
+| [jackhhao jailbreaks](https://huggingface.co/datasets/jackhhao/jailbreak-classification), 139 + 123 benign | 30.9% | **58.3%** | 0 of 123 |
+| [deepset prompt-injections](https://huggingface.co/datasets/deepset/prompt-injections) train split, 203 + 343 benign (mostly German) | 4.9% | **24.6%** | 0 of 343 |
+| Our Adversary corpus, 68 + our benign corpus of 84 | 27.9% | 94.1% | 0 of 84 (was 8) |
+
+The three public sets were never used to write the rules; only their totals were checked. Our own corpus was used, so its 94.1% is optimistic. A hit means at least one finding at medium severity or higher. Pattern matching has a ceiling: paraphrased and harmful-content requests still get through, which is where a classifier would come in.
+
+#### ⚔️ Self red-team on every push
+CI now runs our own attack corpus through our own defenses, offline:
+- Mund scans every Adversary payload, plus a benign corpus to count false positives.
+- Ward decides the tool calls a coerced agent would make.
+
+The scorecard goes to the job summary. CI fails if detection falls or false positives rise past the committed baseline. Today's numbers:
+- Mund flags 94.1% of payloads, with 0 false positives.
+- Ward decides 21 of 21 calls correctly.
 
 ### 🗓️ October 2026 update — what landed
 
@@ -404,7 +428,7 @@ The packages that keep your agent within policy: declare it, enforce it across e
 | [🛡️ @weave_protocol/adapter-cursor](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-cursor) | 0.1.0 | **Cursor adapter** — enforces WARD.md via Cursor's agent hooks (shell, file, MCP and tool calls) |
 | [🌐 @weave_protocol/browser](https://github.com/Tyox-all/Weave_Protocol/blob/main/browser) | 0.3.0 | **Browser agent security** — runtime IPI scanner (33 patterns) for headless agents |
 | [🔍 @weave_protocol/hundredmen](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen) | 1.3.0 | **MCP proxy** — intercept, scan, gate tool calls; enforces WARD.md as first gate |
-| [🛡️ @weave_protocol/mund](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund) | 0.5.1 | **Scanner** — secrets, PII, injection, MCP vetting, pre-install checks for skills + MCP (rug pulls), OSV dependency CVEs, SARIF, threat intel |
+| [🛡️ @weave_protocol/mund](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund) | 0.5.2 | **Scanner** — secrets, PII, injection, MCP vetting, pre-install checks for skills + MCP (rug pulls), OSV dependency CVEs, SARIF, threat intel |
 | [🏛️ @weave_protocol/hord](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord) | 0.3.1 | **Vault** — encrypted storage, sandboxing, capability tokens, attestation |
 | [🔐 @weave_protocol/yoxallismus](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus) | **0.2.0-beta.0** | **Post-quantum cipher** — X25519 + ML-KEM-768 hybrid KEM · sealed boxes · cascade AEAD · Double Ratchet · locked `yoxall/2` format · ⚠️ NOT AUDITED |
 | [⚖️ @weave_protocol/domere](https://github.com/Tyox-all/Weave_Protocol/blob/main/domere) | 1.6.0 | **Judge** — compliance (PCI-DSS, ISO27001, SOC2, HIPAA, GDPR, CCPA), blockchain anchoring |

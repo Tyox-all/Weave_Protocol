@@ -1,4 +1,5 @@
 {
-  "mundDetectionRate": 0.39705882352941174,
+  "mundDetectionRate": 0.9411764705882353,
+  "mundFalsePositiveRate": 0,
   "wardCorrectRate": 1
 }
