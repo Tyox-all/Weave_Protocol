@@ -70,6 +70,10 @@ weave-ward-opencode test read --input='{"filePath":"secrets/key"}'   # dry run
 
 The package's main entry default-exports only the plugin, `{ id: "weave-ward", server }`, as OpenCode's loader requires. The helpers are at `@weave_protocol/adapter-opencode/lib`.
 
+## Dashboard
+
+Set `WEAVE_DASHBOARD_URL` (and `WEAVE_API_KEY`) where you run the agent, and each decision is reported to a local [Weave API](https://github.com/Tyox-all/Weave_Protocol/tree/main/api) dashboard (0.2.0+). Only the decision and the tool name are sent, never command or argument contents. Reporting never changes a decision and gives up after 250 ms.
+
 ## Verified
 
 Built against OpenCode's [plugin docs](https://opencode.ai/docs/plugins/), plus the plugin loader and tool schemas in OpenCode v1.19.5. 12 fixture tests.

@@ -161,3 +161,34 @@ describe('CLI (isolated XDG_CONFIG_HOME)', () => {
     assert.equal(run(['test', 'read', `--input=${JSON.stringify({ filePath: join(ws, 'src', 'a') })}`], ws).status, 0);
   });
 });
+
+async function fakeDashboard() {
+  const { createServer } = await import('node:http');
+  const received = [];
+  const server = createServer((req, res) => {
+    let raw = '';
+    req.on('data', (c) => (raw += c));
+    req.on('end', () => { received.push(JSON.parse(raw)); res.writeHead(201); res.end('{}'); });
+  });
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  return { url: `http://127.0.0.1:${server.address().port}`, received, close: () => server.close() };
+}
+
+test('reports the decision to the dashboard when WEAVE_DASHBOARD_URL is set', async () => {
+  const dash = await fakeDashboard();
+  const prev = process.env.WEAVE_DASHBOARD_URL;
+  process.env.WEAVE_DASHBOARD_URL = dash.url;
+  try {
+    const ws = mkdtempSync(join(tmpdir(), 'report-ws-'));
+    writeFileSync(join(ws, 'WARD.md'), WARD(ws));
+    const hooks = await plugin.server({ directory: ws });
+    await assert.rejects(hooks['tool.execute.before']({ tool: 'read' }, { args: { filePath: join(ws, 'secrets', 'k') } }));
+    for (let i = 0; i < 50 && dash.received.length === 0; i++) await new Promise((r) => setTimeout(r, 10));
+    assert.equal(dash.received[0]?.surface, 'opencode');
+    assert.equal(dash.received[0].decision, 'deny');
+    assert.equal(dash.received[0].subject, 'read');
+  } finally {
+    if (prev === undefined) delete process.env.WEAVE_DASHBOARD_URL; else process.env.WEAVE_DASHBOARD_URL = prev;
+    dash.close();
+  }
+});

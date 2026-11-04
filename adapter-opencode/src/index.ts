@@ -12,6 +12,7 @@
  * An invalid WARD.md blocks every call rather than switching enforcement off.
  */
 
+import { reportEvent } from '@weave_protocol/ward';
 import { resolveWard, evaluateCall, blockMessage } from './policy.js';
 
 interface PluginInput {
@@ -36,7 +37,10 @@ const WardPlugin = async ({ directory, worktree }: PluginInput) => {
         throw new Error(`WARD policy could not be loaded: ${err instanceof Error ? err.message : String(err)}. Fix WARD.md to continue.`);
       }
       if (!ward) return;
-      const message = blockMessage(evaluateCall(ward.policy, input.tool, output.args, dir), ward.source);
+      const result = evaluateCall(ward.policy, input.tool, output.args, dir);
+      // Dashboard reporting (only when WEAVE_DASHBOARD_URL is set; never blocks)
+      void reportEvent({ surface: 'opencode', decision: result.decision, subject: input.tool, reason: result.reasons[0] });
+      const message = blockMessage(result, ward.source);
       if (message) throw new Error(message);
     },
   };
