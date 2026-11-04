@@ -547,6 +547,34 @@ Mund uses YAML-based rules in `rules/default.yaml`. Example:
   enabled: true
 ```
 
+### What the injection rules look for (0.5.2)
+
+The injection rules look for intent, not a single phrase, and run on normalized text with zero-width characters removed and Unicode normalized. These families of rules fire on any phrasing that matches them:
+
+| Rule | Catches |
+|---|---|
+| `prompt_injection_ignore` | Ignoring, forgetting or overriding earlier instructions (EN, DE, ES, FR, IT, PT) |
+| `prompt_injection_new_task` | A new task, role or directive that replaces the agent's own |
+| `prompt_injection_ai_addressed` | Text written to an AI reader ("if you are an AI…") |
+| `prompt_injection_concealment` | Hiding actions from the user |
+| `prompt_injection_authority` | False system, admin or developer authority |
+| `prompt_injection_jailbreak` | Unrestricted personas, "no ethical guidelines", developer mode, forced prefixes |
+| `prompt_injection_decode_execute` | Decode or translate, then act on the result |
+| `prompt_injection_system` | System-prompt and instruction extraction |
+| `prompt_injection_data_harvest` | Collecting the user's history, contacts or credentials |
+| `transaction_directive` | Moving money to an account |
+| `exfiltration_directive`, `templated_exfil_url` | Sending private data to a URL or address, and URLs with `{SESSION_TOKEN}`-style placeholders |
+| `credential_file_access`, `environment_dump`, `log_tampering`, `privilege_escalation` | Dangerous operations requested in content |
+
+Mund also reads text a person doesn't see:
+- hidden HTML elements, `noscript`, `template` and comments;
+- base64 that decodes to prose;
+- Unicode tag characters;
+- words split by zero-width characters;
+- tool-call syntax embedded in content.
+
+Treat a hit at `medium` or higher as actionable. That is the threshold Weave's CI uses: it holds detection on our attack corpus and false positives on a benign corpus (`tests/fixtures/benign`) to a committed baseline.
+
 ### Severity Levels
 
 | Level | Action | Example |
