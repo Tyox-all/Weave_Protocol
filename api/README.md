@@ -51,7 +51,7 @@ Clients send the key as `X-API-Key: your-key` or `Authorization: Bearer your-key
 
 ## 📊 Dashboard
 
-A live view of what your agents' Weave surfaces decided (1.4.0+): Hundredmen, the Claude Code / Antigravity / MSAF adapters, and the browser guard.
+A live view of what your agents' Weave surfaces decided (1.4.0+): Hundredmen, the browser guard, and the Claude Code, Antigravity, MSAF, Gemini CLI, Codex CLI, OpenCode and Cursor adapters (the last four from 1.5.0).
 
 **Access:** `http://localhost:3000/dashboard`
 

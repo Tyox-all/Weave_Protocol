@@ -14,7 +14,16 @@
 
 import type { Decision } from "./enforcer/index.js";
 
-export type ReportSurface = "mcp" | "claude-code" | "antigravity" | "msaf" | "browser";
+export type ReportSurface =
+  | "mcp"
+  | "claude-code"
+  | "antigravity"
+  | "msaf"
+  | "browser"
+  | "gemini-cli"
+  | "codex"
+  | "opencode"
+  | "cursor";
 export type ReportDecision = Decision | "ipi_detected" | "scan";
 
 export interface EnforcementEvent {

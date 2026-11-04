@@ -31,7 +31,8 @@ const post = (call, body) => call('/api/v1/events', { method: 'POST', body: JSON
 test('with nothing reported, every surface is off and nothing is invented', async () => {
   await withServer(async (call) => {
     const snap = await (await call('/api/dashboard/snapshot')).json();
-    assert.equal(snap.surfaces.length, 5);
+    assert.equal(snap.surfaces.length, 9);
+    assert.deepEqual(snap.surfaces.slice(5).map((s) => s.id), ['gemini-cli', 'codex', 'opencode', 'cursor']);
     for (const s of snap.surfaces) {
       assert.equal(s.status, 'off', s.id);
       assert.equal(s.eventsToday, 0, s.id);
@@ -48,6 +49,7 @@ test('reported events drive the snapshot', async () => {
     await post(call, { surface: 'claude-code', decision: 'allow', subject: 'Read' });
     await post(call, { surface: 'browser', decision: 'ipi_detected', subject: 'https://blog.example/p', reason: 'high risk: trigger_phrase' });
     await post(call, { surface: 'msaf', decision: 'require_approval', subject: 'SendEmail', timestamp: Date.now() - 2 * 60 * 60 * 1000 });
+    await post(call, { surface: 'codex', decision: 'deny', subject: 'Bash', reason: 'Denied by filesystem rule' });
 
     const snap = await (await call('/api/dashboard/snapshot')).json();
     const byId = Object.fromEntries(snap.surfaces.map((s) => [s.id, s]));
@@ -56,8 +58,10 @@ test('reported events drive the snapshot', async () => {
     assert.equal(byId.msaf.status, 'idle', 'reported earlier today, not in the last 5 minutes');
     assert.equal(byId.msaf.lastHour, 0);
     assert.equal(byId.antigravity.status, 'off');
-    assert.deepEqual(snap.stats, { decisions: 4, allows: 1, denies: 1, approvalsRequested: 1, ipiDetected: 1, urlsScanned: 1 });
-    assert.equal(snap.events[0].kind, 'ipi_detected', 'newest first');
+    assert.equal(byId.codex.status, 'live', 'new adapters report too');
+    assert.equal(byId.cursor.status, 'off');
+    assert.deepEqual(snap.stats, { decisions: 5, allows: 1, denies: 2, approvalsRequested: 1, ipiDetected: 1, urlsScanned: 1 });
+    assert.equal(snap.events[1].kind, 'ipi_detected', 'newest first');
     assert.match(snap.notes.dataSource, /^Live/);
   });
 });
