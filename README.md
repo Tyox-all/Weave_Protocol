@@ -75,7 +75,7 @@ The Claude Code, Antigravity and MSAF adapters each checked only part of a tool 
 An invalid WARD.md now blocks instead of switching enforcement off. **Upgrade to adapter-claudecode 0.3.0, adapter-antigravity 0.3.0 or adapter-msaf 0.2.0.**
 
 #### 🛡️ New: WARD.md in Cursor
-[`@weave_protocol/adapter-cursor`](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-cursor) enforces WARD.md through Cursor's agent hooks: shell commands, file reads, MCP calls, and every other tool through `preToolUse`. Set it up with `weave-ward-cursor init`. That makes seven harnesses enforcing the same WARD.md.
+[`@weave_protocol/adapter-cursor`](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-cursor) enforces WARD.md through Cursor's agent hooks: shell commands, file reads, MCP calls, and every other tool through `preToolUse`. Set it up with `weave-ward-cursor init`. It's live-checked in Cursor 3.28.7: a denied read and a denied write were both blocked. That makes seven harnesses enforcing the same WARD.md.
 
 #### 🛡️ New: WARD.md in OpenCode
 [`@weave_protocol/adapter-opencode`](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-opencode) is an OpenCode plugin that enforces WARD.md on every tool call, so the same policy covers whichever model OpenCode runs, including DeepSeek, Kimi, Qwen or a local model. Add `"@weave_protocol/adapter-opencode"` to `plugin` in opencode.json. It's live-checked in OpenCode 1.19.5: a read of a denied file and a write outside the allowed folder were both blocked.

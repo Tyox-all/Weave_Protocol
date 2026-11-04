@@ -65,7 +65,15 @@ Set `WEAVE_DASHBOARD_URL` (and `WEAVE_API_KEY`) where you run the agent, and eac
 
 ## Verified
 
-Built against Cursor's [agent hooks documentation](https://cursor.com/docs/agent/hooks), with 11 fixture tests. It hasn't been live-checked in Cursor yet. Cursor's docs don't say whether the `cursor-agent` CLI runs agent hooks, so for now treat this as an IDE adapter.
+Built against Cursor's [agent hooks documentation](https://cursor.com/docs/agent/hooks), with 12 fixture tests.
+
+Live-checked in the Cursor app (3.28.7) with a project-level `.cursor/hooks.json`:
+- **Denied read:** the agent's read of `secrets/key` was blocked through `beforeReadFile`, with `WARD: Denied by filesystem rule …`.
+- **Allowed read:** `notes.txt` went through.
+- **Denied write:** creating `secrets/new.txt` was blocked through `preToolUse`. Cursor sends writes as `tool_name: "Write"` with `tool_input: { file_path, content }`.
+- **Reads are decided once:** each read also arrives as a `preToolUse`. The adapter leaves those to `beforeReadFile`, which fires whenever file content is actually read.
+
+Cursor's docs don't say whether the `cursor-agent` CLI runs agent hooks, so this is verified for the app.
 
 ## License
 
