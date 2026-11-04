@@ -22,6 +22,10 @@ That's it. You now have every Weave Protocol package installed:
 | 🛂 [@weave_protocol/tollere](https://www.npmjs.com/package/@weave_protocol/tollere) | Supply chain security — npm, Docker, IDE extensions |
 | 🔗 [@weave_protocol/langchain](https://www.npmjs.com/package/@weave_protocol/langchain) | LangChain.js security callbacks |
 | 🔌 [@weave_protocol/api](https://www.npmjs.com/package/@weave_protocol/api) | REST API + monitoring dashboard |
+| 📜 [@weave_protocol/ward](https://www.npmjs.com/package/@weave_protocol/ward) | WARD.md policy standard and the shared tool-call evaluator |
+| 🌐 [@weave_protocol/browser](https://www.npmjs.com/package/@weave_protocol/browser) | Browser-agent guard: navigation, downloads, prompt-injection scanning |
+| 🕸️ [@weave_protocol/cli](https://www.npmjs.com/package/@weave_protocol/cli) | `weave init`, audit and dashboard commands |
+| 🛡️ Harness adapters | WARD.md enforcement in [Claude Code](https://www.npmjs.com/package/@weave_protocol/adapter-claudecode), [Antigravity](https://www.npmjs.com/package/@weave_protocol/adapter-antigravity), [Microsoft Agent Framework](https://www.npmjs.com/package/@weave_protocol/adapter-msaf), [Gemini CLI](https://www.npmjs.com/package/@weave_protocol/adapter-geminicli), [Codex CLI](https://www.npmjs.com/package/@weave_protocol/adapter-codex), [OpenCode](https://www.npmjs.com/package/@weave_protocol/adapter-opencode) and [Cursor](https://www.npmjs.com/package/@weave_protocol/adapter-cursor). Installing them doesn't turn them on; run each adapter's `init`. |
 
 ---
 
