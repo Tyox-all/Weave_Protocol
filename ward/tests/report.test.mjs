@@ -3,7 +3,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { reportEvent, dashboardUrl } from '../dist/index.js';
+import { reportEvent, dashboardUrl, reportTimeoutMs } from '../dist/index.js';
 
 let server, url;
 const received = [];
@@ -55,4 +55,21 @@ test('a slow or missing dashboard costs at most the timeout and never throws', a
   assert.ok(Date.now() - t0 < 1000, `took ${Date.now() - t0}ms`);
   delayMs = 0;
   await reportEvent({ surface: 'mcp', decision: 'allow', subject: 'x' }, { url: 'http://127.0.0.1:1', timeoutMs: 100 });
+});
+
+test('the timeout comes from the option, then WEAVE_DASHBOARD_TIMEOUT_MS, capped at 5s', () => {
+  const prev = process.env.WEAVE_DASHBOARD_TIMEOUT_MS;
+  try {
+    delete process.env.WEAVE_DASHBOARD_TIMEOUT_MS;
+    assert.equal(reportTimeoutMs(), 250);
+    process.env.WEAVE_DASHBOARD_TIMEOUT_MS = '1500';
+    assert.equal(reportTimeoutMs(), 1500);
+    assert.equal(reportTimeoutMs({ timeoutMs: 100 }), 100, 'the option wins');
+    process.env.WEAVE_DASHBOARD_TIMEOUT_MS = '60000';
+    assert.equal(reportTimeoutMs(), 5000, 'capped');
+    process.env.WEAVE_DASHBOARD_TIMEOUT_MS = 'nope';
+    assert.equal(reportTimeoutMs(), 250, 'garbage falls back');
+  } finally {
+    if (prev === undefined) delete process.env.WEAVE_DASHBOARD_TIMEOUT_MS; else process.env.WEAVE_DASHBOARD_TIMEOUT_MS = prev;
+  }
 });

@@ -41,13 +41,25 @@ export interface ReportOptions {
   url?: string;
   /** API key. Default: $WEAVE_API_KEY */
   apiKey?: string;
-  /** Default 250ms */
+  /** Default: $WEAVE_DASHBOARD_TIMEOUT_MS, else 250ms */
   timeoutMs?: number;
 }
 
 const MAX = 200;
 const env = (key: string): string | undefined =>
   (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.[key];
+
+/**
+ * How long a report may take before it's dropped. 250ms keeps hooks fast;
+ * raise it with WEAVE_DASHBOARD_TIMEOUT_MS on a slow machine or network,
+ * where a cold first request can take longer and events would be lost.
+ * Capped at 5 seconds so a dashboard can never stall an agent for long.
+ */
+export function reportTimeoutMs(opts: ReportOptions = {}): number {
+  const fromEnv = Number(env("WEAVE_DASHBOARD_TIMEOUT_MS"));
+  const ms = opts.timeoutMs ?? (Number.isFinite(fromEnv) && fromEnv > 0 ? fromEnv : 250);
+  return Math.min(ms, 5000);
+}
 
 /** The dashboard URL reportEvent would use, or undefined when reporting is off. */
 export function dashboardUrl(opts: ReportOptions = {}): string | undefined {
@@ -85,7 +97,7 @@ export async function reportEvent(event: EnforcementEvent, opts: ReportOptions =
 
   const apiKey = opts.apiKey ?? env("WEAVE_API_KEY");
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), opts.timeoutMs ?? 250);
+  const timer = setTimeout(() => controller.abort(), reportTimeoutMs(opts));
   try {
     await doFetch(`${base}/api/v1/events`, {
       method: "POST",

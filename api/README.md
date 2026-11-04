@@ -66,7 +66,7 @@ export WEAVE_API_KEY=...        # the API's key, if it has one
 
 - **Off by default.** Without `WEAVE_DASHBOARD_URL`, nothing is sent.
 - **What's sent:** the surface, the decision, the tool name or a URL without its query string, and a short reason. Command text and argument contents are never sent.
-- **Never in the way.** Reporting never changes a decision and gives up after 250 ms.
+- **Never in the way.** Reporting never changes a decision and gives up after 250 ms. Set `WEAVE_DASHBOARD_TIMEOUT_MS` (up to 5000) on slow machines so events aren't dropped.
 - **What the dashboard shows:**
   - each surface: **LIVE** (reported in the last 5 minutes), **IDLE** (in the last 24 hours) or **OFF** (not reporting);
   - each surface's count for the last 24 hours and the last hour;

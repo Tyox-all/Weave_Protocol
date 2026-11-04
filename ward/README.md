@@ -171,7 +171,7 @@ export WEAVE_API_KEY=...                            # the API's key
 
 - **Off by default.** Nothing is sent unless `WEAVE_DASHBOARD_URL` is set.
 - **Sent:** the surface, the decision, the tool name or a URL with its query string removed, and a truncated reason with any argument value stripped. Command text and argument contents are never sent.
-- **Never in the way.** A report never changes a decision, gives up after 250 ms, and never throws.
+- **Never in the way.** A report never changes a decision and never throws. It gives up after 250 ms; on a slow machine or network, raise that with `WEAVE_DASHBOARD_TIMEOUT_MS` (up to 5000) so events aren't dropped.
 
 ---
 
