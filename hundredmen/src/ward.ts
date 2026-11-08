@@ -22,6 +22,7 @@ import {
   checkNetwork,
   checkCapability,
   checkDataEgress,
+  checkOutboundData,
   type WardPolicy,
   type CheckResult,
   type HttpMethod,
@@ -182,6 +183,17 @@ export class WardPolicyManager {
         decision: netResult.decision,
         reason: netResult.reason,
         matchedRule: netResult.matchedRule,
+      });
+    }
+
+    // 4. What the call sends: secrets and personal data in URLs, message
+    //    bodies and commands, against WARD.md's Data Boundaries (Ward 0.3.5)
+    for (const egress of checkOutboundData(this.policy, tool, args)) {
+      breakdowns.push({
+        type: 'data_egress',
+        decision: egress.decision,
+        reason: `${egress.reason} (${egress.subject})`,
+        matchedRule: egress.matchedRule,
       });
     }
 
