@@ -14,6 +14,11 @@ Part of the [Weave Protocol](https://github.com/Tyox-all/Weave_Protocol) securit
 
 ## 🆕 What's new
 
+**1.3.2: checks what MCP calls send.** Using [Ward](https://www.npmjs.com/package/@weave_protocol/ward) 0.3.5, Hundredmen checks the URLs, message bodies and arguments of a call for credentials and personal data:
+- it enforces WARD.md's `egressDeny`, even to allowed hosts;
+- a credential sent anywhere but its issuer is held for review;
+- so is sensitive data sent to a model API that WARD.md doesn't name.
+
 **1.3.0: decisions on the dashboard.** Set `WEAVE_DASHBOARD_URL` and Hundredmen sends each allow and deny decision to a local [Weave API](https://www.npmjs.com/package/@weave_protocol/api) dashboard. It's off by default.
 
 **1.2.0: whole-call checks.**
