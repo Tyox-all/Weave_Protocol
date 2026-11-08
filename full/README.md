@@ -31,6 +31,8 @@ That's it. You now have every Weave Protocol package installed:
 
 ## 🆕 What's new
 
+**0.5.0** brings in the November security releases. The seven harness adapters enforce WARD.md's session and spend limits (Ward 0.3.6). They also run a payment guard and check what each call sends. This release also includes Mund 0.5.3's detection and Witan 1.2.2's fix for WARD.md spending caps.
+
 **0.4.0** adds the Gemini CLI, Codex, OpenCode and Cursor adapters and the browser guard, so one install now includes every defensive package. Each component is a regular dependency, so a fresh install picks up its patch releases, such as Ward 0.3.3's self-protection and Mund 0.5.2's detection.
 
 ## Usage
