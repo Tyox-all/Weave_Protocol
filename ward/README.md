@@ -18,6 +18,12 @@ npm install @weave_protocol/ward
 
 ## 🆕 What's new
 
+**0.3.6: payments and spend limits.**
+- **Payment guard, on by default.** A call that moves money needs human approval unless WARD.md allows that capability by name. That covers payment, transfer, purchase and withdrawal tools, plus wallet and Stripe CLIs in shell commands. A default `allow` or a wildcard doesn't lift it.
+- **Session limits.** `@weave_protocol/ward/ledger` enforces the Behavioral Limits (`maxToolCalls`, `maxRuntimeSeconds`, `maxExternalServices`). It also enforces [Witan's](https://www.npmjs.com/package/@weave_protocol/witan) `spending_limits:` caps: per-tool call counts and cumulative payment amounts per run, hour, day, week or month. Hook-based adapters keep these counts across their separate processes.
+
+See [payments and spend limits](#payments-and-spend-limits-036).
+
 **0.3.5: what's leaving, not just where it goes.** A secret sent to an allowed domain is still a leak. That's the pattern behind Claude Code CVE-2026-54316, exfiltration through a pre-approved domain. Every tool call that sends something is checked for the data it carries:
 - literal keys, card numbers, emails and SSNs;
 - in shell commands, `$SECRET_VARS`, secret files such as `.env` and SSH keys, and environment dumps.
@@ -229,6 +235,47 @@ evaluateToolCall(policy, tool, args, { classify: (text) => myFindings(text) }); 
 
 `checkOutboundData`, `classifyData`, `classifyCommandReferences` and `isModelEndpoint` are exported for hosts that don't use `evaluateToolCall`.
 
+### Payments and spend limits (0.3.6+)
+
+**Payment guard.** `evaluateToolCall` asks for approval before any call that moves money. It recognizes:
+- tools named for payments, payouts, purchases, checkout, withdrawals or wires;
+- tools named transfer, swap, bridge, buy, refund or send that carry an amount;
+- wallet and payment CLIs in shell commands: `cast send`, `solana transfer`, `spl-token transfer`, `bitcoin-cli send…` and `stripe payouts|transfers|charges create`, among others.
+
+To lift the guard, allow the capability by its exact name, or allow `payments` for all of them. Allowing `shell_exec` doesn't lift it for a payment CLI inside a shell command. `detectPayment()` reports the amount: `amount`, `amount_usd`, `amount_cents` (divided by 100), `value`, `price` or `total`, in USD when no other currency is stated.
+
+**Session limits.** These need history, which a hook process doesn't have. `@weave_protocol/ward/ledger` keeps it in one small file per agent, `$WEAVE_LEDGER_DIR` or `~/.weave/ledger/<agent>.json`, with mode 0600. It records when each call ran, its session, its tool, the USD moved and the hosts contacted. No arguments are stored. Parallel hook processes are serialized with a lock.
+
+```typescript
+import { evaluateWithLedger } from "@weave_protocol/ward/ledger";
+
+const result = evaluateWithLedger(policy, toolName, args, { mappings, cwd, session: hookInput.session_id });
+```
+
+It enforces:
+
+| WARD.md | Limit |
+|---|---|
+| `## Behavioral Limits` → `maxToolCalls` | Tool calls per session (deny) |
+| `maxRuntimeSeconds` | Time since the session's first call (deny) |
+| `maxExternalServices` | Distinct hosts contacted per session (deny) |
+| `spending_limits:` → `budget.tool_calls` | Tool calls per window |
+| `budget.tools.<name>.max_calls` | Calls of one tool per window |
+| `budget.tools.<name>.max_amount_usd` | USD that tool may move per window, cumulative. An unknown amount needs approval. |
+
+```yaml
+spending_limits:
+  - window: day                 # run (the session) | hour | day | week | month (rolling)
+    budget:
+      tools:
+        send_payment:
+          max_amount_usd: 500
+          max_calls: 5
+    on_exceeded: block          # block | require_approval | notify
+```
+
+This is the same `spending_limits:` format Witan reads. `budget.usd` and `budget.tokens` cover LLM spend, which hooks can't see, so Witan enforces those. The ledger is only touched when WARD.md declares a limit that needs it. `checkSessionLimits()` is the pure check, for hosts that keep their own history.
+
 ### Reporting decisions to the dashboard (0.3.0+)
 
 `reportEvent()` sends an enforcement decision to a local Weave API (`@weave_protocol/api`), which shows it on its dashboard. The Weave adapters, browser guard and Hundredmen call it for you. Its surfaces are `mcp`, `claude-code`, `antigravity`, `msaf`, `browser`, `gemini-cli`, `codex`, `opencode` and `cursor` (the last four from 0.3.1).
@@ -312,12 +359,12 @@ WARD.md is the format that does all three.
 **Shipped:**
 - the parser, validator, type system and CLI;
 - the check primitives: `checkFilesystem`, `checkNetwork`, `checkCapability`, `checkDataEgress` and `checkBehavioral`;
-- `evaluateToolCall` with self-protection and outbound-data checks;
+- `evaluateToolCall` with self-protection, outbound-data checks and the payment guard;
+- session and spend limits (`@weave_protocol/ward/ledger`);
 - dashboard reporting;
 - adapters for seven agent harnesses, plus MCP (Hundredmen) and Playwright (Browser).
 
 **Next:**
-- per-session limits from the Behavioral section;
 - signed policies and signed decision receipts.
 
 ---

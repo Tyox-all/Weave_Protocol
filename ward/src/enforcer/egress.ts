@@ -260,6 +260,11 @@ function outboundOf(toolName: string, input: Record<string, unknown>, commandFie
   return { hosts: [...hosts], texts, commands };
 }
 
+/** Hosts a tool call contacts (empty when it sends nothing). "an unknown host" when it sends without a URL. */
+export function destinationsOf(toolName: string, args: Record<string, unknown> | undefined, commandField?: string, urlField?: string): string[] {
+  return outboundOf(toolName, args && typeof args === "object" ? args : {}, commandField, urlField)?.hosts ?? [];
+}
+
 // ─────────────────────────────────────────────────────────
 // The check
 // ─────────────────────────────────────────────────────────

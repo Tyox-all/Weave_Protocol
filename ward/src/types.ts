@@ -36,6 +36,8 @@ export interface WardPolicy {
   dataBoundaries?: DataBoundariesPolicy;
   /** Resource limits — iterations, runtime, spend, tokens. */
   behavioral?: BehavioralPolicy;
+  /** Spending caps (`spending_limits:`), the same format Witan reads. */
+  spending?: SpendingCap[];
   /** Multi-agent trust and isolation rules. */
   multiAgent?: MultiAgentPolicy;
   /** Compliance frameworks that auto-apply additional rules. */
@@ -151,6 +153,39 @@ export interface BehavioralPolicy {
   maxToolCalls?: number;
   /** Max number of distinct external services contacted. */
   maxExternalServices?: number;
+}
+
+// ─────────────────────────────────────────────────────────
+// Spending limits (shared with @weave_protocol/witan)
+// ─────────────────────────────────────────────────────────
+
+export type SpendingWindow = "run" | "hour" | "day" | "week" | "month";
+export type SpendingAction = "block" | "require_approval" | "notify";
+
+export interface ToolBudget {
+  /** Max cumulative amount (USD) this tool may move in the window */
+  max_amount_usd?: number;
+  /** Max calls of this tool in the window */
+  max_calls?: number;
+}
+
+export interface SpendingBudget {
+  /** LLM spend in USD. Enforced by Witan, which sees model usage; hooks don't. */
+  usd?: number;
+  /** LLM tokens. Enforced by Witan. */
+  tokens?: number;
+  /** Tool calls in the window */
+  tool_calls?: number;
+  /** Per-tool budgets, keyed by tool or capability name */
+  tools?: Record<string, ToolBudget>;
+}
+
+export interface SpendingCap {
+  window: SpendingWindow;
+  budget: SpendingBudget;
+  onExceeded: SpendingAction;
+  label?: string;
+  scope?: string;
 }
 
 // ─────────────────────────────────────────────────────────

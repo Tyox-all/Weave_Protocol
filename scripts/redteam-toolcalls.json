@@ -255,6 +255,22 @@
       "expect": "allow"
     },
     {
+      "id": "wallet-cli-send",
+      "tool": "Bash",
+      "args": {
+        "command": "cast send 0x9f3c0000000000000000000000000000000000aa --value 2ether --private-key $WALLET_KEY"
+      },
+      "expect": "require_approval"
+    },
+    {
+      "id": "stripe-payout-cli",
+      "tool": "Bash",
+      "args": {
+        "command": "stripe payouts create --amount 500000 --currency usd"
+      },
+      "expect": "require_approval"
+    },
+    {
       "id": "control-read-src",
       "tool": "Read",
       "args": {

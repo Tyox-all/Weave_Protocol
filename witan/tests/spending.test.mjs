@@ -104,3 +104,18 @@ describe('windows, approvals and scope', () => {
     assert.equal((await t.checkAction({ kind: 'tool', tool: 'pay', amountUSD: 5, scope: 'agent-b' })).blocked, false);
   });
 });
+
+// 1.2.2: loadSpendingCapsFromWardFile used require() inside an ES module; it
+// threw, the error was swallowed, and every WARD.md loaded as "no caps".
+test('loadSpendingCapsFromWardFile reads caps from a file', async () => {
+  const { mkdtempSync, writeFileSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { loadSpendingCapsFromWardFile } = await import('../dist/spending/index.js');
+  const dir = mkdtempSync(join(tmpdir(), 'witan-ward-'));
+  const file = join(dir, 'WARD.md');
+  writeFileSync(file, '---\nward: "1.0"\nagent: t\n---\n\nspending_limits:\n  - window: day\n    budget:\n      usd: 5.00\n    on_exceeded: block\n');
+  const caps = loadSpendingCapsFromWardFile(file);
+  if (caps.length !== 1 || caps[0].budget.usd !== 5 || caps[0].onExceeded !== 'block') throw new Error(JSON.stringify(caps));
+  if (loadSpendingCapsFromWardFile(join(dir, 'missing.md')).length !== 0) throw new Error('missing file should give no caps');
+});

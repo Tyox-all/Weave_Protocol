@@ -11,6 +11,8 @@ Part of the [Weave Protocol Security Suite](https://github.com/Tyox-all/Weave_Pr
 
 ## 🆕 What's new
 
+**1.2.2: WARD.md spending caps load.** `loadSpendingCapsFromWardFile()` called `require()` inside an ES module. It threw, the error was swallowed, and every file loaded as "no caps". **If you load caps from WARD.md, upgrade.** [Ward](https://www.npmjs.com/package/@weave_protocol/ward) 0.3.6 now reads the same `spending_limits:` format, so tool-call and payment caps are enforced in the harness adapters too.
+
 **1.2.0: spending caps fail closed.**
 - Current Claude models are priced: Fable 5.1 and 5; Opus 5.5, 5, 4.8 and 4.6; Sonnet 5.5, 5 and 4.6; Haiku 5.5 and 4.5. Before this, USD caps never triggered for them.
 - Opus 4.7 pricing is corrected.

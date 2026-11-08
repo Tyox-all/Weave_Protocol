@@ -6,6 +6,7 @@
  */
 
 import { splitFrontmatter, parseYAML } from "./yaml.js";
+import { parseSpendingLimits } from "./spending.js";
 import { splitSections, extractStructuredBlock, type MarkdownSection } from "./markdown.js";
 import type {
   WardPolicy,
@@ -49,6 +50,11 @@ export function parseWard(source: string): WardPolicy {
   for (const section of sections) {
     applySection(policy, section);
   }
+
+  // spending_limits: may sit in its own section or anywhere in the body, as
+  // Witan reads it
+  const spending = parseSpendingLimits(body);
+  if (spending.length) policy.spending = spending;
 
   return policy;
 }
