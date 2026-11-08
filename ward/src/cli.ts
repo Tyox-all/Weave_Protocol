@@ -14,6 +14,7 @@ import { resolve } from "node:path";
 import { parseWard, parseAndValidate } from "./parser/index.js";
 import type { WardPolicy } from "./types.js";
 import { verifyReceiptLog, receiptLogPath, loadReceiptKeys, receiptKeyPath } from "./receipts/index.js";
+import { signPolicySource, checkPolicySignature, loadPolicySigningKey, policyKeyPath, trustedPolicyKeys, trustedKeysPath } from "./signing/index.js";
 
 // ─────────────────────────────────────────────────────────
 // Colors
@@ -47,6 +48,8 @@ function help(): void {
   console.log(`  ${c.cyan}parse${c.reset} ${c.gray}<file>${c.reset}              Print parsed policy as JSON`);
   console.log(`  ${c.cyan}validate${c.reset} ${c.gray}<file>${c.reset}           Validate the file and report issues`);
   console.log(`  ${c.cyan}explain${c.reset} ${c.gray}<file>${c.reset}            Human-readable summary of the policy`);
+  console.log(`  ${c.cyan}sign${c.reset} ${c.gray}<file> [--key=FILE]${c.reset}       Sign a WARD.md (Ed25519; adds a signature line)`);
+  console.log(`  ${c.cyan}verify${c.reset} ${c.gray}<file> [--key=B64|FILE]${c.reset}  Check a WARD.md's signature against trusted keys`);
   console.log(`  ${c.cyan}receipts verify${c.reset} ${c.gray}[file] [--agent=NAME] [--key=B64|FILE] [--json]${c.reset}  Verify a decision-receipt log`);
   console.log(`  ${c.cyan}receipts key${c.reset}               Print the public key that signs this machine's receipts`);
   console.log(`  ${c.cyan}help${c.reset}                       Show this message\n`);
@@ -431,6 +434,42 @@ function explainPolicy(p: WardPolicy): void {
 }
 
 // ─────────────────────────────────────────────────────────
+// Signed policies (0.3.8)
+// ─────────────────────────────────────────────────────────
+
+function runSign(args: string[]): number {
+  const file = args.find((a) => !a.startsWith("--"));
+  if (!file) { console.error("Usage: weave-ward sign <WARD.md> [--key=FILE]"); return 2; }
+  const keyFile = args.find((a) => a.startsWith("--key="))?.slice(6);
+  const source = readFileSync(resolve(file), "utf8");
+  const v = parseAndValidate(source);
+  if (!v.valid) {
+    console.error(`${c.red}✗${c.reset} Not signing an invalid policy: ${v.errors.map((e) => e.message).join("; ")}`);
+    return 1;
+  }
+  const key = loadPolicySigningKey(keyFile ? resolve(keyFile) : undefined);
+  writeFileSync(resolve(file), signPolicySource(source, key));
+  console.log(`${c.green}✓${c.reset} Signed ${file} with key ${key.keyId}`);
+  console.log(`  ${c.gray}key file ${keyFile ? resolve(keyFile) : policyKeyPath()} (keep it private)${c.reset}`);
+  console.log(`  To require this signature on a machine, add the public key to ${trustedKeysPath()}:`);
+  console.log(`  ${key.publicKeyB64}`);
+  return 0;
+}
+
+function runVerify(args: string[]): number {
+  const file = args.find((a) => !a.startsWith("--")) ?? "WARD.md";
+  let key = args.find((a) => a.startsWith("--key="))?.slice(6);
+  if (key && existsSync(key)) key = readFileSync(key, "utf8").trim();
+  const trusted = key ? [key] : trustedPolicyKeys();
+  const r = checkPolicySignature(readFileSync(resolve(file), "utf8"), trusted);
+  const mark = r.ok ? `${c.green}✓${c.reset}` : `${c.red}✗${c.reset}`;
+  console.log(`${mark} ${file}: ${r.reason}`);
+  if (r.signature?.signedAt) console.log(`  ${c.gray}signed ${r.signature.signedAt}${c.reset}`);
+  if (!trusted.length) console.log(`  ${c.gray}No trusted keys configured (${trustedKeysPath()} or WEAVE_POLICY_TRUSTED_KEYS), so any valid signature passes.${c.reset}`);
+  return r.ok && r.status !== "unsigned" ? 0 : 1;
+}
+
+// ─────────────────────────────────────────────────────────
 // Receipts (0.3.7)
 // ─────────────────────────────────────────────────────────
 
@@ -491,6 +530,12 @@ async function main(): Promise<void> {
         break;
       case "receipts":
         code = runReceipts(rest);
+        break;
+      case "sign":
+        code = runSign(rest);
+        break;
+      case "verify":
+        code = runVerify(rest);
         break;
       case "help":
       case "--help":

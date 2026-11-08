@@ -224,6 +224,18 @@ attestor: <pubkey or DID>
 
 **Receipts.** With `required: true` and `frequency: every_action` (or unset), a host records every tool-call decision as a receipt. A receipt holds the decision, the tool and capability, the reasons, and digests of the arguments and the policy. It is chained by hash to the previous receipt and signed. `attestor` names the public key that verifiers should expect. The reference implementation (Ward 0.3.7) uses Ed25519 over SHA-256 hashes of canonical JSON, and stores arguments only as a keyed HMAC.
 
+### 5.8.1 Signed policies
+
+A WARD.md may end with a signature line:
+
+```
+<!-- ward-signature v1 keyId=<16 hex> publicKey=<base64 SPKI> signedAt=<ISO 8601> sig=<base64> -->
+```
+
+`sig` is an Ed25519 signature over the ASCII string `ward-policy/v1:` followed by the hex SHA-256 of the file without that line. Before hashing, line endings are normalized to `\n`, trailing whitespace is removed, and one final `\n` is added. `keyId` is the first 16 hex characters of the SHA-256 of the public key.
+
+A host decides which keys it trusts outside the policy file. When it has trusted keys, it must not enforce a policy unless that policy carries a valid signature from one of them. A host should never enforce a signed policy whose signature doesn't verify. The reference implementation (Ward 0.3.8) denies every call in both cases.
+
 ### 5.9 `## Threat Model`
 
 ```yaml
