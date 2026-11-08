@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/hundredmen",
-  "version": "1.3.2",
+  "version": "1.4.0",
   "description": "Real-time MCP security proxy - intercepts, scans, and gates AI agent tool calls. Now with WARD.md policy enforcement.",
   "type": "module",
   "main": "dist/index.js",
@@ -45,7 +45,7 @@
   "homepage": "https://github.com/Tyox-all/Weave_Protocol#readme",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
-    "@weave_protocol/ward": "^0.3.5"
+    "@weave_protocol/ward": "^0.3.8"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

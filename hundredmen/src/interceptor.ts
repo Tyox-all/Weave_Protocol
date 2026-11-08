@@ -331,9 +331,9 @@ export class Interceptor extends EventEmitter {
    * Check a proposed tool call against the loaded WARD.md policy.
    * Returns null if no policy is loaded.
    */
-  checkWard(tool: string, args: Record<string, unknown> | undefined): WardCheckResult | null {
+  checkWard(tool: string, args: Record<string, unknown> | undefined, sessionId?: string): WardCheckResult | null {
     if (!this.wardManager || !this.wardManager.isLoaded()) return null;
-    return this.wardManager.checkCall(tool, args);
+    return this.wardManager.checkCall(tool, args, sessionId);
   }
   
   // ==========================================================================
@@ -545,7 +545,7 @@ export class Interceptor extends EventEmitter {
   
   private makeDecision(call: InterceptedCall): { decision: CallDecision; reason: string } {
     // 0. WARD policy check (highest priority — declared policy)
-    const wardResult = this.checkWard(call.tool, call.arguments);
+    const wardResult = this.checkWard(call.tool, call.arguments, call.sessionId);
     if (wardResult) {
       if (wardResult.decision === 'deny') {
         return {

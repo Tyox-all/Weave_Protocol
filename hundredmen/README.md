@@ -14,6 +14,15 @@ Part of the [Weave Protocol](https://github.com/Tyox-all/Weave_Protocol) securit
 
 ## 🆕 What's new
 
+**1.4.0: the same enforcement as the harness adapters.** Hundredmen now decides MCP calls with [Ward](https://www.npmjs.com/package/@weave_protocol/ward)'s shared evaluator, keyed on the MCP session. Every call gets:
+- checks on every path, URL and command token;
+- self-protection;
+- checks on what the call sends;
+- the payment guard, which holds money-moving tools for review;
+- WARD.md's session and spend limits.
+
+When WARD.md's Verification section says `required: true`, each decision is recorded as a signed, hash-chained receipt with `surface: "mcp"`. A signed WARD.md that was edited, or isn't signed by a key in `~/.weave/trusted-policy-keys`, blocks every call.
+
 **1.3.2: checks what MCP calls send.** Using [Ward](https://www.npmjs.com/package/@weave_protocol/ward) 0.3.5, Hundredmen checks the URLs, message bodies and arguments of a call for credentials and personal data:
 - it enforces WARD.md's `egressDeny`, even to allowed hosts;
 - a credential sent anywhere but its issuer is held for review;
