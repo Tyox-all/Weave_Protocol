@@ -6,6 +6,14 @@
 
 The same WARD.md you use with Claude Code, Antigravity, Microsoft Agent Framework, Gemini CLI and Codex CLI.
 
+## 🆕 What's new
+
+**0.3.0: session and spend limits.** WARD.md's limits are now enforced per session, keyed on the OpenCode `sessionID`:
+- Behavioral Limits: `maxToolCalls`, `maxRuntimeSeconds` and `maxExternalServices`;
+- `spending_limits:` caps: tool calls, and per-tool call counts and USD amounts over a run, hour, day, week or month.
+
+The counts live in a small local ledger (`~/.weave/ledger`, or `$WEAVE_LEDGER_DIR`) because every hook call is a new process. [Ward](https://www.npmjs.com/package/@weave_protocol/ward) 0.3.6's **payment guard** also asks before any call that moves money: payment tools, and wallet or Stripe CLIs in shell commands.
+
 ## Quick start
 
 Add the plugin to OpenCode's config, either by hand:

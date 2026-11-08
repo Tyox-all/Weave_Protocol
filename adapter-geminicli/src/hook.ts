@@ -24,7 +24,8 @@
 
 import { readFileSync, existsSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
-import { parseAndValidate, evaluateToolCall, reportEvent, type WardPolicy } from '@weave_protocol/ward';
+import { parseAndValidate, reportEvent, type WardPolicy } from '@weave_protocol/ward';
+import { evaluateWithLedger } from '@weave_protocol/ward/ledger';
 import { TOOL_MAPPINGS, type GeminiHookInput, type GeminiHookOutput } from './types.js';
 import { userWardPath } from './config.js';
 
@@ -83,9 +84,11 @@ export function evaluateCall(
   toolName: string,
   toolInput: Record<string, unknown> | undefined,
   cwd: string = process.cwd(),
+  session?: string,
 ): HookDecision {
   const { args, commandCwd } = normalizeInput(toolName, toolInput, cwd);
-  const { decision, reasons } = evaluateToolCall(policy, toolName, args, { mappings: TOOL_MAPPINGS, cwd: commandCwd });
+  // evaluateWithLedger adds WARD.md's session and spend limits (Ward 0.3.6)
+  const { decision, reasons } = evaluateWithLedger(policy, toolName, args, { mappings: TOOL_MAPPINGS, cwd: commandCwd, session });
   return { decision, reasons };
 }
 
@@ -143,7 +146,7 @@ export async function runBeforeToolHook(failClosed: boolean): Promise<never> {
 
   let result: HookDecision;
   try {
-    result = evaluateCall(resolved.policy, payload.tool_name, payload.tool_input, cwd);
+    result = evaluateCall(resolved.policy, payload.tool_name, payload.tool_input, cwd, payload.session_id);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (failClosed) emit({ decision: 'deny', reason: `WARD evaluation failed: ${msg}` });

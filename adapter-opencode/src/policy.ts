@@ -11,6 +11,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { isAbsolute, join, resolve } from 'node:path';
 import { parseAndValidate, evaluateToolCall, type ToolMapping, type WardPolicy } from '@weave_protocol/ward';
+import { evaluateWithLedger } from '@weave_protocol/ward/ledger';
 import { patchTargets } from './patch.js';
 
 export const TOOL_MAPPINGS: Record<string, ToolMapping> = {
@@ -72,7 +73,7 @@ export function resolveWard(dir: string): ResolvedWard | null {
 const RANK = { allow: 0, require_approval: 1, deny: 2 } as const;
 
 /** Decide an OpenCode tool call. */
-export function evaluateCall(policy: WardPolicy, tool: string, args: unknown, dir: string): WardDecision {
+export function evaluateCall(policy: WardPolicy, tool: string, args: unknown, dir: string, session?: string): WardDecision {
   const input = args && typeof args === 'object' && !Array.isArray(args) ? (args as Record<string, unknown>) : {};
 
   // apply_patch: the files the patch writes and deletes, not its text
@@ -84,6 +85,10 @@ export function evaluateCall(policy: WardPolicy, tool: string, args: unknown, di
         mappings: { apply_patch: { capability: 'file_write', pathField: 'target', fsOp } },
       });
     const results = [check(writes, 'write'), ...(deletes.length ? [check(deletes, 'delete')] : [])];
+    // The patch counts once against WARD.md's session and spend limits
+    if (results.every((r) => r.decision !== 'deny')) {
+      results.push(evaluateWithLedger(policy, tool, {}, { cwd: dir, session, mappings: { apply_patch: { capability: 'file_write' } } }));
+    }
     const worst = results.reduce((a, b) => (RANK[b.decision] > RANK[a.decision] ? b : a));
     return { decision: worst.decision, reasons: results.flatMap((r) => r.reasons) };
   }
@@ -92,7 +97,8 @@ export function evaluateCall(policy: WardPolicy, tool: string, args: unknown, di
   const cwd = tool === 'bash' && typeof input.workdir === 'string' && input.workdir
     ? (isAbsolute(input.workdir) ? input.workdir : join(dir, input.workdir))
     : dir;
-  const { decision, reasons } = evaluateToolCall(policy, tool, input, { mappings: TOOL_MAPPINGS, cwd });
+  // evaluateWithLedger adds WARD.md's session and spend limits (Ward 0.3.6)
+  const { decision, reasons } = evaluateWithLedger(policy, tool, input, { mappings: TOOL_MAPPINGS, cwd, session });
   return { decision, reasons };
 }
 

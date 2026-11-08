@@ -14,6 +14,12 @@ Part of the [Weave Protocol](https://github.com/Tyox-all/Weave_Protocol) securit
 
 ## 🆕 What's new
 
+**0.5.0: session and spend limits.** WARD.md's limits are now enforced per session, keyed on the Antigravity `conversationId`:
+- Behavioral Limits: `maxToolCalls`, `maxRuntimeSeconds` and `maxExternalServices`;
+- `spending_limits:` caps: tool calls, and per-tool call counts and USD amounts over a run, hour, day, week or month.
+
+The counts live in a small local ledger (`~/.weave/ledger`, or `$WEAVE_LEDGER_DIR`) because every hook call is a new process. [Ward](https://www.npmjs.com/package/@weave_protocol/ward) 0.3.6's **payment guard** also asks before any call that moves money: payment tools, and wallet or Stripe CLIs in shell commands.
+
 **0.4.0: decisions on the dashboard.** Set `WEAVE_DASHBOARD_URL` and each allow and deny goes to a local [Weave API](https://www.npmjs.com/package/@weave_protocol/api) dashboard. It's off by default.
 
 **0.2.1:** enforces WARD.md in the `agy` 1.4 CLI.

@@ -133,3 +133,15 @@ describe('loading the policy', () => {
     assert.throws(() => new WardMiddleware({ cwd: dir, failMode: 'open' }), /Invalid WARD\.md/);
   });
 });
+
+// 0.3.1: WARD.md's maxToolCalls per middleware instance (its own session), via
+// Ward's ledger (Ward 0.3.6)
+test('session limits apply per middleware instance', () => {
+  process.env.WEAVE_LEDGER_DIR = mkdtempSync(join(tmpdir(), 'msaf-ledger-'));
+  const source = '---\nward: "1.0"\nagent: msaf-limits\n---\n\n## Capabilities\n\ndefault: allow\n\n## Behavioral Limits\n\nmaxToolCalls: 2\n';
+  const a = new WardMiddleware({ wardSource: source });
+  const call = { toolName: 'lookup', args: {} };
+  assert.deepEqual([a.evaluate(call).decision, a.evaluate(call).decision, a.evaluate(call).decision], ['allow', 'allow', 'deny']);
+  assert.equal(new WardMiddleware({ wardSource: source }).evaluate(call).decision, 'allow', 'a new instance is a new session');
+  delete process.env.WEAVE_LEDGER_DIR;
+});

@@ -20,6 +20,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { parseAndValidate, evaluateToolCall, reportEvent, type WardPolicy } from '@weave_protocol/ward';
+import { evaluateWithLedger } from '@weave_protocol/ward/ledger';
 import { TOOL_MAPPINGS, type CodexHookInput, type CodexHookOutput } from './types.js';
 import { patchTargets } from './patch.js';
 import { userWardPath } from './config.js';
@@ -58,7 +59,7 @@ export function resolveWardForCwd(cwd: string): ResolvedWard | null {
 const RANK = { allow: 0, require_approval: 1, deny: 2 } as const;
 
 /** Decide a Codex tool call against a WARD policy. */
-export function evaluateCall(policy: WardPolicy, toolName: string, toolInput: unknown, cwd: string = process.cwd()): HookDecision {
+export function evaluateCall(policy: WardPolicy, toolName: string, toolInput: unknown, cwd: string = process.cwd(), session?: string): HookDecision {
   const input: Record<string, unknown> =
     toolInput && typeof toolInput === 'object' && !Array.isArray(toolInput)
       ? (toolInput as Record<string, unknown>)
@@ -78,11 +79,16 @@ export function evaluateCall(policy: WardPolicy, toolName: string, toolInput: un
         })]
         : []),
     ];
+    // The patch counts once against WARD.md's session and spend limits
+    if (results.every((r) => r.decision !== 'deny')) {
+      results.push(evaluateWithLedger(policy, 'apply_patch', {}, { ...opts, session, mappings: { apply_patch: { capability: 'file_write' } } }));
+    }
     const worst = results.reduce((a, b) => (RANK[b.decision] > RANK[a.decision] ? b : a));
     return { decision: worst.decision, reasons: results.flatMap((r) => r.reasons) };
   }
 
-  const { decision, reasons } = evaluateToolCall(policy, toolName, input, opts);
+  // evaluateWithLedger adds WARD.md's session and spend limits (Ward 0.3.6)
+  const { decision, reasons } = evaluateWithLedger(policy, toolName, input, { ...opts, session });
   return { decision, reasons };
 }
 
@@ -139,7 +145,7 @@ export async function runPreToolUseHook(failClosed: boolean): Promise<never> {
 
   let result: HookDecision;
   try {
-    result = evaluateCall(resolved.policy, payload.tool_name, payload.tool_input, cwd);
+    result = evaluateCall(resolved.policy, payload.tool_name, payload.tool_input, cwd, payload.session_id);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (failClosed) emit(denyWith(`WARD evaluation failed: ${msg}`));

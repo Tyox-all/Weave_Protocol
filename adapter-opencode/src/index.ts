@@ -37,7 +37,7 @@ const WardPlugin = async ({ directory, worktree }: PluginInput) => {
         throw new Error(`WARD policy could not be loaded: ${err instanceof Error ? err.message : String(err)}. Fix WARD.md to continue.`);
       }
       if (!ward) return;
-      const result = evaluateCall(ward.policy, input.tool, output.args, dir);
+      const result = evaluateCall(ward.policy, input.tool, output.args, dir, input.sessionID);
       // Dashboard reporting (only when WEAVE_DASHBOARD_URL is set; never blocks)
       void reportEvent({ surface: 'opencode', decision: result.decision, subject: input.tool, reason: result.reasons[0] });
       const message = blockMessage(result, ward.source);

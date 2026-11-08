@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/adapter-codex",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Weave Protocol adapter for OpenAI Codex CLI - enforces WARD.md policies via Codex's PreToolUse hook",
   "type": "module",
   "main": "dist/index.js",
@@ -39,7 +39,7 @@
     "url": "https://github.com/Tyox-all/Weave_Protocol/issues"
   },
   "dependencies": {
-    "@weave_protocol/ward": "^0.3.2"
+    "@weave_protocol/ward": "^0.3.6"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
