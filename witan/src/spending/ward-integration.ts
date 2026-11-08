@@ -27,6 +27,7 @@
  *       on_exceeded: require_approval
  */
 
+import { existsSync, readFileSync } from 'node:fs';
 import type { SpendingCap, CapAction, SpendingWindow } from './types.js';
 
 /**
@@ -161,12 +162,8 @@ function matchScalar(text: string, re: RegExp): string | undefined {
  * Returns [] if the file doesn't exist or has no spending section.
  */
 export function loadSpendingCapsFromWardFile(filepath: string): SpendingCap[] {
-  try {
-    const fs = require('node:fs') as typeof import('node:fs');
-    if (!fs.existsSync(filepath)) return [];
-    const text = fs.readFileSync(filepath, 'utf8');
-    return parseSpendingCapsFromWard(text);
-  } catch {
-    return [];
-  }
+  // (Before 1.2.2 this called require() inside an ES module, which threw and
+  // was swallowed, so every file loaded as "no caps".)
+  if (!existsSync(filepath)) return [];
+  return parseSpendingCapsFromWard(readFileSync(filepath, 'utf8'));
 }

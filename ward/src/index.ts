@@ -40,7 +40,10 @@ export {
 } from "./enforcer/index.js";
 export type { Decision, CheckResult, RuntimeState } from "./enforcer/index.js";
 export { evaluateToolCall, protectedConfig } from "./enforcer/toolcall.js";
-export { checkOutboundData, classifyData, classifyCommandReferences, isModelEndpoint } from "./enforcer/egress.js";
+export { checkOutboundData, classifyData, classifyCommandReferences, isModelEndpoint, destinationsOf } from "./enforcer/egress.js";
+export { detectPayment, explicitlyAllowed, checkSessionLimits, needsLedger } from "./enforcer/limits.js";
+export type { PaymentCall, LedgerEvent, LedgerSnapshot, PendingCall, LimitCheck } from "./enforcer/limits.js";
+export { parseSpendingLimits } from "./parser/spending.js";
 export type { DataFinding, DataClassifier, OutboundCheck, OutboundOptions } from "./enforcer/egress.js";
 export { reportEvent, dashboardUrl, reportTimeoutMs } from "./report.js";
 export type { EnforcementEvent, ReportOptions, ReportSurface, ReportDecision } from "./report.js";

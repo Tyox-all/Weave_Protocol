@@ -164,6 +164,29 @@ maxExternalServices: 3
 
 All fields are optional. A missing field means the limit is unenforced.
 
+**Enforcement.** `maxToolCalls`, `maxRuntimeSeconds` and `maxExternalServices` apply per session. The session is the harness's conversation or session id, and runtime counts from the session's first tool call. A host that can't keep history across calls may ignore them. `maxIterations`, `maxCostUSD` and `maxTokens` need model usage, which tool hooks don't see.
+
+### 5.5.1 `spending_limits:`
+
+```yaml
+spending_limits:
+  - window: day            # run | hour | day | week | month
+    budget:
+      usd: 5.00            # LLM spend
+      tokens: 200000       # LLM tokens
+      tool_calls: 100
+      tools:
+        send_payment:
+          max_amount_usd: 500
+          max_calls: 5
+    on_exceeded: require_approval   # block | require_approval | notify
+    label: daily budget
+```
+
+The block may appear in its own `## Spending Limits` section or anywhere in the body. `run` is one session, and the other windows are rolling. Hosts that see tool calls enforce `tool_calls` and `tools`; hosts that see model usage enforce `usd` and `tokens`.
+
+**Payments.** A host should ask for approval before a tool call that moves money, unless the Capabilities section allows that capability by name or allows `payments`.
+
 ### 5.6 `## Multi-Agent`
 
 ```yaml

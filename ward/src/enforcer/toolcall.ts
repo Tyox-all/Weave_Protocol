@@ -20,7 +20,8 @@ import {
   type CheckResult,
   type Decision,
 } from "./index.js";
-import { checkOutboundData, type DataClassifier } from "./egress.js";
+import { checkOutboundData, destinationsOf, type DataClassifier } from "./egress.js";
+import { detectPayment, explicitlyAllowed, type PaymentCall } from "./limits.js";
 
 /** How a harness's tool maps onto WARD concepts. */
 export interface ToolMapping {
@@ -36,7 +37,7 @@ export interface ToolMapping {
 }
 
 export interface ToolCallCheck extends CheckResult {
-  type: "capability" | "filesystem" | "network" | "command" | "egress";
+  type: "capability" | "filesystem" | "network" | "command" | "egress" | "payment" | "limits";
   /** The argument or command token this check covered */
   subject?: string;
 }
@@ -46,6 +47,10 @@ export interface ToolCallEvaluation {
   /** Reasons for every non-allow check, strictest first */
   reasons: string[];
   checks: ToolCallCheck[];
+  /** Set when the call moves money (0.3.6) */
+  payment?: PaymentCall;
+  /** Hosts the call contacts (0.3.6) */
+  hosts?: string[];
 }
 
 export interface EvaluateOptions {
@@ -103,7 +108,24 @@ export function evaluateToolCall(
     cwd: opts.cwd, classify: opts.classify, commandField: mapping.commandField, urlField: mapping.urlField,
   }));
 
-  return aggregate(checks);
+  // 6. Payments: moving money needs a person unless WARD.md allows this
+  //    capability by name (a default allow or a wildcard doesn't count)
+  const command = commandArgs(input, mapping).join("\n") || undefined;
+  const payment = detectPayment(toolName, mapping.capability, input, command) ?? undefined;
+  // A payment CLI inside a shell command isn't lifted by allowing shell_exec
+  const lifted = payment && (payment.viaCommand ? explicitlyAllowed(policy, "payments") : explicitlyAllowed(policy, "payments", toolName, mapping.capability));
+  if (payment && !lifted) {
+    checks.push({
+      type: "payment",
+      subject: payment.stated ? `${toolName} ${payment.stated}` : toolName,
+      decision: "require_approval",
+      severity: "critical",
+      reason: `Moving money requires human approval (Ward payment guard; allow ${payment.viaCommand ? "'payments'" : `'${mapping.capability}' or 'payments'`} by name in WARD.md Capabilities to lift this)`,
+    });
+  }
+
+  const hosts = destinationsOf(toolName, input, mapping.commandField, mapping.urlField);
+  return { ...aggregate(checks), ...(payment ? { payment } : {}), ...(hosts.length ? { hosts } : {}) };
 }
 
 // ─────────────────────────────────────────────────────────
@@ -275,7 +297,8 @@ function mergeCapability(a: CheckResult, b: CheckResult): CheckResult {
 
 const RANK: Record<Decision, number> = { allow: 0, require_approval: 1, deny: 2 };
 
-function aggregate(checks: ToolCallCheck[]): ToolCallEvaluation {
+/** Combine checks: the strictest decision wins; reasons strictest first. */
+export function aggregate(checks: ToolCallCheck[]): ToolCallEvaluation {
   let decision: Decision = "allow";
   for (const c of checks) if (RANK[c.decision] > RANK[decision]) decision = c.decision;
   const reasons = checks
