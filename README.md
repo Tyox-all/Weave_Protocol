@@ -380,15 +380,15 @@ The thesis was that [WARD.md](https://www.npmjs.com/package/@weave_protocol/ward
 
 | Runtime | Vendor | Enforcer | Status |
 |---|---|---|---|
-| **MCP servers** | Open standard | [Hundredmen v1.2.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen) | ✅ Live on npm |
-| **Claude Code** | Anthropic | [adapter-claudecode v0.4.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-claudecode) | ✅ Live on npm |
-| **Google Antigravity** (desktop + `agy` CLI + SDK) | Google | [adapter-antigravity v0.4.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-antigravity) | ✅ Live on npm |
-| **Microsoft Agent Framework** | Microsoft | [adapter-msaf v0.3.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-msaf) | ✅ Live on npm |
-| **Gemini CLI** | Google | [adapter-geminicli v0.1.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-geminicli) | ✅ Live on npm |
-| **Codex CLI** | OpenAI | [adapter-codex v0.1.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-codex) | ✅ Live on npm |
-| **OpenCode** | open source | [adapter-opencode v0.1.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-opencode) | ✅ Live on npm |
-| **Cursor** | Anysphere | [adapter-cursor v0.1.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-cursor) | ✅ New |
-| **Browser agents** | Open standard | [browser v0.1.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/browser) | ✅ Live on npm |
+| **MCP servers** | Open standard | [Hundredmen v1.3.2](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen) | ✅ Live on npm |
+| **Claude Code** | Anthropic | [adapter-claudecode v0.5.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-claudecode) | ✅ Live on npm |
+| **Google Antigravity** (desktop + `agy` CLI + SDK) | Google | [adapter-antigravity v0.5.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-antigravity) | ✅ Live on npm |
+| **Microsoft Agent Framework** | Microsoft | [adapter-msaf v0.4.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-msaf) | ✅ Live on npm |
+| **Gemini CLI** | Google | [adapter-geminicli v0.3.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-geminicli) | ✅ Live on npm |
+| **Codex CLI** | OpenAI | [adapter-codex v0.3.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-codex) | ✅ Live on npm |
+| **OpenCode** | open source | [adapter-opencode v0.3.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-opencode) | ✅ Live on npm |
+| **Cursor** | Anysphere | [adapter-cursor v0.3.0](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-cursor) | ✅ New |
+| **Browser agents** | Open standard | [browser v0.3.1](https://github.com/Tyox-all/Weave_Protocol/blob/main/browser) | ✅ Live on npm |
 
 The same `WARD.md` file in your project root is now read and enforced by **Anthropic's, Google's, Microsoft's, MCP's, and the browser harness's runtimes** — without any platform-specific edits.
 
@@ -440,13 +440,13 @@ The packages that keep your agent within policy: declare it, enforce it across e
 | Package | Version | Description |
 |---|---|---|
 | [🛡️ @weave_protocol/ward](https://github.com/Tyox-all/Weave_Protocol/blob/main/ward) | 0.3.6 | **WARD.md** — agent security policy standard (parser, validator, runtime checks, shared tool-call evaluator, dashboard reporting) |
-| [🛡️ @weave_protocol/adapter-claudecode](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-claudecode) | 0.4.1 | **Claude Code adapter** — enforces WARD.md via PreToolUse hooks; Mund pre-install hooks for skills + MCP |
-| [🛡️ @weave_protocol/adapter-antigravity](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-antigravity) | 0.4.1 | **Google Antigravity adapter** — enforces WARD.md across desktop, `agy` CLI, and SDK; Mund pre-install hooks |
-| [🛡️ @weave_protocol/adapter-msaf](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-msaf) | 0.3.1 | **Microsoft Agent Framework adapter** — middleware-based WARD enforcement |
-| [🛡️ @weave_protocol/adapter-geminicli](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-geminicli) | 0.2.1 | **Gemini CLI adapter** — enforces WARD.md via the BeforeTool hook |
-| [🛡️ @weave_protocol/adapter-codex](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-codex) | 0.2.1 | **Codex CLI adapter** — enforces WARD.md via the PreToolUse hook, including apply_patch file edits |
-| [🛡️ @weave_protocol/adapter-opencode](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-opencode) | 0.2.1 | **OpenCode plugin** — enforces WARD.md on every tool call, whatever model OpenCode runs |
-| [🛡️ @weave_protocol/adapter-cursor](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-cursor) | 0.2.1 | **Cursor adapter** — enforces WARD.md via Cursor's agent hooks (shell, file, MCP and tool calls) |
+| [🛡️ @weave_protocol/adapter-claudecode](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-claudecode) | 0.5.0 | **Claude Code adapter** — enforces WARD.md via PreToolUse hooks; Mund pre-install hooks for skills + MCP |
+| [🛡️ @weave_protocol/adapter-antigravity](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-antigravity) | 0.5.0 | **Google Antigravity adapter** — enforces WARD.md across desktop, `agy` CLI, and SDK; Mund pre-install hooks |
+| [🛡️ @weave_protocol/adapter-msaf](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-msaf) | 0.4.0 | **Microsoft Agent Framework adapter** — middleware-based WARD enforcement |
+| [🛡️ @weave_protocol/adapter-geminicli](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-geminicli) | 0.3.0 | **Gemini CLI adapter** — enforces WARD.md via the BeforeTool hook |
+| [🛡️ @weave_protocol/adapter-codex](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-codex) | 0.3.0 | **Codex CLI adapter** — enforces WARD.md via the PreToolUse hook, including apply_patch file edits |
+| [🛡️ @weave_protocol/adapter-opencode](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-opencode) | 0.3.0 | **OpenCode plugin** — enforces WARD.md on every tool call, whatever model OpenCode runs |
+| [🛡️ @weave_protocol/adapter-cursor](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-cursor) | 0.3.0 | **Cursor adapter** — enforces WARD.md via Cursor's agent hooks (shell, file, MCP and tool calls) |
 | [🌐 @weave_protocol/browser](https://github.com/Tyox-all/Weave_Protocol/blob/main/browser) | 0.3.1 | **Browser agent security** — runtime IPI scanner (33 patterns) for headless agents |
 | [🔍 @weave_protocol/hundredmen](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen) | 1.3.2 | **MCP proxy** — intercept, scan, gate tool calls; enforces WARD.md as first gate |
 | [🛡️ @weave_protocol/mund](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund) | 0.5.3 | **Scanner** — secrets, PII, injection, MCP vetting, pre-install checks for skills + MCP (rug pulls), OSV dependency CVEs, SARIF, threat intel |

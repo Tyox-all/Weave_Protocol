@@ -9,7 +9,8 @@
 
 import { readFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { parseAndValidate, evaluateToolCall, type WardPolicy } from '@weave_protocol/ward';
+import { parseAndValidate, type WardPolicy } from '@weave_protocol/ward';
+import { evaluateWithLedger } from '@weave_protocol/ward/ledger';
 import {
   TOOL_MAPPINGS,
   type ToolMapping,
@@ -76,11 +77,14 @@ export function evaluateCall(
   call: MsafToolCall,
   customMappings: Record<string, ToolMapping> = {},
   cwd: string = process.cwd(),
+  session?: string,
 ): MsafMiddlewareResult {
-  const { decision, reasons } = evaluateToolCall(policy, call.toolName, call.args, {
+  // evaluateWithLedger adds WARD.md's session and spend limits (Ward 0.3.6)
+  const { decision, reasons } = evaluateWithLedger(policy, call.toolName, call.args, {
     // Custom mappings win on conflict.
     mappings: { ...TOOL_MAPPINGS, ...customMappings },
     cwd,
+    session,
   });
   return { decision, reasons };
 }

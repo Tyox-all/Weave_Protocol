@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/adapter-claudecode",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Weave Protocol adapter for Claude Code - enforces WARD.md policies via Claude Code's hook system",
   "type": "module",
   "main": "dist/index.js",
@@ -40,7 +40,7 @@
     "url": "https://github.com/Tyox-all/Weave_Protocol/issues"
   },
   "dependencies": {
-    "@weave_protocol/ward": "^0.3.0"
+    "@weave_protocol/ward": "^0.3.6"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

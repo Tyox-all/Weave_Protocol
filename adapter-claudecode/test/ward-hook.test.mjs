@@ -107,3 +107,26 @@ describe('hook CLI end to end', () => {
     assert.deepEqual(hook({ tool_name: 'Bash', tool_input: { command: 'ls' } }, none), {});
   });
 });
+
+// Session limits: WARD.md's maxToolCalls holds across separate hook processes, per
+// session_id, through Ward's ledger (Ward 0.3.6).
+test('session limits hold across hook processes', async () => {
+  const { spawnSync: run } = await import('node:child_process');
+  const { mkdtempSync: tmp, writeFileSync: write, mkdirSync: mk } = await import('node:fs');
+  const { tmpdir: td } = await import('node:os');
+  const { join: j, resolve: r } = await import('node:path');
+  const ws = tmp(j(td(), 'limits-ws-'));
+  const home = tmp(j(td(), 'limits-home-'));
+  mk(j(ws, '.'), { recursive: true });
+  write(j(ws, '.', 'WARD.md'), `---\nward: "1.0"\nagent: limits-e2e\n---\n\n## Filesystem\n\nallow:\n  - read: ${ws}/**\ndefault: deny\n\n## Capabilities\n\ndefault: allow\n\n## Behavioral Limits\n\nmaxToolCalls: 2\n`);
+  const env = { PATH: process.env.PATH, HOME: home, WEAVE_LEDGER_DIR: j(home, 'ledger'), CLAUDE_CONFIG_DIR: j(home, '.claude') };
+  const hook = (session) => {
+    const out = run(process.execPath, [r('dist/cli.js'), 'hook', 'pre-tool-use'], { input: JSON.stringify({ cwd: ws, session_id: session, hook_event_name: 'PreToolUse', tool_name: 'Read', tool_input: { file_path: j(ws, 'a.txt') } }), env, encoding: 'utf8', cwd: ws });
+    assert.equal(out.status, 0, out.stderr);
+    return out.stdout;
+  };
+  assert.doesNotMatch(hook('one'), /Max tool calls/);
+  assert.doesNotMatch(hook('one'), /Max tool calls/);
+  assert.match(hook('one'), /Max tool calls/);
+  assert.doesNotMatch(hook('two'), /Max tool calls/, 'another session has its own count');
+});

@@ -26,7 +26,8 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { homedir } from 'node:os';
-import { parseAndValidate, evaluateToolCall, reportEvent, type WardPolicy } from '@weave_protocol/ward';
+import { parseAndValidate, reportEvent, type WardPolicy } from '@weave_protocol/ward';
+import { evaluateWithLedger } from '@weave_protocol/ward/ledger';
 import {
   TOOL_MAPPINGS,
   type AntigravityHookInput,
@@ -103,8 +104,10 @@ export function evaluateCall(
   toolName: string,
   toolInput: Record<string, unknown> | undefined,
   cwd?: string,
+  session?: string,
 ): HookDecision {
-  const { decision, reasons } = evaluateToolCall(policy, toolName, toolInput, { mappings: TOOL_MAPPINGS, cwd });
+  // evaluateWithLedger adds WARD.md's session and spend limits (Ward 0.3.6)
+  const { decision, reasons } = evaluateWithLedger(policy, toolName, toolInput, { mappings: TOOL_MAPPINGS, cwd, session });
   return { decision, reasons };
 }
 
@@ -170,7 +173,7 @@ export async function runPreToolUseHook(failClosed: boolean): Promise<never> {
 
   let result: HookDecision;
   try {
-    result = evaluateCall(resolved.policy, tool, args, cwd);
+    result = evaluateCall(resolved.policy, tool, args, cwd, payload.conversationId);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (failClosed) emit({ decision: 'deny', reason: `WARD evaluation failed: ${msg}` });

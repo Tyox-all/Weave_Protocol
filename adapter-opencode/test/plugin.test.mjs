@@ -195,3 +195,14 @@ test('reports the decision to the dashboard when WEAVE_DASHBOARD_URL is set', as
     dash.close();
   }
 });
+
+// Session limits: WARD.md's maxToolCalls per OpenCode session, via Ward's
+// ledger (Ward 0.3.6)
+test('session limits apply per OpenCode session', async () => {
+  const { parseWard } = await import('@weave_protocol/ward');
+  process.env.WEAVE_LEDGER_DIR = mkdtempSync(join(tmpdir(), 'oc-ledger-'));
+  const p = parseWard('---\nward: "1.0"\nagent: oc-limits\n---\n\n## Capabilities\n\ndefault: allow\n\n## Behavioral Limits\n\nmaxToolCalls: 2\n');
+  const go = (session) => evaluateCall(p, 'webfetch', { url: 'https://example.com' }, '/tmp', session).decision;
+  assert.deepEqual([go('s1'), go('s1'), go('s1'), go('s2')], ['allow', 'allow', 'deny', 'allow']);
+  delete process.env.WEAVE_LEDGER_DIR;
+});

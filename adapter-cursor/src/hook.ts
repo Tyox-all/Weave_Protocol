@@ -24,7 +24,8 @@
 
 import { readFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { parseAndValidate, evaluateToolCall, reportEvent, type WardPolicy } from '@weave_protocol/ward';
+import { parseAndValidate, reportEvent, type WardPolicy } from '@weave_protocol/ward';
+import { evaluateWithLedger } from '@weave_protocol/ward/ledger';
 import { TOOL_MAPPINGS, type CursorHookInput, type CursorHookOutput } from './types.js';
 import { userWardPath } from './config.js';
 
@@ -104,8 +105,9 @@ export function toToolCall(payload: CursorHookInput, fallbackCwd = process.cwd()
 }
 
 /** Decide a Cursor tool call against a WARD policy. */
-export function evaluateCall(policy: WardPolicy, call: ToolCall): HookDecision {
-  const { decision, reasons } = evaluateToolCall(policy, call.tool, call.args, { mappings: TOOL_MAPPINGS, cwd: call.cwd });
+export function evaluateCall(policy: WardPolicy, call: ToolCall, session?: string): HookDecision {
+  // evaluateWithLedger adds WARD.md's session and spend limits (Ward 0.3.6)
+  const { decision, reasons } = evaluateWithLedger(policy, call.tool, call.args, { mappings: TOOL_MAPPINGS, cwd: call.cwd, session });
   return { decision, reasons };
 }
 
@@ -164,7 +166,7 @@ export async function runHook(failClosed: boolean): Promise<never> {
 
   let result: HookDecision;
   try {
-    result = evaluateCall(resolved.policy, call);
+    result = evaluateCall(resolved.policy, call, payload.conversation_id);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (failClosed) emit(denyWith(`WARD evaluation failed: ${msg}`));

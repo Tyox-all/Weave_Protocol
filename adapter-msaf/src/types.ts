@@ -124,6 +124,12 @@ export interface MiddlewareOptions {
   wardSource?: string;
 
   /**
+   * Session id for WARD.md's session and spend limits (0.3.1+). Defaults to
+   * a new id per middleware instance, so each agent run is its own session.
+   */
+  sessionId?: string;
+
+  /**
    * Custom tool name → capability mappings. Merged on top of the built-in
    * TOOL_MAPPINGS so users can override or add.
    */

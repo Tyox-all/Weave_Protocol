@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/adapter-cursor",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Weave Protocol adapter for Cursor - enforces WARD.md policies via Cursor's agent hooks",
   "type": "module",
   "main": "dist/index.js",
@@ -38,7 +38,7 @@
     "url": "https://github.com/Tyox-all/Weave_Protocol/issues"
   },
   "dependencies": {
-    "@weave_protocol/ward": "^0.3.2"
+    "@weave_protocol/ward": "^0.3.6"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

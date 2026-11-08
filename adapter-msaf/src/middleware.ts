@@ -21,6 +21,7 @@
  *   `agent_middleware` signatures. The user wires them in.
  */
 
+import { randomUUID } from 'node:crypto';
 import { readFileSync, existsSync } from 'node:fs';
 import {
   type WardPolicy,
@@ -63,6 +64,7 @@ export class WardMiddleware {
   private readonly onAllow?: MiddlewareOptions['onAllow'];
   private readonly onDeny?: MiddlewareOptions['onDeny'];
   private readonly cwd?: string;
+  private readonly sessionId: string;
 
   constructor(opts: MiddlewareOptions = {}) {
     this.failClosed = opts.failMode === 'closed';
@@ -70,6 +72,7 @@ export class WardMiddleware {
     this.onAllow = opts.onAllow;
     this.onDeny = opts.onDeny;
     this.cwd = opts.cwd;
+    this.sessionId = opts.sessionId ?? `msaf-${randomUUID()}`;
 
     // A policy the caller named explicitly must load; never fall back to
     // running without it.
@@ -127,7 +130,7 @@ export class WardMiddleware {
     if (!this.resolved) {
       return { decision: 'allow', reasons: ['No WARD.md loaded'] };
     }
-    const result = evaluateCall(this.resolved.policy, call, this.toolMappings, this.cwd);
+    const result = evaluateCall(this.resolved.policy, call, this.toolMappings, this.cwd, this.sessionId);
     // Dashboard reporting (only when WEAVE_DASHBOARD_URL is set; never blocks)
     void reportEvent({ surface: 'msaf', decision: result.decision, subject: call.toolName, reason: result.reasons[0] });
     return { ...result, policySource: this.resolved.source };
