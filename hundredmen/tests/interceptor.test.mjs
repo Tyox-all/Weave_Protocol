@@ -149,3 +149,69 @@ describe('outbound data', () => {
     assert.equal((await call('send_message', { channel: 'C123', text: 'Deploy finished.' }, 'slack')).status, 'approved');
   });
 });
+
+
+// 1.4.0: Hundredmen uses Ward's evaluateWithLedger, so MCP calls get the
+// same session limits, payment guard, signed-policy checks and receipts as
+// the harness adapters.
+describe('shared evaluator', async () => {
+  const { mkdtempSync, readFileSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { signPolicySource, loadPolicySigningKey } = await import('@weave_protocol/ward/signing');
+  const { verifyReceiptLog, receiptLogPath } = await import('@weave_protocol/ward/receipts');
+
+  const make = (source) => {
+    const dir = mkdtempSync(join(tmpdir(), 'hm-shared-'));
+    process.env.WEAVE_LEDGER_DIR = join(dir, 'ledger');
+    process.env.WEAVE_RECEIPT_DIR = join(dir, 'receipts');
+    process.env.WEAVE_RECEIPT_KEY_FILE = join(dir, 'receipt.pem');
+    process.env.WEAVE_POLICY_TRUSTED_KEYS_FILE = join(dir, 'trusted');
+    const i = new Interceptor({ scanEnabled: false, reputationEnabled: false, driftDetectionEnabled: false });
+    const ward = new WardPolicyManager();
+    ward.loadFromSource(source, 'test');
+    i.setWardManager(ward);
+    return { i, dir };
+  };
+  const BASE = '---\nward: "1.0"\nagent: hm-shared\n---\n\n## Capabilities\n\ndefault: allow\n';
+
+  test('session limits count per MCP session', async () => {
+    const { i } = make(BASE + '\n## Behavioral Limits\n\nmaxToolCalls: 2\n');
+    const a = i.createSession('agent-a');
+    const b = i.createSession('agent-b');
+    const go = async (s) => (await i.intercept(s.id, 'fs', 'list_dir', {})).status;
+    assert.deepEqual([await go(a), await go(a), await go(a), await go(b)], ['approved', 'approved', 'blocked', 'approved']);
+  });
+
+  test('the payment guard holds money-moving tools for review', async () => {
+    const { i } = make(BASE);
+    const s = i.createSession('agent');
+    const c = await i.intercept(s.id, 'stripe', 'create_payout', { amount: 5000 });
+    assert.equal(c.status, 'pending');
+    assert.match(c.decisionReason, /payment guard/);
+  });
+
+  test('a signed policy that was edited blocks every call', async () => {
+    const key = loadPolicySigningKey(join(mkdtempSync(join(tmpdir(), 'hm-key-')), 'k.pem'));
+    const signed = signPolicySource(BASE, key);
+    const ok = make(signed);
+    assert.equal((await ok.i.intercept(ok.i.createSession('a').id, 'fs', 'list_dir', {})).status, 'approved');
+    const bad = make(signed.replace('default: allow', 'default: allow\nallow:\n  - everything'));
+    const c = await bad.i.intercept(bad.i.createSession('a').id, 'fs', 'list_dir', {});
+    assert.equal(c.status, 'blocked');
+    assert.match(c.decisionReason, /changed after it was signed/);
+  });
+
+  test('decisions are written as receipts that verify', async () => {
+    const { i } = make(BASE + '\n## Verification\n\nrequired: true\n');
+    const s = i.createSession('agent');
+    await i.intercept(s.id, 'fs', 'list_dir', {});
+    await i.intercept(s.id, 'stripe', 'create_payout', { amount: 1 });
+    const r = verifyReceiptLog(receiptLogPath('hm-shared'));
+    assert.equal(r.ok, true, JSON.stringify(r.problems));
+    assert.deepEqual(r.decisions, { allow: 1, require_approval: 1 });
+    const first = JSON.parse(readFileSync(receiptLogPath('hm-shared'), 'utf8').split('\n')[1]);
+    assert.equal(first.surface, 'mcp');
+    assert.equal(first.session, s.id);
+  });
+});
