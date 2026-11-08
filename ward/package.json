@@ -1,7 +1,7 @@
 {
   "name": "@weave_protocol/ward",
-  "version": "0.3.6",
-  "description": "WARD.md — the agent security policy standard. Define what your agents can and cannot do, version-controlled alongside AGENTS.md and SKILL.md.",
+  "version": "0.3.7",
+  "description": "WARD.md \u2014 the agent security policy standard. Define what your agents can and cannot do, version-controlled alongside AGENTS.md and SKILL.md.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -71,6 +71,11 @@
       "types": "./dist/ledger/index.d.ts",
       "import": "./dist/ledger/index.js",
       "default": "./dist/ledger/index.js"
+    },
+    "./receipts": {
+      "types": "./dist/receipts/index.d.ts",
+      "import": "./dist/receipts/index.js",
+      "default": "./dist/receipts/index.js"
     },
     "./package.json": "./package.json"
   }
