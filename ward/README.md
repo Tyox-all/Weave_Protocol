@@ -18,6 +18,8 @@ npm install @weave_protocol/ward
 
 ## 🆕 What's new
 
+**0.3.8: signed policies.** Sign WARD.md once with `weave-ward sign`, then list the public key in `~/.weave/trusted-policy-keys` on each machine. Every adapter will then refuse a policy that was edited after signing or that a trusted key didn't sign: each call is denied with the reason. A signed policy that was changed is refused even without a trust list. See [signed policies](#signed-policies-038).
+
 **0.3.7: signed decision receipts.** With `required: true` in WARD.md's Verification section, every allow, deny and approval becomes a receipt in an append-only log. Each receipt is **Ed25519-signed and hash-chained** to the one before, so editing, deleting or reordering any receipt fails verification. Run `weave-ward receipts verify` to check a log offline. Arguments are never stored, only a keyed digest. All seven adapters write receipts through Ward. See [decision receipts](#decision-receipts-037).
 
 **0.3.6: payments and spend limits.**
@@ -278,6 +280,38 @@ spending_limits:
 
 This is the same `spending_limits:` format Witan reads. `budget.usd` and `budget.tokens` cover LLM spend, which hooks can't see, so Witan enforces those. The ledger is only touched when WARD.md declares a limit that needs it. `checkSessionLimits()` is the pure check, for hosts that keep their own history.
 
+### Signed policies (0.3.8+)
+
+```bash
+weave-ward sign WARD.md                 # Ed25519; key created at ~/.weave/keys/ward-policy.pem on first use
+weave-ward verify WARD.md               # check it against this machine's trusted keys
+weave-ward verify WARD.md --key=<b64>   # or against a given key
+```
+
+`sign` adds a line at the end of the file that doesn't show when the markdown renders:
+
+```
+<!-- ward-signature v1 keyId=… publicKey=… signedAt=… sig=… -->
+```
+
+It signs the SHA-256 of the rest of the file, after normalizing line endings and trailing whitespace. Re-signing replaces the line.
+
+Which keys a machine trusts can't come from WARD.md, since whoever edits the file could edit that too. It comes from outside:
+
+| Setting | |
+|---|---|
+| `~/.weave/trusted-policy-keys` (`$WEAVE_POLICY_TRUSTED_KEYS_FILE`) | Public keys, one per line; `#` starts a comment |
+| `WEAVE_POLICY_TRUSTED_KEYS` | Comma-separated public keys |
+| `WEAVE_POLICY_KEY_FILE` | The signing key `sign` uses |
+
+| WARD.md | No trusted keys | Trusted keys configured |
+|---|---|---|
+| Unsigned | Enforced | **Every call denied** |
+| Signed, unchanged | Enforced | Enforced if the key is trusted, otherwise **every call denied** |
+| Signed, then edited | **Every call denied** | **Every call denied** |
+
+The check runs in `evaluateWithLedger`, so every Weave adapter applies it, and the result is cached per policy text. Hundredmen loads policies on its own path and doesn't check signatures yet. `signPolicySource`, `checkPolicySignature`, `checkPolicy` and `trustedPolicyKeys` are exported from `@weave_protocol/ward/signing`.
+
 ### Decision receipts (0.3.7+)
 
 Turn receipts on in WARD.md:
@@ -399,12 +433,13 @@ WARD.md is the format that does all three.
 - `evaluateToolCall` with self-protection, outbound-data checks and the payment guard;
 - session and spend limits (`@weave_protocol/ward/ledger`);
 - signed, hash-chained decision receipts (`@weave_protocol/ward/receipts`);
+- signed policies with a per-machine trust list (`@weave_protocol/ward/signing`);
 - dashboard reporting;
 - adapters for seven agent harnesses, plus MCP (Hundredmen) and Playwright (Browser).
 
 **Next:**
-- signed policies;
-- anchoring receipt heads with Dōmere.
+- anchoring receipt heads with Dōmere;
+- receipts and signed-policy checks in Hundredmen.
 
 ---
 

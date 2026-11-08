@@ -50,6 +50,8 @@ export interface WardPolicy {
   incidentResponse?: IncidentResponsePolicy;
   /** Any unrecognized sections preserved as raw text. */
   raw?: Record<string, string>;
+  /** The WARD.md text this policy was parsed from (0.3.8), for signature checks. */
+  source?: string;
 }
 
 // ─────────────────────────────────────────────────────────

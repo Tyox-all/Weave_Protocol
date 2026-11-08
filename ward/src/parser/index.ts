@@ -46,6 +46,8 @@ export function parseWard(source: string): WardPolicy {
     description: fm.description as string | undefined,
     raw: {},
   };
+  // Kept (not enumerable, so JSON output and digests skip it) for signature checks
+  Object.defineProperty(policy, "source", { value: source, enumerable: false, writable: true, configurable: true });
 
   for (const section of sections) {
     applySection(policy, section);

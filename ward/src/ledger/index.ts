@@ -20,6 +20,7 @@ import type { WardPolicy } from "../types.js";
 import { evaluateToolCall, aggregate, type EvaluateOptions, type ToolCallEvaluation, type ToolCallCheck } from "../enforcer/toolcall.js";
 import { checkSessionLimits, needsLedger, type LedgerEvent, type LedgerSnapshot } from "../enforcer/limits.js";
 import { appendReceipt, receiptsEnabled } from "../receipts/index.js";
+import { checkPolicy } from "../signing/index.js";
 
 const KEEP_MS = 31 * 86_400_000;
 const LOCK_STALE_MS = 5_000;
@@ -139,7 +140,13 @@ export function evaluateWithLedger(
 ): ToolCallEvaluation {
   const session = opts.session || "default";
   const capability = opts.mappings?.[toolName]?.capability ?? toolName;
-  const result = needsLedger(policy) ? withLimits(policy, toolName, args, opts, session, capability) : evaluateToolCall(policy, toolName, args, opts);
+
+  // A policy edited after it was signed, or not signed by a key this machine
+  // trusts, is not enforced as written: every call is denied (Ward 0.3.8)
+  const signature = checkPolicy(policy);
+  const result: ToolCallEvaluation = !signature.ok
+    ? { decision: "deny", reasons: [`${signature.reason}. Re-sign it with 'weave-ward sign' or restore the signed copy.`], checks: [{ type: "capability", decision: "deny", reason: signature.reason, severity: "critical" }] }
+    : needsLedger(policy) ? withLimits(policy, toolName, args, opts, session, capability) : evaluateToolCall(policy, toolName, args, opts);
 
   // Signed, hash-chained receipt of the decision (Ward 0.3.7), when WARD.md's
   // Verification section or WEAVE_RECEIPTS asks for one. Never changes the decision.
