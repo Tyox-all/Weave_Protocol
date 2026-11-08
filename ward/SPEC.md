@@ -149,6 +149,8 @@ redact:
 
 **Classifications:** `public`, `internal`, `confidential`, `secret`, `pii`, `phi`, `pci`, `credentials`. Custom classifications are permitted; hosts may ignore unrecognized ones.
 
+**Enforcement.** A host classifies the data a tool call sends and applies these rules to every destination, including hosts the Network section allows. A class in `egressDeny` is denied. When `egressAllow` is non-empty, a class it doesn't list is denied. A credential sent only to its own issuer (a GitHub token to `api.github.com`) is not egress of that credential. Hosts may add stricter defaults. The reference implementation (Ward 0.3.5) asks for approval before credentials go anywhere but their issuer, and before sensitive data goes to a model API that the Network section doesn't name.
+
 ### 5.5 `## Behavioral Limits`
 
 ```yaml

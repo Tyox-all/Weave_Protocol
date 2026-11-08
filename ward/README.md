@@ -18,6 +18,12 @@ npm install @weave_protocol/ward
 
 ## 🆕 What's new
 
+**0.3.5: what's leaving, not just where it goes.** A secret sent to an allowed domain is still a leak. That's the pattern behind Claude Code CVE-2026-54316, exfiltration through a pre-approved domain. Every tool call that sends something is checked for the data it carries:
+- literal keys, card numbers, emails and SSNs;
+- in shell commands, `$SECRET_VARS`, secret files such as `.env` and SSH keys, and environment dumps.
+
+The Data Boundaries section of WARD.md is now enforced, and two guards are on by default. See [outbound data](#outbound-data-035).
+
 **0.3.3: agents can't switch off their own guardrails.** An agent with a broad write rule could rewrite the files that control it. Writing or deleting any of these now needs human approval, even under a rule like `write: /repo/**`:
 - `WARD.md`;
 - harness hook and settings files;
@@ -192,6 +198,37 @@ const result = evaluateToolCall(policy, "Bash", { command: "curl https://a.examp
 
   An agent that can rewrite them can turn its own guardrails off, as in Cursor's CurXecute (CVE-2025-54135). To allow edits to one, name that exact file in an allow rule (`- write: /repo/.cursor/mcp.json`). `protectedConfig(path)` tells you whether a path is one of them.
 
+### Outbound data (0.3.5+)
+
+`evaluateToolCall` also checks what a call sends. That covers a call with a URL, a network command (`curl`, `wget`, `scp`, `ssh`, `nc` and others), or a tool whose name says it sends (`send_*`, `post_*`, `*_message`, `upload`, `webhook` and similar). It looks in:
+- the URL's path and query;
+- body and message arguments;
+- the command text.
+
+It doesn't look at recipients (`to`, `cc`, `channel`), harness metadata (`prompt`, `description`) or file paths.
+
+| Found | Class |
+|---|---|
+| Anthropic, OpenAI, GitHub, AWS, Google, Slack, Stripe and npm keys; private keys; JWTs; `password=`-style assignments | `credentials` and `secret` |
+| In commands: secret variables (`$OPENAI_API_KEY`, `$DB_PASSWORD`), secret files (`.env`, `~/.aws/credentials`, `~/.ssh/id_*`, `.netrc`, `*.pem`), `env` and `printenv` dumps | `credentials` and `secret` |
+| Card numbers that pass a Luhn check | `pci` |
+| Email addresses, US SSNs | `pii` |
+
+Decisions:
+- **Your Data Boundaries rules.** A class in `egressDeny` is **denied** to any host, allowed or not. With `egressAllow` set, any class it doesn't list is denied.
+- **Credentials guard (default).** A credential sent anywhere but its issuer **needs approval**. For example, `$GITHUB_TOKEN` going to `api.github.com` is fine, but going anywhere else isn't. To lift this, add `credentials` to `egressAllow`.
+- **Model-endpoint guardrail (default).** Secrets or personal data sent to a model API that WARD.md doesn't name in an explicit Network allow rule **need approval**. That covers OpenAI, Anthropic, Gemini, OpenRouter, Groq, Mistral, DeepSeek, Azure OpenAI, Bedrock and others. To lift it, add a rule naming the host, such as `- url: "https://openrouter.ai/**"`.
+
+A credential sent only to its own issuer is always allowed, because that's how the API is used. Reasons name the kind of data and the destination, never the value.
+
+Only what's visible is classified. A secret Ward can't see, such as one already encoded or held in an unnamed variable, isn't caught, so treat this as a strong backstop rather than a guarantee. For broader detection, pass a classifier, for example one built on [Mund](https://www.npmjs.com/package/@weave_protocol/mund):
+
+```typescript
+evaluateToolCall(policy, tool, args, { classify: (text) => myFindings(text) }); // returns DataFinding[]
+```
+
+`checkOutboundData`, `classifyData`, `classifyCommandReferences` and `isModelEndpoint` are exported for hosts that don't use `evaluateToolCall`.
+
 ### Reporting decisions to the dashboard (0.3.0+)
 
 `reportEvent()` sends an enforcement decision to a local Weave API (`@weave_protocol/api`), which shows it on its dashboard. The Weave adapters, browser guard and Hundredmen call it for you. Its surfaces are `mcp`, `claude-code`, `antigravity`, `msaf`, `browser`, `gemini-cli`, `codex`, `opencode` and `cursor` (the last four from 0.3.1).
@@ -275,12 +312,11 @@ WARD.md is the format that does all three.
 **Shipped:**
 - the parser, validator, type system and CLI;
 - the check primitives: `checkFilesystem`, `checkNetwork`, `checkCapability`, `checkDataEgress` and `checkBehavioral`;
-- `evaluateToolCall` with self-protection;
+- `evaluateToolCall` with self-protection and outbound-data checks;
 - dashboard reporting;
 - adapters for seven agent harnesses, plus MCP (Hundredmen) and Playwright (Browser).
 
 **Next:**
-- enforcing `egressDeny` with content scanning, so secrets can't leave through allowed domains;
 - per-session limits from the Behavioral section;
 - signed policies and signed decision receipts.
 

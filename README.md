@@ -64,6 +64,18 @@ npm install @weave_protocol/full
 
 ### 🗓️ November 2026 update — hardening
 
+#### 🛡️ Ward checks what's leaving, not just where it goes (Ward 0.3.5)
+A secret sent to a domain your policy allows is still a leak. That's how the Claude Code exfiltration CVE (CVE-2026-54316) worked, through a pre-approved domain. Every tool call that sends something is now checked for:
+- literal keys, card numbers, emails and SSNs;
+- in shell commands, `$SECRET_VARS`, `.env` and SSH key files, and environment dumps.
+
+This applies across all seven harness adapters.
+- WARD.md's `egressDeny` and `egressAllow` are **enforced**, even to allowed domains.
+- By default, a credential sent anywhere but its own issuer **needs approval**: `$GITHUB_TOKEN` to `api.github.com` is fine, but to any other host it's not.
+- The **model-endpoint guardrail** asks before secrets or personal data go to a model API (OpenAI, Anthropic, Gemini, OpenRouter, Bedrock and others) that your WARD.md doesn't name.
+
+CI's self red-team covers these: Ward decides all 27 coerced tool calls correctly, including six exfiltration attempts.
+
 #### 🛡️ Agents can't switch off their own guardrails (Ward 0.3.3)
 An agent with a broad write rule could rewrite the files that control it: WARD.md, its harness's hook and settings files, MCP server lists, or git hooks. This is the pattern behind Cursor's CurXecute (CVE-2025-54135), where injected content rewrote `mcp.json`. Every adapter now asks a human before an agent writes or deletes one of these, even when a rule like `write: /repo/**` covers it. To let an agent edit one, name that exact file in an allow rule.
 
@@ -418,7 +430,7 @@ The packages that keep your agent within policy: declare it, enforce it across e
 
 | Package | Version | Description |
 |---|---|---|
-| [🛡️ @weave_protocol/ward](https://github.com/Tyox-all/Weave_Protocol/blob/main/ward) | 0.3.4 | **WARD.md** — agent security policy standard (parser, validator, runtime checks, shared tool-call evaluator, dashboard reporting) |
+| [🛡️ @weave_protocol/ward](https://github.com/Tyox-all/Weave_Protocol/blob/main/ward) | 0.3.5 | **WARD.md** — agent security policy standard (parser, validator, runtime checks, shared tool-call evaluator, dashboard reporting) |
 | [🛡️ @weave_protocol/adapter-claudecode](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-claudecode) | 0.4.1 | **Claude Code adapter** — enforces WARD.md via PreToolUse hooks; Mund pre-install hooks for skills + MCP |
 | [🛡️ @weave_protocol/adapter-antigravity](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-antigravity) | 0.4.1 | **Google Antigravity adapter** — enforces WARD.md across desktop, `agy` CLI, and SDK; Mund pre-install hooks |
 | [🛡️ @weave_protocol/adapter-msaf](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-msaf) | 0.3.1 | **Microsoft Agent Framework adapter** — middleware-based WARD enforcement |

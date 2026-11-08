@@ -20,6 +20,7 @@ import {
   type CheckResult,
   type Decision,
 } from "./index.js";
+import { checkOutboundData, type DataClassifier } from "./egress.js";
 
 /** How a harness's tool maps onto WARD concepts. */
 export interface ToolMapping {
@@ -35,7 +36,7 @@ export interface ToolMapping {
 }
 
 export interface ToolCallCheck extends CheckResult {
-  type: "capability" | "filesystem" | "network" | "command";
+  type: "capability" | "filesystem" | "network" | "command" | "egress";
   /** The argument or command token this check covered */
   subject?: string;
 }
@@ -52,6 +53,8 @@ export interface EvaluateOptions {
   mappings?: Record<string, ToolMapping>;
   /** Working directory used to resolve relative paths */
   cwd?: string;
+  /** Extra data classifier for outbound payloads (e.g. Mund), added to Ward's built-in one */
+  classify?: DataClassifier;
 }
 
 /**
@@ -93,6 +96,12 @@ export function evaluateToolCall(
   for (const command of commandArgs(input, mapping)) {
     checks.push(...scanCommand(policy, command, opts.cwd));
   }
+
+  // 5. What the call sends: secrets and personal data in URLs, bodies,
+  //    messages and network commands, against WARD.md's Data Boundaries
+  checks.push(...checkOutboundData(policy, toolName, input, {
+    cwd: opts.cwd, classify: opts.classify, commandField: mapping.commandField, urlField: mapping.urlField,
+  }));
 
   return aggregate(checks);
 }
