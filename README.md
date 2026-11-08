@@ -64,11 +64,14 @@ npm install @weave_protocol/full
 
 ### 🗓️ November 2026 update — hardening
 
+#### ⛓️ Receipts anchored on-chain (Ward 0.3.9, Dōmere 1.7.0)
+A hash chain can't show that its newest entries were cut off. `weave-ward receipts checkpoint` signs a receipt log's current head. Dōmere's `domere_anchor_receipts` batches checkpoints from any number of agents into one Merkle root, and prepares the Solana or Ethereum transaction that stores it. Your wallet signs it; Dōmere never holds keys or broadcasts. `weave-ward receipts verify --checkpoints=bundle.json` then fails if any receipt up to an anchored checkpoint was removed or rewritten.
+
 #### ✍️ Signed policies: one WARD.md, enforced as written everywhere (Ward 0.3.8)
 Sign WARD.md once with `weave-ward sign`, then put the public key in `~/.weave/trusted-policy-keys` on each machine. Every adapter then refuses a policy that was edited after signing, or that a trusted key didn't sign, and denies each call with the reason. Even without a trust list, a signed policy that someone changed is refused. This is the piece that makes centrally managed policy trustworthy at scale.
 
 #### 🔏 Signed, hash-chained decision receipts (Ward 0.3.7)
-Turn on `required: true` in WARD.md's Verification section. Every decision then becomes an Ed25519-signed receipt chained to the one before, so no one can quietly edit, delete or reorder the record. Run `weave-ward receipts verify` to check a log offline, with or without an expected public key. Receipts never contain arguments, only a keyed digest the key holder can match. This works in all seven adapters. Anchoring receipt heads with Dōmere comes later.
+Turn on `required: true` in WARD.md's Verification section. Every decision then becomes an Ed25519-signed receipt chained to the one before, so no one can quietly edit, delete or reorder the record. Run `weave-ward receipts verify` to check a log offline, with or without an expected public key. Receipts never contain arguments, only a keyed digest the key holder can match. This works in all seven adapters.
 
 #### 💳 Agents can't spend without asking (Ward 0.3.6)
 In October an agent spent from a crypto wallet it was never authorized to use. Ward's new **payment guard** asks a person before any call that moves money, in every adapter. That covers payment, transfer, purchase and withdrawal tools, plus wallet and Stripe CLIs in shell commands. It stays on until WARD.md allows that capability by name.
@@ -445,7 +448,7 @@ The packages that keep your agent within policy: declare it, enforce it across e
 
 | Package | Version | Description |
 |---|---|---|
-| [🛡️ @weave_protocol/ward](https://github.com/Tyox-all/Weave_Protocol/blob/main/ward) | 0.3.8 | **WARD.md** — agent security policy standard (parser, validator, runtime checks, shared tool-call evaluator, dashboard reporting) |
+| [🛡️ @weave_protocol/ward](https://github.com/Tyox-all/Weave_Protocol/blob/main/ward) | 0.3.9 | **WARD.md** — agent security policy standard (parser, validator, runtime checks, shared tool-call evaluator, dashboard reporting) |
 | [🛡️ @weave_protocol/adapter-claudecode](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-claudecode) | 0.5.0 | **Claude Code adapter** — enforces WARD.md via PreToolUse hooks; Mund pre-install hooks for skills + MCP |
 | [🛡️ @weave_protocol/adapter-antigravity](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-antigravity) | 0.5.0 | **Google Antigravity adapter** — enforces WARD.md across desktop, `agy` CLI, and SDK; Mund pre-install hooks |
 | [🛡️ @weave_protocol/adapter-msaf](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-msaf) | 0.4.0 | **Microsoft Agent Framework adapter** — middleware-based WARD enforcement |
@@ -458,7 +461,7 @@ The packages that keep your agent within policy: declare it, enforce it across e
 | [🛡️ @weave_protocol/mund](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund) | 0.5.3 | **Scanner** — secrets, PII, injection, MCP vetting, pre-install checks for skills + MCP (rug pulls), OSV dependency CVEs, SARIF, threat intel |
 | [🏛️ @weave_protocol/hord](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord) | 0.3.2 | **Vault** — encrypted storage, sandboxing, capability tokens, attestation |
 | [🔐 @weave_protocol/yoxallismus](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus) | **0.2.0-beta.1** | **Post-quantum cipher** — X25519 + ML-KEM-768 hybrid KEM · sealed boxes · cascade AEAD · Double Ratchet · locked `yoxall/2` format · ⚠️ NOT AUDITED |
-| [⚖️ @weave_protocol/domere](https://github.com/Tyox-all/Weave_Protocol/blob/main/domere) | 1.6.1 | **Judge** — compliance (PCI-DSS, ISO27001, SOC2, HIPAA, GDPR, CCPA), blockchain anchoring |
+| [⚖️ @weave_protocol/domere](https://github.com/Tyox-all/Weave_Protocol/blob/main/domere) | 1.7.0 | **Judge** — compliance (PCI-DSS, ISO27001, SOC2, HIPAA, GDPR, CCPA), blockchain anchoring |
 | [👥 @weave_protocol/witan](https://github.com/Tyox-all/Weave_Protocol/blob/main/witan) | **1.2.2** | **Council** — multi-agent consensus & governance, autonomous spending caps (Q4 v1.1) |
 | [🛂 @weave_protocol/tollere](https://github.com/Tyox-all/Weave_Protocol/blob/main/tollere) | 0.2.5 | **Customs** — supply chain security (npm, PyPI, Docker, IDE extensions, sandwich detection) |
 

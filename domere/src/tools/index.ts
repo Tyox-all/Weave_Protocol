@@ -7,7 +7,7 @@ import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import type { BlockchainNetwork, IDomereStorage } from '../types.js';
 import { ThreadManager, IntentAnalyzer, DriftDetector } from '../thread/index.js';
 import { LanguageAnalyzerService } from '../language/index.js';
-import { AnchoringService } from '../anchoring/index.js';
+import { AnchoringService, prepareReceiptAnchor, verifyReceiptAnchorBundle, type ReceiptCheckpoint, type ReceiptAnchorBundle } from '../anchoring/index.js';
 import { createStorage } from '../storage/index.js';
 
 // Tool definitions
@@ -24,6 +24,8 @@ export const DOMERE_TOOLS: Tool[] = [
   { name: 'domere_check_drift', description: 'Check intent drift', inputSchema: { type: 'object', properties: { original_intent: { type: 'string' }, current_intent: { type: 'string' }, constraints: { type: 'array', items: { type: 'string' } } }, required: ['original_intent', 'current_intent'] } },
   { name: 'domere_estimate_anchor_cost', description: 'Estimate blockchain cost', inputSchema: { type: 'object', properties: { network: { type: 'string', enum: ['solana', 'ethereum', 'solana-devnet', 'ethereum-sepolia'] } }, required: ['network'] } },
   { name: 'domere_prepare_anchor', description: 'Prepare anchor transaction', inputSchema: { type: 'object', properties: { thread_id: { type: 'string' }, network: { type: 'string' } }, required: ['thread_id', 'network'] } },
+  { name: 'domere_anchor_receipts', description: "Batch Ward receipt checkpoints (from 'weave-ward receipts checkpoint') into one Merkle root and prepare the unsigned transaction that anchors it. Returns the bundle to keep for verification.", inputSchema: { type: 'object', properties: { checkpoints: { type: 'array', items: { type: 'object' }, description: 'Ward checkpoint objects' }, network: { type: 'string', enum: ['solana', 'ethereum', 'solana-devnet', 'ethereum-sepolia'] } }, required: ['checkpoints', 'network'] } },
+  { name: 'domere_verify_receipt_anchor', description: 'Check a Ward receipt anchor bundle offline: checkpoint signatures, Merkle root, manifest hash. Compare the root with the on-chain value to finish.', inputSchema: { type: 'object', properties: { bundle: { type: 'object' } }, required: ['bundle'] } },
 ];
 
 // Tool Handler
@@ -100,6 +102,17 @@ export class DomereToolHandler {
         request.network = args.network as BlockchainNetwork;
         return this.anchoringService.createAnchorTransaction(request);
       }
+      case 'domere_anchor_receipts': {
+        const { bundle, request } = prepareReceiptAnchor(args.checkpoints as ReceiptCheckpoint[], args.network as BlockchainNetwork);
+        const transaction = await this.anchoringService.createAnchorTransaction(request);
+        return {
+          bundle,
+          transaction,
+          next: `Save the bundle (e.g. receipts-anchor.json), sign and send the transaction with your wallet, then verify logs with: weave-ward receipts verify <log> --checkpoints=receipts-anchor.json`,
+        };
+      }
+      case 'domere_verify_receipt_anchor':
+        return verifyReceiptAnchorBundle(args.bundle as ReceiptAnchorBundle);
       default:
         throw new Error(`Unknown tool: ${name}`);
     }

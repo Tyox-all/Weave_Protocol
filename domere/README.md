@@ -12,6 +12,8 @@ Part of the [Weave Protocol](https://github.com/Tyox-all/Weave_Protocol) securit
 
 ## 🆕 What's new
 
+**1.7.0: anchor Ward's decision receipts.** Ward signs every allow and deny decision into a hash-chained log. A chain can't show that its newest receipts were cut off. `domere_anchor_receipts` fixes that: it batches signed log checkpoints from any number of agents into one Merkle root, and prepares the transaction that stores the root on Solana or Ethereum. A log that was truncated or rewritten before an anchored checkpoint then fails `weave-ward receipts verify`.
+
 **1.6.0: GDPR and CCPA records survive restarts.** With `DOMERE_STORAGE=sqlite`:
 - consents, DSARs, breaches and opt-outs persist in the same database file as threads;
 - erased data is removed from disk too, using `secure_delete` and a WAL checkpoint after deletes.
@@ -297,6 +299,30 @@ domere_prepare_anchor        { "thread_id": "thr_...", "network": "ethereum" }
             (it needs a recent blockhash), then sign and send. The thread_anchor PDA is derived for you.
 ```
 
+### Anchoring Ward receipts
+
+[Ward](https://www.npmjs.com/package/@weave_protocol/ward) writes a signed, hash-chained receipt for every tool-call decision. To prove later that no receipts were removed or changed:
+
+```bash
+weave-ward receipts checkpoint --agent=build-bot      # prints a signed checkpoint of the log's head
+```
+
+Give one or more checkpoints (one per agent, any number of agents) to `domere_anchor_receipts`:
+
+```text
+domere_anchor_receipts  { "checkpoints": [ {...}, {...} ], "network": "solana" }
+→ bundle:       { anchor_id, merkle_root, manifest_hash, receipts, checkpoints }  — keep this
+→ transaction:  the unsigned anchor, as from domere_prepare_anchor
+```
+
+Sign and send the transaction with your wallet. The chain then stores the bundle's `merkle_root` under its `anchor_id`, with the receipt count. To verify:
+
+```bash
+weave-ward receipts verify ~/.weave/receipts/build-bot.jsonl --checkpoints=receipts-anchor.json
+```
+
+This fails if any receipt up to the checkpoint is missing or changed. `domere_verify_receipt_anchor` rechecks the bundle offline: the checkpoint signatures, the root and the manifest hash. To finish, compare its `merkle_root` with the value stored on-chain. Library: `prepareReceiptAnchor`, `verifyReceiptAnchorBundle`.
+
 Submitting and verifying on-chain aren't implemented, and the API returns `501` for them. Before 1.4.1, preparing an anchor crashed, Ethereum function selectors were computed with SHA-256 instead of Keccak-256, the Solana PDA was a placeholder, and submit/verify returned invented transaction ids.
 
 **Default program and contract addresses** (override with `anchoring` config):
@@ -336,9 +362,11 @@ domere_check_injection       Prompt-injection check
 domere_check_drift           Drift between declared and current intent
 domere_estimate_anchor_cost  Anchoring cost estimate
 domere_prepare_anchor        Prepare an anchor to sign and submit yourself
+domere_anchor_receipts       Batch Ward receipt checkpoints into one anchor
+domere_verify_receipt_anchor Check a receipt anchor bundle offline
 ```
 
-The `domere` MCP server serves these 12 tools plus the GDPR (11) and CCPA (19) tools below: 42 in all. The GDPR and CCPA records name your organization, so set:
+The `domere` MCP server serves these 14 tools plus the GDPR (12) and CCPA (19) tools below: 45 in all. The GDPR and CCPA records name your organization, so set:
 
 | Variable | Used for |
 |---|---|

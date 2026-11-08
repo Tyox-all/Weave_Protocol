@@ -6,6 +6,8 @@
 export { MerkleTree, BatchAnchor } from './merkle.js';
 export { SolanaAnchorClient, SOLANA_PROGRAM_IDL } from './solana.js';
 export { EthereumAnchorClient, ETHEREUM_CONTRACT_ABI, ETHEREUM_CONTRACT_SOURCE } from './ethereum.js';
+export { prepareReceiptAnchor, verifyReceiptAnchorBundle, verifyReceiptCheckpoint } from './receipts.js';
+export type { ReceiptCheckpoint, ReceiptAnchorBundle } from './receipts.js';
 
 import type { 
   AnchorRequest, 

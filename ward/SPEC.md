@@ -222,7 +222,7 @@ attestor: <pubkey or DID>
 
 **`frequency`:** `every_action`, `every_handoff`, `every_iteration`, `session_end`, `manual`.
 
-**Receipts.** With `required: true` and `frequency: every_action` (or unset), a host records every tool-call decision as a receipt. A receipt holds the decision, the tool and capability, the reasons, and digests of the arguments and the policy. It is chained by hash to the previous receipt and signed. `attestor` names the public key that verifiers should expect. The reference implementation (Ward 0.3.7) uses Ed25519 over SHA-256 hashes of canonical JSON, and stores arguments only as a keyed HMAC.
+**Receipts.** With `required: true` and `frequency: every_action` (or unset), a host records every tool-call decision as a receipt. A receipt holds the decision, the tool and capability, the reasons, and digests of the arguments and the policy. It is chained by hash to the previous receipt and signed. `attestor` names the public key that verifiers should expect. The reference implementation (Ward 0.3.7) uses Ed25519 over SHA-256 hashes of canonical JSON, and stores arguments only as a keyed HMAC. A chain can't show that its newest receipts were removed, so a host should periodically commit the head elsewhere as a signed **checkpoint** (agent, sequence number, head hash, time, key), stored where the host can't rewrite it, and verifiers should check the log against every checkpoint they hold. Ward 0.3.9 signs checkpoints with the receipt key (`ward-checkpoint/v1:` + SHA-256 of the canonical checkpoint). Dōmere 1.7.0 anchors batches of them on-chain under one Merkle root.
 
 ### 5.8.1 Signed policies
 

@@ -11,6 +11,11 @@
  * derived from the signing key), so the log can't be used to guess short
  * secrets, while the key holder can still prove which arguments were decided.
  *
+ * A chain can't show that its newest receipts were cut off, so the head can
+ * be committed elsewhere as a signed checkpoint (Ward 0.3.9): keep checkpoints
+ * off the machine, or anchor them on-chain with Dōmere, and verification then
+ * catches a log that was truncated or rewritten before the checkpoint.
+ *
  *   log:  $WEAVE_RECEIPT_DIR (default ~/.weave/receipts)/<agent>.jsonl   0600
  *   key:  $WEAVE_RECEIPT_KEY_FILE (default ~/.weave/keys/ward-receipts.pem)  0600
  *
@@ -279,6 +284,10 @@ export interface VerifyResult {
   /** Hash of the last receipt. Record it elsewhere (or anchor it with Dōmere): a
    *  chain can't show that receipts after it were removed. */
   head: string;
+  /** Checkpoints for this log that matched it */
+  checkpoints: number;
+  /** Highest receipt a matching checkpoint commits to (0: none) */
+  checkpointedSeq: number;
   problems: Array<{ line: number; problem: string }>;
 }
 
@@ -288,8 +297,8 @@ export interface VerifyResult {
  * every signature is valid for the key its header names. With `publicKey`
  * (base64 SPKI), every signing key must be that key.
  */
-export function verifyReceiptLog(path: string, opts: { publicKey?: string } = {}): VerifyResult {
-  const result: VerifyResult = { ok: true, receipts: 0, keys: [], decisions: {}, head: ZERO, problems: [] };
+export function verifyReceiptLog(path: string, opts: { publicKey?: string; checkpoints?: ReceiptCheckpoint[] } = {}): VerifyResult {
+  const result: VerifyResult = { ok: true, receipts: 0, keys: [], decisions: {}, head: ZERO, checkpoints: 0, checkpointedSeq: 0, problems: [] };
   const fail = (line: number, problem: string) => { result.ok = false; result.problems.push({ line, problem }); };
   let text: string;
   try { text = readFileSync(path, "utf8"); } catch (e) { fail(0, `cannot read: ${(e as Error).message}`); return result; }
@@ -300,12 +309,15 @@ export function verifyReceiptLog(path: string, opts: { publicKey?: string } = {}
   let prev = ZERO;
   let seq = 0;
   let lastAt = "";
+  let agent: string | undefined;
+  const hashBySeq = new Map<number, string>();
   lines.forEach((raw, i) => {
     const n = i + 1;
     if (!raw.trim()) return;
     let r: Receipt | ReceiptHeader;
     try { r = JSON.parse(raw); } catch { fail(n, "not valid JSON"); return; }
     if (r.type === "header") {
+      agent ??= r.agent;
       if ((r.prev ?? ZERO) !== prev) fail(n, "header does not continue the chain");
       if (opts.publicKey && r.publicKey !== opts.publicKey) fail(n, `signed by key ${r.keyId}, not the expected key`);
       try {
@@ -334,7 +346,106 @@ export function verifyReceiptLog(path: string, opts: { publicKey?: string } = {}
     prev = r.hash;
     seq = r.seq;
     lastAt = r.at;
+    hashBySeq.set(r.seq, r.hash);
   });
   result.head = prev;
+
+  // Checkpoints recorded elsewhere: the log must still contain each one's
+  // receipt, unchanged. This is what catches a log cut short.
+  for (const cp of opts.checkpoints ?? []) {
+    if (cp.agent !== agent) continue;
+    const at = `checkpoint of receipt #${cp.seq} (${cp.at})`;
+    if (!verifyCheckpoint(cp)) { fail(0, `${at} has an invalid signature`); continue; }
+    if (opts.publicKey && cp.publicKey !== opts.publicKey) { fail(0, `${at} is signed by key ${cp.keyId}, not the expected key`); continue; }
+    if (!result.keys.includes(cp.keyId)) { fail(0, `${at} is signed by key ${cp.keyId}, which never signed this log`); continue; }
+    if (cp.seq > seq) { fail(0, `receipts after #${seq} were removed: the ${at} records #${cp.seq}`); continue; }
+    if (hashBySeq.get(cp.seq) !== cp.head) { fail(0, `receipt #${cp.seq} doesn't match the ${at}: the log was rewritten`); continue; }
+    result.checkpoints++;
+    result.checkpointedSeq = Math.max(result.checkpointedSeq, cp.seq);
+  }
   return result;
+}
+
+// ─────────────────────────────────────────────────────────
+// Checkpoints (0.3.9)
+// ─────────────────────────────────────────────────────────
+
+/**
+ * A signed statement that an agent's receipt log had reached receipt `seq`
+ * with hash `head`. Store it somewhere the log's machine can't rewrite, or
+ * anchor it with Dōmere (domere_anchor_receipts), and verifyReceiptLog
+ * catches receipts removed or changed up to that point.
+ */
+export interface ReceiptCheckpoint {
+  type: "checkpoint";
+  v: 1;
+  agent: string;
+  seq: number;
+  head: string;
+  at: string;
+  keyId: string;
+  publicKey: string;
+  sig: string;
+}
+
+const checkpointMessage = (cp: Omit<ReceiptCheckpoint, "sig"> | ReceiptCheckpoint) => {
+  const { sig: _s, ...body } = cp as ReceiptCheckpoint;
+  return Buffer.from(`ward-checkpoint/v1:${sha256(canonicalJson(body))}`);
+};
+
+/**
+ * Checkpoint the head of a receipt log. Throws if the log doesn't verify or
+ * has no receipts: a checkpoint vouches for everything before it.
+ */
+export function createCheckpoint(path: string, keys = loadReceiptKeys()): ReceiptCheckpoint {
+  const v = verifyReceiptLog(path);
+  if (!v.ok) throw new Error(`the log doesn't verify (${v.problems[0]?.problem ?? "unknown problem"}), so it can't be checkpointed`);
+  if (!v.receipts) throw new Error("the log has no receipts yet");
+  if (!v.keys.includes(keys.keyId)) throw new Error(`key ${keys.keyId} never signed this log; checkpoint it with the key that did`);
+  let agent = "";
+  let seq = 0;
+  for (const line of readFileSync(path, "utf8").split("\n")) {
+    if (!line.trim()) continue;
+    const r = JSON.parse(line) as Receipt | ReceiptHeader;
+    if (r.type === "header" && !agent) agent = r.agent;
+    if (r.type === "receipt") seq = r.seq;
+  }
+  const body: Omit<ReceiptCheckpoint, "sig"> = {
+    type: "checkpoint", v: 1, agent, seq, head: v.head, at: new Date().toISOString(), keyId: keys.keyId, publicKey: keys.publicKeyB64,
+  };
+  return { ...body, sig: sign(null, checkpointMessage(body), keys.privateKey).toString("base64") };
+}
+
+/** Is a checkpoint signed by the key it names? (Not whether that key is trusted.) */
+export function verifyCheckpoint(cp: ReceiptCheckpoint): boolean {
+  try {
+    if (cp?.type !== "checkpoint" || cp.v !== 1 || !Number.isInteger(cp.seq) || cp.seq < 1) return false;
+    const spki = Buffer.from(cp.publicKey, "base64");
+    if (sha256(spki).slice(0, 16) !== cp.keyId) return false;
+    const key = createPublicKey({ key: spki, format: "der", type: "spki" });
+    return verify(null, checkpointMessage(cp), key, Buffer.from(cp.sig, "base64"));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Checkpoints from text: JSON lines, a JSON array, or a Dōmere anchor bundle
+ * (an object with a `checkpoints` array).
+ */
+export function readCheckpoints(text: string): ReceiptCheckpoint[] {
+  const pick = (v: unknown): ReceiptCheckpoint[] =>
+    (Array.isArray(v) ? v : [v]).filter((c): c is ReceiptCheckpoint => !!c && typeof c === "object" && (c as { type?: unknown }).type === "checkpoint");
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && Array.isArray(parsed.checkpoints)) return pick(parsed.checkpoints);
+    return pick(parsed);
+  } catch {
+    const out: ReceiptCheckpoint[] = [];
+    for (const line of text.split("\n")) {
+      if (!line.trim()) continue;
+      try { out.push(...pick(JSON.parse(line))); } catch { /* not a checkpoint */ }
+    }
+    return out;
+  }
 }

@@ -18,6 +18,8 @@ npm install @weave_protocol/ward
 
 ## 🆕 What's new
 
+**0.3.9: receipt checkpoints.** A receipt chain alone can't show that its newest receipts were cut off. `weave-ward receipts checkpoint` signs the log's current head. Keep checkpoints off the machine, or anchor them on-chain with [Dōmere](https://www.npmjs.com/package/@weave_protocol/domere) (`domere_anchor_receipts`). `weave-ward receipts verify --checkpoints=FILE` then fails if any receipt up to a checkpoint was removed or changed. See [checkpoints and anchoring](#checkpoints-and-anchoring-039).
+
 **0.3.8: signed policies.** Sign WARD.md once with `weave-ward sign`, then list the public key in `~/.weave/trusted-policy-keys` on each machine. Every adapter will then refuse a policy that was edited after signing or that a trusted key didn't sign: each call is denied with the reason. A signed policy that was changed is refused even without a trust list. See [signed policies](#signed-policies-038).
 
 **0.3.7: signed decision receipts.** With `required: true` in WARD.md's Verification section, every allow, deny and approval becomes a receipt in an append-only log. Each receipt is **Ed25519-signed and hash-chained** to the one before, so editing, deleting or reordering any receipt fails verification. Run `weave-ward receipts verify` to check a log offline. Arguments are never stored, only a keyed digest. All seven adapters write receipts through Ward. See [decision receipts](#decision-receipts-037).
@@ -310,7 +312,7 @@ Which keys a machine trusts can't come from WARD.md, since whoever edits the fil
 | Signed, unchanged | Enforced | Enforced if the key is trusted, otherwise **every call denied** |
 | Signed, then edited | **Every call denied** | **Every call denied** |
 
-The check runs in `evaluateWithLedger`, so every Weave adapter applies it, and the result is cached per policy text. Hundredmen loads policies on its own path and doesn't check signatures yet. `signPolicySource`, `checkPolicySignature`, `checkPolicy` and `trustedPolicyKeys` are exported from `@weave_protocol/ward/signing`.
+The check runs in `evaluateWithLedger`, so every Weave adapter and Hundredmen (1.4.0+) apply it, and the result is cached per policy text. `signPolicySource`, `checkPolicySignature`, `checkPolicy` and `trustedPolicyKeys` are exported from `@weave_protocol/ward/signing`.
 
 ### Decision receipts (0.3.7+)
 
@@ -343,9 +345,26 @@ weave-ward receipts verify log.jsonl --key=pub.txt   # also require this signing
 weave-ward receipts key                          # print this machine's public key
 ```
 
-Verification recomputes every hash, checks every link, sequence number, timestamp order and signature, and reports the line of each problem. Removing the newest receipts leaves a shorter chain that is still valid, so verification prints the **head** hash. Record it somewhere else, or anchor it with [Dōmere](https://www.npmjs.com/package/@weave_protocol/domere), to detect truncation. Signatures prove which key wrote a receipt, not that the machine holding the key was uncompromised.
+Verification recomputes every hash and checks every link, sequence number, timestamp order and signature. It reports the line of each problem. Removing the newest receipts leaves a shorter chain that is still valid. Checkpoints catch that. Signatures prove which key wrote a receipt, not that the machine holding the key was uncompromised.
 
-`appendReceipt`, `verifyReceiptLog`, `loadReceiptKeys` and `canonicalJson` are exported from `@weave_protocol/ward/receipts`.
+#### Checkpoints and anchoring (0.3.9+)
+
+A checkpoint is a signed statement that a log had reached receipt `seq` with hash `head`:
+
+```bash
+weave-ward receipts checkpoint --agent=my-agent                          # print one
+weave-ward receipts checkpoint --agent=my-agent --append=/mnt/audit/my-agent.checkpoints.jsonl
+weave-ward receipts verify --agent=my-agent --checkpoints=/mnt/audit/my-agent.checkpoints.jsonl
+```
+
+Verification against checkpoints fails in these cases:
+- a checkpoint's receipt is missing (the log was cut short);
+- its hash differs (the log was rewritten, even with the same key);
+- the checkpoint was signed by a key that never signed the log.
+
+Checkpoints help only if they are stored where the log's machine can't rewrite them: another host, a write-once bucket, or a public chain. To anchor one on Solana or Ethereum, pass checkpoints from any number of agents to Dōmere's `domere_anchor_receipts`. It returns a bundle that commits to all of them in one Merkle root, plus an unsigned transaction to sign with your wallet. `--checkpoints` accepts that bundle file directly. Run `weave-ward receipts checkpoint` from cron, or at the end of each CI job, to bound how much can be lost.
+
+`appendReceipt`, `verifyReceiptLog`, `createCheckpoint`, `verifyCheckpoint`, `readCheckpoints`, `loadReceiptKeys` and `canonicalJson` are exported from `@weave_protocol/ward/receipts`.
 
 ### Reporting decisions to the dashboard (0.3.0+)
 
@@ -391,6 +410,10 @@ weave-ward init [--strict]    Create a starter WARD.md (basic or strict template
 weave-ward parse <file>       Print parsed policy as JSON
 weave-ward validate <file>    Validate the file and report issues
 weave-ward explain <file>     Human-readable summary
+weave-ward sign <file>        Sign a WARD.md (0.3.8+); weave-ward verify <file> checks it
+weave-ward receipts verify    Verify a receipt log (--checkpoints=FILE to check against checkpoints)
+weave-ward receipts checkpoint  Sign a log's head, to keep or anchor elsewhere (0.3.9+)
+weave-ward receipts key       Print the public key that signs this machine's receipts
 weave-ward help               Show help
 ```
 
@@ -432,14 +455,13 @@ WARD.md is the format that does all three.
 - the check primitives: `checkFilesystem`, `checkNetwork`, `checkCapability`, `checkDataEgress` and `checkBehavioral`;
 - `evaluateToolCall` with self-protection, outbound-data checks and the payment guard;
 - session and spend limits (`@weave_protocol/ward/ledger`);
-- signed, hash-chained decision receipts (`@weave_protocol/ward/receipts`);
+- signed, hash-chained decision receipts (`@weave_protocol/ward/receipts`), with checkpoints that Dōmere can anchor on-chain;
 - signed policies with a per-machine trust list (`@weave_protocol/ward/signing`);
 - dashboard reporting;
 - adapters for seven agent harnesses, plus MCP (Hundredmen) and Playwright (Browser).
 
 **Next:**
-- anchoring receipt heads with Dōmere;
-- receipts and signed-policy checks in Hundredmen.
+- reading anchors back from the chain, so verification can finish without a block explorer.
 
 ---
 

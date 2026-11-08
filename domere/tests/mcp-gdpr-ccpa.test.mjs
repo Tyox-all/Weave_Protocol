@@ -29,10 +29,10 @@ async function ok(name, args) {
   return body;
 }
 
-test('lists the 12 core tools plus 12 GDPR and 19 CCPA tools, all uniquely named', async () => {
+test('lists the 14 core tools plus 12 GDPR and 19 CCPA tools, all uniquely named', async () => {
   const names = (await client.listTools()).tools.map((t) => t.name);
-  assert.equal(names.length, 43);
-  assert.equal(new Set(names).size, 43);
+  assert.equal(names.length, 45);
+  assert.equal(new Set(names).size, 45);
   for (const n of ['domere_create_thread', 'domere_gdpr_record_consent', 'domere_gdpr_verify_chain', 'ccpa_verify_chain']) assert.ok(names.includes(n), n);
 });
 

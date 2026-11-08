@@ -9,11 +9,11 @@
  *   weave-ward help
  */
 
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, appendFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { parseWard, parseAndValidate } from "./parser/index.js";
 import type { WardPolicy } from "./types.js";
-import { verifyReceiptLog, receiptLogPath, loadReceiptKeys, receiptKeyPath } from "./receipts/index.js";
+import { verifyReceiptLog, receiptLogPath, loadReceiptKeys, receiptKeyPath, createCheckpoint, readCheckpoints, type ReceiptCheckpoint } from "./receipts/index.js";
 import { signPolicySource, checkPolicySignature, loadPolicySigningKey, policyKeyPath, trustedPolicyKeys, trustedKeysPath } from "./signing/index.js";
 
 // ─────────────────────────────────────────────────────────
@@ -50,7 +50,8 @@ function help(): void {
   console.log(`  ${c.cyan}explain${c.reset} ${c.gray}<file>${c.reset}            Human-readable summary of the policy`);
   console.log(`  ${c.cyan}sign${c.reset} ${c.gray}<file> [--key=FILE]${c.reset}       Sign a WARD.md (Ed25519; adds a signature line)`);
   console.log(`  ${c.cyan}verify${c.reset} ${c.gray}<file> [--key=B64|FILE]${c.reset}  Check a WARD.md's signature against trusted keys`);
-  console.log(`  ${c.cyan}receipts verify${c.reset} ${c.gray}[file] [--agent=NAME] [--key=B64|FILE] [--json]${c.reset}  Verify a decision-receipt log`);
+  console.log(`  ${c.cyan}receipts verify${c.reset} ${c.gray}[file] [--agent=NAME] [--key=B64|FILE] [--checkpoints=FILE] [--json]${c.reset}  Verify a decision-receipt log`);
+  console.log(`  ${c.cyan}receipts checkpoint${c.reset} ${c.gray}[file] [--agent=NAME] [--append=FILE]${c.reset}  Sign the log's head, to keep or anchor elsewhere`);
   console.log(`  ${c.cyan}receipts key${c.reset}               Print the public key that signs this machine's receipts`);
   console.log(`  ${c.cyan}help${c.reset}                       Show this message\n`);
   console.log(`${c.bold}Examples:${c.reset}`);
@@ -482,14 +483,37 @@ function runReceipts(args: string[]): number {
     console.error(`${c.gray}key id ${keys.keyId} · ${receiptKeyPath()}${c.reset}`);
     return 0;
   }
+  if (sub === "checkpoint") {
+    const file = resolve(rest.find((a) => !a.startsWith("--")) ?? receiptLogPath(flag("agent") ?? "default"));
+    let cp: ReceiptCheckpoint;
+    try { cp = createCheckpoint(file); } catch (e) {
+      console.error(`${c.red}✗${c.reset} ${file}: ${(e as Error).message}`);
+      return 1;
+    }
+    const line = JSON.stringify(cp);
+    const out = flag("append");
+    if (out) appendFileSync(out, line + "\n");
+    console.log(line);
+    console.error(`${c.gray}receipt #${cp.seq} of ${cp.agent} · ${cp.head}${out ? ` · appended to ${resolve(out)}` : ""}${c.reset}`);
+    console.error(`${c.gray}keep this off this machine, or anchor it with Dōmere (domere_anchor_receipts)${c.reset}`);
+    return 0;
+  }
   if (sub !== "verify") {
-    console.error(`Usage: weave-ward receipts verify [file] [--agent=NAME] [--key=B64|FILE] [--json]\n       weave-ward receipts key`);
+    console.error(`Usage: weave-ward receipts verify [file] [--agent=NAME] [--key=B64|FILE] [--checkpoints=FILE] [--json]\n       weave-ward receipts checkpoint [file] [--agent=NAME] [--append=FILE]\n       weave-ward receipts key`);
     return 2;
   }
   const file = rest.find((a) => !a.startsWith("--")) ?? receiptLogPath(flag("agent") ?? "default");
   let key = flag("key");
   if (key && existsSync(key)) key = readFileSync(key, "utf8").trim();
-  const r = verifyReceiptLog(resolve(file), key ? { publicKey: key } : {});
+  const checkpoints: ReceiptCheckpoint[] = [];
+  for (const a of rest.filter((x) => x.startsWith("--checkpoints="))) {
+    const path = a.slice("--checkpoints=".length);
+    try { checkpoints.push(...readCheckpoints(readFileSync(path, "utf8"))); } catch (e) {
+      console.error(`${c.red}✗${c.reset} cannot read checkpoints ${path}: ${(e as Error).message}`);
+      return 1;
+    }
+  }
+  const r = verifyReceiptLog(resolve(file), { ...(key ? { publicKey: key } : {}), ...(checkpoints.length ? { checkpoints } : {}) });
   if (rest.includes("--json")) {
     console.log(JSON.stringify({ file: resolve(file), ...r }, null, 2));
     return r.ok ? 0 : 1;
@@ -498,11 +522,13 @@ function runReceipts(args: string[]): number {
   if (r.ok) {
     console.log(`${c.green}✓${c.reset} ${r.receipts} receipts verified (${counts})`);
     console.log(`  ${c.gray}signed by ${r.keys.join(" → ") || "-"}${c.reset}`);
-    console.log(`  ${c.gray}head ${r.head}${c.reset}  ${c.gray}(record or anchor this: a chain can't show later receipts were removed)${c.reset}`);
+    if (r.checkpoints) console.log(`  ${c.gray}matches ${r.checkpoints} checkpoint(s); nothing up to receipt #${r.checkpointedSeq} was removed or changed${c.reset}`);
+    else if (checkpoints.length) console.log(`  ${c.yellow}none of the ${checkpoints.length} checkpoint(s) are for this log's agent${c.reset}`);
+    console.log(`  ${c.gray}head ${r.head}${c.reset}  ${c.gray}(checkpoint this with 'weave-ward receipts checkpoint': a chain alone can't show later receipts were removed)${c.reset}`);
     return 0;
   }
   console.log(`${c.red}✗${c.reset} ${resolve(file)}: ${r.problems.length} problem(s) in ${r.receipts} receipts`);
-  for (const p of r.problems.slice(0, 20)) console.log(`  line ${p.line}: ${p.problem}`);
+  for (const p of r.problems.slice(0, 20)) console.log(p.line ? `  line ${p.line}: ${p.problem}` : `  ${p.problem}`);
   return 1;
 }
 
