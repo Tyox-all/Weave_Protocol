@@ -13,6 +13,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { parseWard, parseAndValidate } from "./parser/index.js";
 import type { WardPolicy } from "./types.js";
+import { verifyReceiptLog, receiptLogPath, loadReceiptKeys, receiptKeyPath } from "./receipts/index.js";
 
 // ─────────────────────────────────────────────────────────
 // Colors
@@ -46,6 +47,8 @@ function help(): void {
   console.log(`  ${c.cyan}parse${c.reset} ${c.gray}<file>${c.reset}              Print parsed policy as JSON`);
   console.log(`  ${c.cyan}validate${c.reset} ${c.gray}<file>${c.reset}           Validate the file and report issues`);
   console.log(`  ${c.cyan}explain${c.reset} ${c.gray}<file>${c.reset}            Human-readable summary of the policy`);
+  console.log(`  ${c.cyan}receipts verify${c.reset} ${c.gray}[file] [--agent=NAME] [--key=B64|FILE] [--json]${c.reset}  Verify a decision-receipt log`);
+  console.log(`  ${c.cyan}receipts key${c.reset}               Print the public key that signs this machine's receipts`);
   console.log(`  ${c.cyan}help${c.reset}                       Show this message\n`);
   console.log(`${c.bold}Examples:${c.reset}`);
   console.log(`  ${c.gray}$${c.reset} weave-ward init`);
@@ -428,6 +431,43 @@ function explainPolicy(p: WardPolicy): void {
 }
 
 // ─────────────────────────────────────────────────────────
+// Receipts (0.3.7)
+// ─────────────────────────────────────────────────────────
+
+function runReceipts(args: string[]): number {
+  const [sub, ...rest] = args;
+  const flag = (name: string) => rest.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3);
+  if (sub === "key") {
+    const keys = loadReceiptKeys();
+    console.log(keys.publicKeyB64);
+    console.error(`${c.gray}key id ${keys.keyId} · ${receiptKeyPath()}${c.reset}`);
+    return 0;
+  }
+  if (sub !== "verify") {
+    console.error(`Usage: weave-ward receipts verify [file] [--agent=NAME] [--key=B64|FILE] [--json]\n       weave-ward receipts key`);
+    return 2;
+  }
+  const file = rest.find((a) => !a.startsWith("--")) ?? receiptLogPath(flag("agent") ?? "default");
+  let key = flag("key");
+  if (key && existsSync(key)) key = readFileSync(key, "utf8").trim();
+  const r = verifyReceiptLog(resolve(file), key ? { publicKey: key } : {});
+  if (rest.includes("--json")) {
+    console.log(JSON.stringify({ file: resolve(file), ...r }, null, 2));
+    return r.ok ? 0 : 1;
+  }
+  const counts = Object.entries(r.decisions).map(([d, n]) => `${n} ${d}`).join(", ") || "none";
+  if (r.ok) {
+    console.log(`${c.green}✓${c.reset} ${r.receipts} receipts verified (${counts})`);
+    console.log(`  ${c.gray}signed by ${r.keys.join(" → ") || "-"}${c.reset}`);
+    console.log(`  ${c.gray}head ${r.head}${c.reset}  ${c.gray}(record or anchor this: a chain can't show later receipts were removed)${c.reset}`);
+    return 0;
+  }
+  console.log(`${c.red}✗${c.reset} ${resolve(file)}: ${r.problems.length} problem(s) in ${r.receipts} receipts`);
+  for (const p of r.problems.slice(0, 20)) console.log(`  line ${p.line}: ${p.problem}`);
+  return 1;
+}
+
+// ─────────────────────────────────────────────────────────
 // Router
 // ─────────────────────────────────────────────────────────
 
@@ -448,6 +488,9 @@ async function main(): Promise<void> {
         break;
       case "explain":
         code = runExplain(rest);
+        break;
+      case "receipts":
+        code = runReceipts(rest);
         break;
       case "help":
       case "--help":

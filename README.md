@@ -64,6 +64,9 @@ npm install @weave_protocol/full
 
 ### 🗓️ November 2026 update — hardening
 
+#### 🔏 Signed, hash-chained decision receipts (Ward 0.3.7)
+Turn on `required: true` in WARD.md's Verification section. Every decision then becomes an Ed25519-signed receipt chained to the one before, so no one can quietly edit, delete or reorder the record. Run `weave-ward receipts verify` to check a log offline, with or without an expected public key. Receipts never contain arguments, only a keyed digest the key holder can match. This works in all seven adapters. Anchoring receipt heads with Dōmere is next.
+
 #### 💳 Agents can't spend without asking (Ward 0.3.6)
 In October an agent spent from a crypto wallet it was never authorized to use. Ward's new **payment guard** asks a person before any call that moves money, in every adapter. That covers payment, transfer, purchase and withdrawal tools, plus wallet and Stripe CLIs in shell commands. It stays on until WARD.md allows that capability by name.
 
@@ -439,7 +442,7 @@ The packages that keep your agent within policy: declare it, enforce it across e
 
 | Package | Version | Description |
 |---|---|---|
-| [🛡️ @weave_protocol/ward](https://github.com/Tyox-all/Weave_Protocol/blob/main/ward) | 0.3.6 | **WARD.md** — agent security policy standard (parser, validator, runtime checks, shared tool-call evaluator, dashboard reporting) |
+| [🛡️ @weave_protocol/ward](https://github.com/Tyox-all/Weave_Protocol/blob/main/ward) | 0.3.7 | **WARD.md** — agent security policy standard (parser, validator, runtime checks, shared tool-call evaluator, dashboard reporting) |
 | [🛡️ @weave_protocol/adapter-claudecode](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-claudecode) | 0.5.0 | **Claude Code adapter** — enforces WARD.md via PreToolUse hooks; Mund pre-install hooks for skills + MCP |
 | [🛡️ @weave_protocol/adapter-antigravity](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-antigravity) | 0.5.0 | **Google Antigravity adapter** — enforces WARD.md across desktop, `agy` CLI, and SDK; Mund pre-install hooks |
 | [🛡️ @weave_protocol/adapter-msaf](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-msaf) | 0.4.0 | **Microsoft Agent Framework adapter** — middleware-based WARD enforcement |

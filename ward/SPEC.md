@@ -222,6 +222,8 @@ attestor: <pubkey or DID>
 
 **`frequency`:** `every_action`, `every_handoff`, `every_iteration`, `session_end`, `manual`.
 
+**Receipts.** With `required: true` and `frequency: every_action` (or unset), a host records every tool-call decision as a receipt. A receipt holds the decision, the tool and capability, the reasons, and digests of the arguments and the policy. It is chained by hash to the previous receipt and signed. `attestor` names the public key that verifiers should expect. The reference implementation (Ward 0.3.7) uses Ed25519 over SHA-256 hashes of canonical JSON, and stores arguments only as a keyed HMAC.
+
 ### 5.9 `## Threat Model`
 
 ```yaml

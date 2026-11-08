@@ -18,6 +18,8 @@ npm install @weave_protocol/ward
 
 ## 🆕 What's new
 
+**0.3.7: signed decision receipts.** With `required: true` in WARD.md's Verification section, every allow, deny and approval becomes a receipt in an append-only log. Each receipt is **Ed25519-signed and hash-chained** to the one before, so editing, deleting or reordering any receipt fails verification. Run `weave-ward receipts verify` to check a log offline. Arguments are never stored, only a keyed digest. All seven adapters write receipts through Ward. See [decision receipts](#decision-receipts-037).
+
 **0.3.6: payments and spend limits.**
 - **Payment guard, on by default.** A call that moves money needs human approval unless WARD.md allows that capability by name. That covers payment, transfer, purchase and withdrawal tools, plus wallet and Stripe CLIs in shell commands. A default `allow` or a wildcard doesn't lift it.
 - **Session limits.** `@weave_protocol/ward/ledger` enforces the Behavioral Limits (`maxToolCalls`, `maxRuntimeSeconds`, `maxExternalServices`). It also enforces [Witan's](https://www.npmjs.com/package/@weave_protocol/witan) `spending_limits:` caps: per-tool call counts and cumulative payment amounts per run, hour, day, week or month. Hook-based adapters keep these counts across their separate processes.
@@ -276,6 +278,41 @@ spending_limits:
 
 This is the same `spending_limits:` format Witan reads. `budget.usd` and `budget.tokens` cover LLM spend, which hooks can't see, so Witan enforces those. The ledger is only touched when WARD.md declares a limit that needs it. `checkSessionLimits()` is the pure check, for hosts that keep their own history.
 
+### Decision receipts (0.3.7+)
+
+Turn receipts on in WARD.md:
+
+```yaml
+## Verification
+
+required: true
+frequency: every_action      # or leave unset
+attestor: <base64 public key>   # optional: the key verification should expect
+```
+
+`WEAVE_RECEIPTS=1` turns receipts on regardless of WARD.md, and `WEAVE_RECEIPTS=0` turns them off. `evaluateWithLedger`, which every Weave adapter uses, then appends one receipt per decision to `~/.weave/receipts/<agent>.jsonl` (`$WEAVE_RECEIPT_DIR`, mode 0600):
+
+```json
+{"type":"receipt","v":1,"seq":42,"at":"2026-11-08T21:40:12.511Z","agent":"my-agent","session":"…","surface":"claude-code",
+ "tool":"Bash","capability":"shell_exec","decision":"deny","reasons":["Outbound data contains $AWS_SECRET_ACCESS_KEY ('credentials'), which WARD.md denies egress"],
+ "argsDigest":"hmac-sha256:…","policyDigest":"sha256:…","keyId":"3f9a…","prev":"sha256:…","hash":"sha256:…","sig":"…"}
+```
+
+- **Chained:** `hash` is the SHA-256 of the receipt's canonical JSON, without `hash` and `sig`. `prev` is the previous receipt's hash, and `seq` counts up with no gaps.
+- **Signed:** `sig` is an Ed25519 signature over `hash`. The key is created on first use at `~/.weave/keys/ward-receipts.pem` (`$WEAVE_RECEIPT_KEY_FILE`, mode 0600). A header line names the public key. If the key changes, a new header continues the chain.
+- **No arguments:** `argsDigest` is an HMAC under a key derived from the signing key. The key holder can prove which arguments were decided, but the log can't be used to guess short secrets. Reasons are stored without the argument they name.
+- **Never in the way:** a receipt that can't be written doesn't change or delay the decision. Set `WEAVE_RECEIPTS_DEBUG=1` to see why one failed.
+
+```bash
+weave-ward receipts verify                       # ~/.weave/receipts/default.jsonl, or --agent=NAME, or a path
+weave-ward receipts verify log.jsonl --key=pub.txt   # also require this signing key
+weave-ward receipts key                          # print this machine's public key
+```
+
+Verification recomputes every hash, checks every link, sequence number, timestamp order and signature, and reports the line of each problem. Removing the newest receipts leaves a shorter chain that is still valid, so verification prints the **head** hash. Record it somewhere else, or anchor it with [Dōmere](https://www.npmjs.com/package/@weave_protocol/domere), to detect truncation. Signatures prove which key wrote a receipt, not that the machine holding the key was uncompromised.
+
+`appendReceipt`, `verifyReceiptLog`, `loadReceiptKeys` and `canonicalJson` are exported from `@weave_protocol/ward/receipts`.
+
 ### Reporting decisions to the dashboard (0.3.0+)
 
 `reportEvent()` sends an enforcement decision to a local Weave API (`@weave_protocol/api`), which shows it on its dashboard. The Weave adapters, browser guard and Hundredmen call it for you. Its surfaces are `mcp`, `claude-code`, `antigravity`, `msaf`, `browser`, `gemini-cli`, `codex`, `opencode` and `cursor` (the last four from 0.3.1).
@@ -361,11 +398,13 @@ WARD.md is the format that does all three.
 - the check primitives: `checkFilesystem`, `checkNetwork`, `checkCapability`, `checkDataEgress` and `checkBehavioral`;
 - `evaluateToolCall` with self-protection, outbound-data checks and the payment guard;
 - session and spend limits (`@weave_protocol/ward/ledger`);
+- signed, hash-chained decision receipts (`@weave_protocol/ward/receipts`);
 - dashboard reporting;
 - adapters for seven agent harnesses, plus MCP (Hundredmen) and Playwright (Browser).
 
 **Next:**
-- signed policies and signed decision receipts.
+- signed policies;
+- anchoring receipt heads with Dōmere.
 
 ---
 

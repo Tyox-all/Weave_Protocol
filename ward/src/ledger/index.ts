@@ -19,6 +19,7 @@ import { join } from "node:path";
 import type { WardPolicy } from "../types.js";
 import { evaluateToolCall, aggregate, type EvaluateOptions, type ToolCallEvaluation, type ToolCallCheck } from "../enforcer/toolcall.js";
 import { checkSessionLimits, needsLedger, type LedgerEvent, type LedgerSnapshot } from "../enforcer/limits.js";
+import { appendReceipt, receiptsEnabled } from "../receipts/index.js";
 
 const KEEP_MS = 31 * 86_400_000;
 const LOCK_STALE_MS = 5_000;
@@ -121,6 +122,8 @@ export interface LedgerEvaluateOptions extends EvaluateOptions, LedgerOptions {
   session?: string;
   /** Use this ledger instead of the file for the policy's agent */
   ledger?: FileLedger;
+  /** Harness name recorded in receipts (e.g. "claude-code") */
+  surface?: string;
 }
 
 /**
@@ -134,13 +137,31 @@ export function evaluateWithLedger(
   args: Record<string, unknown> | undefined,
   opts: LedgerEvaluateOptions = {},
 ): ToolCallEvaluation {
-  const base = evaluateToolCall(policy, toolName, args, opts);
-  if (!needsLedger(policy)) return base;
-
   const session = opts.session || "default";
   const capability = opts.mappings?.[toolName]?.capability ?? toolName;
-  const ledger = opts.ledger ?? new FileLedger(policy.agent ?? "default", opts);
+  const result = needsLedger(policy) ? withLimits(policy, toolName, args, opts, session, capability) : evaluateToolCall(policy, toolName, args, opts);
 
+  // Signed, hash-chained receipt of the decision (Ward 0.3.7), when WARD.md's
+  // Verification section or WEAVE_RECEIPTS asks for one. Never changes the decision.
+  if (receiptsEnabled(policy)) {
+    appendReceipt({
+      agent: policy.agent ?? "default", session: opts.session, surface: opts.surface,
+      tool: toolName, capability, decision: result.decision, reasons: result.reasons, args, policy,
+    });
+  }
+  return result;
+}
+
+function withLimits(
+  policy: WardPolicy,
+  toolName: string,
+  args: Record<string, unknown> | undefined,
+  opts: LedgerEvaluateOptions,
+  session: string,
+  capability: string,
+): ToolCallEvaluation {
+  const base = evaluateToolCall(policy, toolName, args, opts);
+  const ledger = opts.ledger ?? new FileLedger(policy.agent ?? "default", opts);
   return ledger.transact((data, now) => {
     const snapshot: LedgerSnapshot = { events: data.events, sessionStartedAt: data.sessions[session]?.startedAt };
     const limits = checkSessionLimits(policy, snapshot, { session, tool: toolName, capability, payment: base.payment, hosts: base.hosts }, now);
