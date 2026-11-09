@@ -39,7 +39,7 @@
     "url": "https://github.com/Tyox-all/Weave_Protocol/issues"
   },
   "dependencies": {
-    "@weave_protocol/tollere": "^0.2.4"
+    "@weave_protocol/tollere": "^0.2.5"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
