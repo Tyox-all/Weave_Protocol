@@ -122,7 +122,7 @@ jobs:
         run: npm sbom --sbom-format cyclonedx --omit dev > sbom.cdx.json
 
       - name: Attest build provenance (Sigstore)
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: ${{ matrix.package }}/${{ steps.pack.outputs.tarball }}
 
