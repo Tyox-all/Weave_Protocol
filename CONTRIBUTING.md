@@ -53,6 +53,25 @@ npm run build
 npm test
 ```
 
+## Why we test everything, on every commit
+
+The packages depend on each other. `api` and `full` use Mund, and Ward is used by Hundredmen, the browser guard and all seven adapters. Each package's own CI job installs its Weave dependencies from npm. So it tests what's already published, not the change in front of it.
+
+That gap shipped a real bug. Mund 0.6.0 added a classifier finding that returned the text it scored as its `match`, and that text could contain secrets and email addresses. They reached logs, Mund's event store and notification webhooks unmasked. Mund's own tests checked what the classifier detected, not what it output. `api` already had a test asserting that scan results never contain a secret, and it would have failed. But `api` was only tested against Mund 0.6.0 after 0.6.0 was on npm. The fix shipped as 0.6.1, and 0.6.0 is deprecated.
+
+So, for every package:
+- **Test what it outputs, not just what it detects.** A new kind of finding needs a test that it never echoes secrets or personal data (see `mund/tests/analyzers/redaction.test.ts`).
+- **Test its dependents against the change.** On every push and pull request, the [Dependents](.github/workflows/dependents.yml) workflow builds each changed package. It then runs the tests of every package that depends on it, directly or through another Weave package, against that build. It checks that every copy in the dependent's tree is the local build, so a pass can't come from the npm version.
+
+Run it yourself before you open a PR:
+
+```bash
+node scripts/test-dependents.mjs --base=origin/main     # packages changed on your branch
+node scripts/test-dependents.mjs --changed=mund,ward    # or name them
+```
+
+It edits each dependent's `package.json` and lockfile while it runs, and restores both afterwards. Run `npm ci` in a dependent to get its `node_modules` back to the lockfile.
+
 ## Code of conduct
 
 Be kind, be technical, be honest. Harassment of any kind is not tolerated.
