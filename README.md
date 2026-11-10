@@ -128,8 +128,10 @@ CI now runs our own attack corpus through our own defenses, offline:
 - Ward decides the tool calls a coerced agent would make.
 
 The scorecard goes to the job summary. CI fails if detection falls or false positives rise past the committed baseline. Today's numbers:
-- Mund flags 94.1% of payloads, with 0 false positives.
-- Ward decides 21 of 21 calls correctly.
+- Mund flags all 68 payloads (100%), with 0 false positives on 84 benign texts.
+- Ward decides 29 of 29 calls correctly.
+
+These are regression numbers on our own corpus, not a measure against unseen attacks. Mund's results on public held-out datasets are in [DETECTION_CLAIMS.md](mund/DETECTION_CLAIMS.md#local-classifier-060).
 
 ### 🗓️ October 2026 update — what landed
 

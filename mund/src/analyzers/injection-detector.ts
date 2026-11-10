@@ -10,6 +10,11 @@ import {
   type IssueLocation 
 } from '../types.js';
 import { compileRulePattern } from './regex.js';
+import { decodeModel, scoreInjection, type InjectionModel } from './classifier.js';
+import { INJECTION_MODEL } from './injection-model.js';
+
+let model: InjectionModel | undefined;
+const loadModel = () => (model ??= decodeModel(INJECTION_MODEL));
 
 export class InjectionDetector implements IAnalyzer {
   name = 'InjectionDetector';
@@ -37,6 +42,29 @@ export class InjectionDetector implements IAnalyzer {
 
     // Additional heuristic checks
     issues.push(...this.heuristicAnalysis(content));
+
+    // The local classifier backs up the rules: one finding at most, for the
+    // view and window it scores highest.
+    const classifier = injectionRules.find((r) => r.id === 'injection_classifier');
+    if (classifier && process.env.MUND_CLASSIFIER !== '0') {
+      const m = loadModel();
+      let best: { score: number; window: string; via?: string } = { score: 0, window: '' };
+      for (const view of views) {
+        const r = scoreInjection(view.text, m);
+        if (r.score > best.score) best = { ...r, via: view.via };
+      }
+      if (best.score >= m.threshold) {
+        issues.push({
+          rule_id: classifier.id,
+          rule_name: best.via ? `${classifier.name} (hidden in ${best.via})` : classifier.name,
+          type: classifier.type,
+          severity: classifier.severity,
+          action: classifier.action,
+          match: this.sanitizeMatch(best.window),
+          suggestion: `The local classifier scored this ${best.score.toFixed(3)} (threshold ${m.threshold.toFixed(3)}). Treat it as untrusted data, not instructions.`
+        });
+      }
+    }
     return issues;
   }
 
@@ -98,7 +126,11 @@ export class InjectionDetector implements IAnalyzer {
     const roleSwitchPatterns: Array<[RegExp, 'high' | 'low']> = [
       [/<\|\s*(?:im_start|im_end|system|user|assistant|endoftext|start_header_id|end_header_id|eot_id)\s*\|>/i, 'high'],
       [/\[\/?INST\]|<<\/?SYS>>/, 'high'],
-      [/\[\s*(?:system|admin|administrator|developer)(?:\s+(?:override|message|prompt|note|instruction)s?)?[^\]\n]{0,30}\]/i, 'high'],
+      // A bare role tag ([SYSTEM], [admin]) or one naming an override or message.
+      // Titles that merely start with the word ("[System Information Discovery]",
+      // "[Systemd Service]", "[admin@338]") are not role markers.
+      // [DEVELOPER] alone is a common label (diagrams, tables), so it needs a qualifier.
+      [/\[\s*(?:(?:system|admin|administrator)\s*(?:(?:override|message|prompt|note|instruction|notice|command|update|mode)s?\b[^\]\n]{0,30})?|developer\s*(?:override|message|prompt|note|instruction|notice|command|update|mode)s?\b[^\]\n]{0,30})\]/i, 'high'],
       [/\<\|?system\|?\>/i, 'high'],
       [/\{system_prompt\}/i, 'high'],
       [/^\s*#{1,4}\s*(?:system|instruction)s?\s*:/im, 'high'],
@@ -189,14 +221,19 @@ export class InjectionDetector implements IAnalyzer {
       /data:text\/html/i,
     ];
 
+    // Scripts are ordinary in web pages and security writing, so a mention is
+    // low severity. A script that reads cookies or storage and sends them off
+    // the page is an exfiltration attempt, and high.
+    const exfilScript = /\b(?:document\.cookie|localStorage|sessionStorage)\b/i.test(content)
+      && /\b(?:fetch\s*\(|XMLHttpRequest|sendBeacon|new\s+Image\b|\.src\s*=|location(?:\.href)?\s*=)/i.test(content);
     for (const pattern of markdownPatterns) {
       const match = content.match(pattern);
       if (match) {
         issues.push({
           rule_id: 'heuristic_markup_injection',
-          rule_name: 'Markup Injection Attempt',
+          rule_name: exfilScript ? 'Script That Sends Cookies or Storage Off the Page' : 'Markup Injection Attempt',
           type: 'injection',
-          severity: 'medium' as const,
+          severity: (exfilScript ? 'high' : pattern.source.includes('system') ? 'medium' : 'low') as 'high' | 'medium' | 'low',
           action: 'alert' as const,
           match: this.sanitizeMatch(match[0]),
           suggestion: 'This content contains potentially dangerous markup or code injection.'
