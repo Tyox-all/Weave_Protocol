@@ -10,6 +10,10 @@
  *
  *   node scripts/test-dependents.mjs --base=origin/main     # packages changed since base
  *   node scripts/test-dependents.mjs --changed=mund,ward    # these packages
+ *   node scripts/test-dependents.mjs --changed=mund --source=published
+ *       # after a release: the version in mund/package.json as published on
+ *       # npm (waits up to --wait minutes, default 60, for it to appear),
+ *       # installed fresh and imported, then tested in every dependent
  *
  * For each changed package: build it and `npm pack` it. For each package
  * that depends on it, directly or through another Weave package: point the
@@ -67,22 +71,60 @@ else {
 }
 for (const d of changed) if (!pkgs[d]) { console.error(`Not a Weave package: ${d}`); process.exit(2); }
 
-const affected = [...new Set(changed.flatMap(dependentsOf))].filter((d) => !changed.includes(d));
-if (!changed.length || !affected.length) {
+const published = flags.source === 'published';
+if (flags.source && !published && flags.source !== 'local') { console.error(`--source must be local or published`); process.exit(2); }
+// Against a local build, a changed package's own tests already ran on it. After a
+// release, every dependent is tested against the published copy, changed or not.
+const affected = [...new Set(changed.flatMap(dependentsOf))].filter((d) => published || !changed.includes(d));
+if (!changed.length || (!affected.length && !published)) {
   log(changed.length ? `No package depends on ${changed.join(', ')}.` : 'No package changed (or only its docs).');
   process.exit(0);
 }
+const what = published ? 'the published version' : 'the local build';
 log(`Changed: ${changed.join(', ')}`);
-log(`Testing against the local build: ${affected.join(', ')}\n`);
+log(`Testing against ${what}: ${affected.join(', ') || '(no dependents)'}\n`);
 
-// ── Build and pack each changed package ───────────────────
-const run = (cmd, args, cwd) => {
-  const r = spawnSync(cmd, args, { cwd, encoding: 'utf8', env: { ...process.env, YOXALL_SILENCE_BETA_WARNING: '1' } });
-  return { ok: r.status === 0, out: `${r.stdout ?? ''}${r.stderr ?? ''}` };
+const run = (cmd, args, cwd, timeout) => {
+  const r = spawnSync(cmd, args, { cwd, encoding: 'utf8', timeout, env: { ...process.env, YOXALL_SILENCE_BETA_WARNING: '1' } });
+  return { ok: r.status === 0, out: `${r.stdout ?? ''}${r.stderr ?? ''}${r.error ? `\n${r.error.message}` : ''}` };
 };
-const packDir = mkdtempSync(join(tmpdir(), 'weave-dependents-'));
+const versionOf = (d) => JSON.parse(readFileSync(join(root, d, 'package.json'), 'utf8')).version;
+// What each changed package resolves to in a dependent: a local tarball, or
+// the exact version published on npm
 const tarball = {};
-for (const d of changed) {
+const packDir = mkdtempSync(join(tmpdir(), 'weave-dependents-'));
+const smoke = [];
+if (published) {
+  const deadline = Date.now() + Number(flags.wait ?? 60) * 60_000;
+  for (const d of changed) {
+    const { name } = pkgs[d];
+    const version = versionOf(d);
+    for (;;) {
+      const r = run('npm', ['view', `${name}@${version}`, 'version'], root);
+      if (r.ok && r.out.trim()) break;
+      if (Date.now() > deadline) { console.error(`${name}@${version} is not on npm after ${flags.wait ?? 60} minutes`); process.exit(1); }
+      log(`waiting for ${name}@${version} on npm...`);
+      spawnSync('sleep', ['30']);
+    }
+    tarball[name] = version;
+    // A fresh install of exactly what was published: it installs, and importing it works
+    const dir = mkdtempSync(join(tmpdir(), 'weave-published-'));
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'verify-published', private: true, type: 'module' }));
+    let r = run('npm', ['install', '--no-audit', '--no-fund', `${name}@${version}`], dir);
+    let step = 'install from npm';
+    if (r.ok) {
+      const meta = JSON.parse(readFileSync(join(dir, 'node_modules', ...name.split('/'), 'package.json'), 'utf8'));
+      if (meta.version !== version) r = { ok: false, out: `installed ${meta.version}, expected ${version}` };
+      else if (meta.main || meta.exports) {
+        step = 'import';
+        r = run(process.execPath, ['--input-type=module', '-e', `await import(${JSON.stringify(name)}); process.exit(0)`], dir, 30_000);
+      }
+    }
+    smoke.push({ d: `${name}@${version}`, using: [name], status: r.ok ? 'pass' : 'fail', step, out: r.out });
+    log(`${r.ok ? 'installed and imported' : 'FAILED'} ${name}@${version} from npm`);
+  }
+}
+for (const d of published ? [] : changed) {
   const dir = join(root, d);
   for (const [cmd, args] of [['npm', ['ci', '--no-audit', '--no-fund']], ['npm', ['run', 'build', '--if-present']]]) {
     const r = run(cmd, args, dir);
@@ -95,13 +137,16 @@ for (const d of changed) {
   log(`built ${pkgs[d].name} -> ${file}`);
 }
 
-/** Copies of these packages installed under `dir` that aren't the local tarball. */
+/** Copies of these packages installed under `dir` that aren't what's being tested. */
 function registryCopies(dir, names) {
   const lock = JSON.parse(readFileSync(join(dir, 'package-lock.json'), 'utf8'));
   const stray = [];
   for (const [path, entry] of Object.entries(lock.packages ?? {})) {
     const name = path.slice(path.lastIndexOf('node_modules/') + 'node_modules/'.length);
-    if (path && names.includes(name) && !String(entry.resolved ?? '').startsWith('file:')) stray.push(`${path} from ${entry.resolved ?? 'unknown'}`);
+    if (!path || !names.includes(name)) continue;
+    const resolved = String(entry.resolved ?? '');
+    const ok = published ? entry.version === tarball[name] && resolved.startsWith('https://registry.npmjs.org/') : resolved.startsWith('file:');
+    if (!ok) stray.push(`${path} ${entry.version ?? '?'} from ${resolved || 'unknown'}`);
   }
   return stray;
 }
@@ -130,9 +175,9 @@ for (const d of affected) {
     // Every copy of the changed package in the tree must be the local build;
     // a copy from the registry would make a pass meaningless
     if (r.ok) {
-      step = 'check that the local build is used';
+      step = `check that ${what} is used`;
       const stray = registryCopies(dir, using);
-      if (stray.length) r = { ok: false, out: `Not using the local build: ${stray.join('; ')}` };
+      if (stray.length) r = { ok: false, out: `Not using ${what}: ${stray.join('; ')}` };
     }
     if (r.ok) { step = 'build'; r = run('npm', ['run', 'build', '--if-present'], dir); }
     if (r.ok) { step = 'test'; r = run('npm', ['test'], dir); }
@@ -144,15 +189,16 @@ for (const d of affected) {
 }
 
 // ── Report ────────────────────────────────────────────────
+results.unshift(...smoke);
 const failed = results.filter((r) => r.status === 'fail');
-const lines = ['## Dependents tested against the local build', '', `Changed: ${changed.map((c) => `\`${c}\``).join(', ')}`, '', '| Package | Uses | Result |', '|---|---|---|'];
+const lines = [`## Dependents tested against ${what}`, '', `Changed: ${changed.map((c) => `\`${c}\``).join(', ')}`, '', '| Package | Uses | Result |', '|---|---|---|'];
 for (const r of results) lines.push(`| \`${r.d}\` | ${r.using.map((u) => `\`${u.replace('@weave_protocol/', '')}\``).join(', ')} | ${r.status === 'pass' ? 'pass' : r.status === 'skip' ? `skipped (${r.why})` : `**failed at ${r.step}**`} |`);
 log('\n' + lines.join('\n'));
 for (const r of failed) {
   // The lines of a failing test, from node:test and vitest output
   const detail = r.out.split('\n').filter((l) => /not ok|✗|×|FAIL|AssertionError|Error:|error:/.test(l)).slice(0, 15).join('\n');
-  log(`\n── ${r.d} failed at ${r.step} (using local ${r.using.join(', ')}) ──\n${detail || r.out.slice(-2000)}`);
-  if (gha) log(`::error title=${r.d} breaks against local ${r.using.join(', ')}::${r.step} failed. ${(detail.split('\n')[0] ?? '').replace(/[\r\n]/g, ' ').slice(0, 200)}`);
+  log(`\n── ${r.d} failed at ${r.step} (using ${what} of ${r.using.join(', ')}) ──\n${detail || r.out.slice(-2000)}`);
+  if (gha) log(`::error title=${r.d} breaks against ${what} of ${r.using.join(', ')}::${r.step} failed. ${(detail.split('\n')[0] ?? r.out.slice(0, 200)).replace(/[\r\n]/g, ' ').slice(0, 200)}`);
 }
 if (gha && process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
 process.exit(failed.length ? 1 : 0);
