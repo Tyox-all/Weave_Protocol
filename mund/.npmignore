@@ -3,3 +3,4 @@ server.json
 *.bak
 .env
 .DS_Store
+training/

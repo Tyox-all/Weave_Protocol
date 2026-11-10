@@ -549,6 +549,15 @@ export const CODE_PATTERNS: DetectionRule[] = [
 // ============================================================================
 
 export const INJECTION_PATTERNS: DetectionRule[] = [
+  {
+    id: 'injection_classifier',
+    name: 'Likely Prompt Injection (local classifier)',
+    description: 'A small offline model over word and character n-grams flags text that reads like an attempt to override an agent\'s instructions, including paraphrases no pattern names. Never blocks on its own. Set MUND_CLASSIFIER=0 or disable this rule to turn it off.',
+    type: 'injection',
+    severity: 'medium',
+    action: 'alert',
+    enabled: true
+  },
   // Patterns run on normalized text: zero-width characters removed, Unicode
   // NFKC, curly quotes straightened, whitespace collapsed, and punctuation
   // other than . , ! ? ' " ( ) - replaced by spaces (so "System:" reads "System").
@@ -577,7 +586,7 @@ export const INJECTION_PATTERNS: DetectionRule[] = [
     name: 'Prompt Injection - Addressed to the AI',
     description: 'Content that speaks to an AI reading it, a sign it was planted for an agent rather than written for a person',
     type: 'injection',
-    pattern: String.raw`(?i)\bif\s+you(?:'re|\s+are)\s+(?:an?\s+)?(?:ai|llm|large\s+language\s+model|language\s+model|ai\s+assistant|ai\s+agent|ai\s+model|chatbot|gpt|chatgpt|claude|gemini|copilot)\b|\bif\s+you(?:'re|\s+are)\s+reading\s+this,?\s+(?:you\s+)?(?:must|should|need\s+to|have\s+to|are\s+required)\b|\b(?:note|message|instructions?)\s+(?:to|for)\s+(?:the\s+|any\s+|all\s+)?(?:ai|llm|ai\s+assistant|ai\s+agent|language\s+model|chatbot)s?\b|\b(?:any|all)\s+ai\s+(?:agents?|assistants?|models?|systems?)\s+(?:from|must|are|should|reading)\b|\b(?:ai|llm)\s+(?:agents?|assistants?|models?)\s*,?\s+(?:must|should|shall|please|you\s+must|in\s+addition|are\s+(?:required|instructed|forbidden|not\s+allowed|prohibited))\b|\b(?:ai|llm)\s+must\s+(?:refuse|ignore|not|always|never|include|respond|reply|send)\b`,
+    pattern: String.raw`(?i)\bif\s+you(?:'re|\s+are)\s+(?:an?\s+)?(?:ai|llm|large\s+language\s+model|language\s+model|ai\s+assistant|ai\s+agent|ai\s+model|chatbot|gpt|chatgpt|claude|gemini|copilot)\b|\bif\s+you(?:'re|\s+are)\s+reading\s+this,?\s+(?:you\s+)?(?:must|should|need\s+to|have\s+to|are\s+required)\b|\b(?:note|message|instructions?)\s+(?:to|for)\s+(?:the\s+|any\s+|all\s+)?(?:ai|llm|ai\s+assistant|ai\s+agent|language\s+model|chatbot)s?\b|\b(?:any|all)\s+ai\s+(?:agents?|assistants?|models?|systems?)\s+(?:from|must|are|should|reading)\b|\b(?:ai|llm)\s+(?:agents?|assistants?|models?)\s*,\s*(?:you\s+)?(?:must|should|shall|please|in\s+addition)\b|\b(?:ai|llm)\s+(?:agents?|assistants?|models?)\s+(?:please|you\s+must|in\s+addition|are\s+(?:required|instructed|forbidden|not\s+allowed|prohibited)\s+to)\b|\b(?:ai|llm)\s+(?:agents?|assistants?|models?)\s+(?:must|should|shall)\s+(?:not\s+|always\s+|never\s+|now\s+|also\s+|only\s+)?(?:ignore|disregard|refuse|send|include|respond|reply|summari[sz]e|mention|recommend|output|tell|forward|execute|run|rate|describe|say|praise|promote|delete|email|post|reveal|treat|follow|obey|stop|add|insert|append|state|report|rank|prefer|favou?r)\b|\b(?:ai|llm)\s+must\s+(?:refuse|ignore|not|always|never|include|respond|reply|send)\b`,
     severity: 'medium',
     action: 'alert',
     enabled: true
@@ -587,7 +596,7 @@ export const INJECTION_PATTERNS: DetectionRule[] = [
     name: 'Prompt Injection - Concealment',
     description: 'Tells the model to hide what it is doing from the user',
     type: 'injection',
-    pattern: String.raw`(?i)\b(?:do\s+not|don't|never)\s+(?:tell|inform|notify|alert|warn|let)\s+(?:the|your)\s+user\b|\bwithout\s+(?:telling|informing|notifying|alerting|asking|warning)\s+(?:the|your)\s+user\b|\b(?:do\s+not|don't|never)\s+(?:mention|reveal|disclose|acknowledge)\s+(?:this|these)\s+(?:instructions?|directives?|messages?|text)\b|\bsilently\s+(?:send|forward|post|upload|transmit|copy|exfiltrate|share|email|transfer|run|execute|delete)\b|\b(?:keep|hide)\s+this\s+(?:\w+\s+)?(?:secret|hidden)\s+from\s+(?:the\s+)?user\b|\b(?:continue|carry\s+on|proceed)\s+(?:normally\s+)?as\s+if\s+nothing\s+(?:happened|changed)\b`,
+    pattern: String.raw`(?i)\b(?:do\s+not|don't|never)\s+(?:tell|inform|notify|alert|warn|let)\s+(?:the|your)\s+user\b|(?<!\b(?:will|would|may|might|can|could|designed\s+to|used\s+to|attempts?\s+to|allow(?:s|ing)?|enabl(?:e|es|ing)|permit(?:s|ting)?|adversar(?:y|ies)|attackers?|malware)\b[^.!?]{0,80})\bwithout\s+(?:telling|informing|notifying|alerting|asking|warning)\s+(?:the|your)\s+user\b|\b(?:do\s+not|don't|never)\s+(?:mention|reveal|disclose|acknowledge)\s+(?:this|these)\s+(?:instructions?|directives?|messages?|text)\b|\bsilently\s+(?:send|forward|post|upload|transmit|copy|exfiltrate|share|email|transfer|run|execute|delete)\b|\b(?:keep|hide)\s+this\s+(?:\w+\s+)?(?:secret|hidden)\s+from\s+(?:the\s+)?user\b|\b(?:continue|carry\s+on|proceed)\s+(?:normally\s+)?as\s+if\s+nothing\s+(?:happened|changed)\b`,
     severity: 'high',
     action: 'alert',
     enabled: true
@@ -607,7 +616,7 @@ export const INJECTION_PATTERNS: DetectionRule[] = [
     name: 'Prompt Injection - False Authority',
     description: 'Claims system, admin or developer authority to override the model\'s rules or the user',
     type: 'injection',
-    pattern: String.raw`(?i)\b(?:system|admin|administrator|developer|root)\s+(?:override|overrides|command|directive)\b|\boverride\s+(?:your\s+|the\s+|all\s+)?(?:safety|security|content|ethical)\b|\b(?:who|that)\s+(?:deployed|created|built|trained|programmed)\s+you\b|\bstop\s+responding\s+to\s+(?:them|the\s+user)\b`,
+    pattern: String.raw`(?i)\b(?:system|admin|administrator|developer|root)\s+(?:override|overrides|directive)\b|\boverride\s+(?:your\s+|the\s+|all\s+)?(?:safety|security|content|ethical)\b|\b(?:who|that)\s+(?:deployed|created|built|trained|programmed)\s+you\b|\bstop\s+responding\s+to\s+(?:them|the\s+user)\b`,
     severity: 'high',
     action: 'alert',
     enabled: true
@@ -617,7 +626,7 @@ export const INJECTION_PATTERNS: DetectionRule[] = [
     name: 'Prompt Injection - Jailbreak Attempt',
     description: 'Persona and framing jailbreaks: unrestricted personas, no-ethics claims, developer mode, forced prefixes',
     type: 'injection',
-    pattern: String.raw`(?i)\bDAN\s+mode\b|\bdo\s+anything\s+now\b|\bpretend\s+you\s+(?:are|have)\s+no\s+(?:restrictions|limits)\b|\bact\s+as\s+(?:if|an?)\s+(?:unrestricted|unfiltered)\b|\b(?:unfiltered|uncensored|amoral|unrestricted|unconstrained|unaligned|jailbroken)\s+(?:and\s+\w+\s+)?(?:ai|assistant|chatbot|bot|model|mode|version|character|persona|llm)\b|\b(?:no|without|doesn't\s+have\s+any|does\s+not\s+have\s+any|free\s+(?:of|from)|not\s+bound\s+by)\s+(?:any\s+)?(?:ethical|moral|safety|content)(?:\s+or\s+(?:ethical|moral|safety))?\s+(?:guidelines|restrictions|filters|limits|polic(?:y|ies)|principles|constraints|boundaries)\b|\bbypass(?:es|ing)?\s+(?:all\s+|any\s+)?(?:content|safety|ethical)\s+(?:polic(?:y|ies)|filters|guidelines|restrictions)\b|\bnever\s+refuses?\b|\bdeveloper\s+mode\s+(?:enabled|output|response)\b|\bwith\s+developer\s+mode\b|\bstarting\s+with\s+exactly\b|\b(?:start|begin)\s+(?:your\s+)?(?:response|reply|answer)\s+with\s+exactly\b|\b(?:act|pretend|play|roleplay)\s+as\s+my\s+(?:deceased|late|dead)\b`,
+    pattern: String.raw`(?i)\bDAN\s+mode\b|\bdo\s+anything\s+now\b|\bpretend\s+you\s+(?:are|have)\s+no\s+(?:restrictions|limits)\b|\bact\s+as\s+(?:if|an?)\s+(?:unrestricted|unfiltered)\b|\b(?:unfiltered|uncensored|amoral|unrestricted|unconstrained|unaligned|jailbroken)\s+(?:and\s+\w+\s+)?(?:ai|assistant|chatbot|bot|model|mode|version|character|persona|llm)\b|\b(?:no|without|doesn't\s+have\s+any|does\s+not\s+have\s+any|free\s+(?:of|from)|not\s+bound\s+by)\s+(?:any\s+)?(?:ethical|moral|safety|content)(?:\s+or\s+(?:ethical|moral|safety))?\s+(?:guidelines|restrictions|filters|limits|polic(?:y|ies)|principles|constraints|boundaries)\b|(?<!\b(?:will|would|may|might|can|could|designed\s+to|used\s+to|attempts?\s+to|allow(?:s|ing)?|enabl(?:e|es|ing)|permit(?:s|ting)?|adversar(?:y|ies)|attackers?|malware)\b[^.!?]{0,80})\bbypass\s+(?:all\s+|any\s+|your\s+|the\s+)?(?:content|safety|ethical)\s+(?:polic(?:y|ies)|filters?|guidelines|restrictions)\b|\bnever\s+refuses?\b|\bdeveloper\s+mode\s+(?:enabled|output|response)\b|\bwith\s+developer\s+mode\b|\bstarting\s+with\s+exactly\b|\b(?:start|begin)\s+(?:your\s+)?(?:response|reply|answer)\s+with\s+exactly\b|\b(?:act|pretend|play|roleplay)\s+as\s+my\s+(?:deceased|late|dead)\b`,
     severity: 'high',
     action: 'alert',
     enabled: true
@@ -627,7 +636,7 @@ export const INJECTION_PATTERNS: DetectionRule[] = [
     name: 'Prompt Injection - Decode and Execute',
     description: 'Asks the model to decode or translate hidden text and then act on it',
     type: 'injection',
-    pattern: String.raw`(?i)\b(?:decode|translate|decrypt|deobfuscate|unscramble)\b[^.\n]{0,80}\b(?:and|then)\s+(?:execute|follow|run|obey|perform|carry\s+out|act\s+on)\b`,
+    pattern: String.raw`(?i)(?<!\b(?:will|would|may|might|can|could|designed\s+to|used\s+to|attempts?\s+to|allow(?:s|ing)?|enabl(?:e|es|ing)|permit(?:s|ting)?|adversar(?:y|ies)|attackers?|malware)\b[^.!?]{0,80})\b(?:decode|translate|decrypt|deobfuscate|unscramble)\b[^.\n]{0,80}\b(?:and|then)\s+(?:execute|follow|run|obey|perform|carry\s+out|act\s+on)\b`,
     severity: 'high',
     action: 'alert',
     enabled: true
@@ -657,7 +666,7 @@ export const INJECTION_PATTERNS: DetectionRule[] = [
     name: 'Prompt Injection - User Data Harvest',
     description: 'Asks the model to collect or output the user\'s private data',
     type: 'injection',
-    pattern: String.raw`(?i)\b(?:respond|reply|include|output|print|list|share|extract|collect|harvest|gather|reveal|send)\s+(?:with\s+)?(?:\S+\s+){0,3}?(?:the\s+)?(?:user's|users'|their)\s+(?:\w+\s+){0,2}?(?:conversation\s+history|chat\s+history|messages|e-?mail\s+addresses|location|credentials|passwords?|session|cookies|account\s+details|contacts)\b`,
+    pattern: String.raw`(?i)(?<!\b(?:will|would|may|might|can|could|designed\s+to|used\s+to|attempts?\s+to|allow(?:s|ing)?|enabl(?:e|es|ing)|permit(?:s|ting)?|adversar(?:y|ies)|attackers?|malware)\b[^.!?]{0,80})\b(?:respond|reply|include|output|print|list|share|extract|collect|harvest|gather|reveal|send)\s+(?:with\s+)?(?:\S+\s+){0,3}?(?:the\s+)?(?:user's|users'|their)\s+(?:\w+\s+){0,2}?(?:conversation\s+history|chat\s+history|messages|e-?mail\s+addresses|location|credentials|passwords?|session|cookies|account\s+details|contacts)\b`,
     severity: 'high',
     action: 'alert',
     enabled: true
@@ -680,6 +689,26 @@ export const INJECTION_PATTERNS: DetectionRule[] = [
     pattern: String.raw`(?i)\bwhat\s+(?:tools|capabilities|urls?|url\s+patterns|domains|commands|actions|files|paths)\b[^?.]{0,60}\b(?:are\s+you|you\s+are)\s+(?:\w+\s+)?(?:allowed|permitted|denied|forbidden|not\s+allowed|blocked)\b|\b(?:output|reveal|print|show|share|dump|expose)\s+(?:me\s+)?your\s+(?:(?:full|raw|hidden|internal|private)\s+)*(?:reasoning\s+trace|chain[\s-]of[\s-]thought|hidden\s+reasoning|internal\s+reasoning)\b|\b(?:stay|remain)\s+in\s+character\b`,
     severity: 'low',
     action: 'log',
+    enabled: true
+  },
+  {
+    id: 'harmful_artifact_request',
+    name: 'Request for a Working Malicious Artifact',
+    description: 'Asks the agent to produce working malware or a phishing kit: an imperative request to write or build a keylogger, ransomware, phishing email, credential harvester or similar, with cues that it should work for real (complete, convincing, undetectable, in full technical detail). Descriptions of such tools, and defensive guidance, are not requests.',
+    type: 'injection',
+    pattern: String.raw`(?i)(?:^|[.!?:]\s+|\b(?:please|can\s+you|could\s+you|would\s+you|i\s+need\s+you\s+to|i\s+want\s+you\s+to|help\s+me|how\s+to|your\s+task\s+is\s+to|go\s+ahead\s+and)\s+)(?:write|generate|create|build|code|develop|produce|craft|compose|implement|make)\b(?:(?!\b(?:detect\w*|detection|rules?|signatures?|yara|sigma|scanners?|filters?|classifiers?|defen[cs]\w*|protect\w*|against|analy[sz]\w*|identif\w*|block\w*|prevent\w*|mitigat\w*)\b)[^.!?]){0,90}?\b(?:key\s?loggers?|ransomware|phishing\s+(?:e-?mails?|messages?|pages?|sites?|kits?|templates?|campaigns?|links?)|credential[\s-](?:harvest(?:er|ing)|stealers?|collection)|password\s+stealers?|info[\s-]?stealers?|stalkerware|spyware|rootkits?|botnets?|(?:remote\s+access\s+)?trojans?)\b(?=[\s\S]{0,300}?\b(?:complete|working|fully\s+functional|functional|convincing|realistic|deployable|undetectable|evad(?:e|es|ing)\s+(?:antivirus|av|edr|detection)|technical\s+accuracy|in\s+(?:full\s+)?detail|impersonat(?:e|es|ing)|captures?|steals?|exfiltrat(?:e|es))\b)`,
+    severity: 'medium',
+    action: 'alert',
+    enabled: true
+  },
+  {
+    id: 'prompt_injection_policy_probe',
+    name: 'Prompt Injection - Guardrail Mapping',
+    description: 'Maps the agent\'s guardrails: asks which tools, URLs or commands it may use and, in the same request, which are denied or need approval; or asks for its hidden reasoning together with the rules or constraints it follows',
+    type: 'injection',
+    pattern: String.raw`(?i)\b(?:tools?|capabilit(?:y|ies)|urls?|url\s+patterns?|domains?|commands?|actions?|endpoints?|apis?)\b[^.?!\n]{0,40}\b(?:are\s+you|you\s+are|you're)\s+(?:\w+\s+)?(?:allowed|permitted)\s+to\b(?=[\s\S]{0,400}?\b(?:denied|forbidden|blocked|prohibited|not\s+allowed|disallowed|(?:require|need)s?\s+(?:human\s+|user\s+|explicit\s+)?approval)\b)|\b(?:constraints?|restrictions?|guidelines?|rules?|instructions?|guardrails?|polic(?:y|ies))\b[\s\S]{0,400}?\b(?:output|reveal|print|show|share|dump|expose|include)\s+(?:me\s+)?(?:your\s+)?(?:(?:full|raw|hidden|internal|private|complete)\s+)*(?:reasoning\s+trace|chain[\s-]of[\s-]thought|hidden\s+reasoning|internal\s+reasoning)\b|\b(?:output|reveal|print|show|share|dump|expose|include)\s+(?:me\s+)?(?:your\s+)?(?:(?:full|raw|hidden|internal|private|complete)\s+)*(?:reasoning\s+trace|chain[\s-]of[\s-]thought|hidden\s+reasoning|internal\s+reasoning)\b[\s\S]{0,400}?\b(?:constraints?|restrictions?|guidelines?|rules?|instructions?|guardrails?|polic(?:y|ies))\b`,
+    severity: 'medium',
+    action: 'alert',
     enabled: true
   }
 ];
