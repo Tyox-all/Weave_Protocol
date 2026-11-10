@@ -1,0 +1,60 @@
+name: Verify release
+
+# After every run of "Publish All Packages", check what actually landed on npm.
+# The publish workflow itself is not changed: this one starts when it finishes.
+#
+# For each package the run published (named by its sbom-<package> artifacts),
+# at the exact commit that was published:
+#   - wait for the version to appear on npm;
+#   - install it fresh and import it;
+#   - run the tests of every package that depends on it against that
+#     published version, and fail if any copy in their tree is another version.
+#
+# The Dependents workflow covers before a release: every push and PR is tested
+# against the local build. See CONTRIBUTING.md, "Why we test everything".
+on:
+  workflow_run:
+    workflows: ['Publish All Packages']
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      packages:
+        description: 'Package dirs to verify, comma-separated (e.g. mund,api)'
+        required: true
+
+permissions:
+  contents: read
+  actions: read   # list the publish run's artifacts
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The commit that was published, so package.json names the versions on npm
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Which packages were published
+        id: pick
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED: ${{ inputs.packages }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ -n "$REQUESTED" ]; then
+            PKGS="$REQUESTED"
+          else
+            PKGS=$(gh api "repos/$REPO/actions/runs/$RUN_ID/artifacts" --paginate --jq '.artifacts[].name' | sed -n 's/^sbom-//p' | paste -sd, -)
+          fi
+          echo "packages=$PKGS" >> "$GITHUB_OUTPUT"
+          echo "Verifying: ${PKGS:-none}"
+      - name: Verify on npm, then test dependents against the published versions
+        if: steps.pick.outputs.packages != ''
+        env:
+          PKGS: ${{ steps.pick.outputs.packages }}
+        run: node scripts/test-dependents.mjs --changed="$PKGS" --source=published --wait=30

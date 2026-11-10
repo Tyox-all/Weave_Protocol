@@ -61,13 +61,20 @@ That gap shipped a real bug. Mund 0.6.0 added a classifier finding that returned
 
 So, for every package:
 - **Test what it outputs, not just what it detects.** A new kind of finding needs a test that it never echoes secrets or personal data (see `mund/tests/analyzers/redaction.test.ts`).
-- **Test its dependents against the change.** On every push and pull request, the [Dependents](.github/workflows/dependents.yml) workflow builds each changed package. It then runs the tests of every package that depends on it, directly or through another Weave package, against that build. It checks that every copy in the dependent's tree is the local build, so a pass can't come from the npm version.
+- **Test its dependents against the change, before a release.** The [Dependents](.github/workflows/dependents.yml) workflow runs on every push and pull request. It builds each changed package and runs the tests of every package that depends on it, directly or through another Weave package, against that build. It checks that every copy in the dependent's tree is the local build, so a pass can't come from the npm version. Before publishing, run it for exactly the packages being released (Actions → Dependents → Run workflow, or the command below), and publish only if it passes.
+- **Check what landed on npm, after a release.** The [Verify release](.github/workflows/verify-release.yml) workflow starts whenever "Publish All Packages" finishes. The publish workflow itself is unchanged. For each package that run published, at the commit it published, it:
+  1. waits for the version to appear on npm;
+  2. installs it fresh and imports it;
+  3. runs every dependent's tests against that exact published version.
+
+  A published package can differ from the local build, through a missing file or a bad `.npmignore`, and this catches it. Run against the deprecated Mund 0.6.0, it fails `api` on "secret is masked".
 
 Run it yourself before you open a PR:
 
 ```bash
 node scripts/test-dependents.mjs --base=origin/main     # packages changed on your branch
 node scripts/test-dependents.mjs --changed=mund,ward    # or name them
+node scripts/test-dependents.mjs --changed=mund --source=published   # what's on npm for mund/package.json's version
 ```
 
 It edits each dependent's `package.json` and lockfile while it runs, and restores both afterwards. Run `npm ci` in a dependent to get its `node_modules` back to the lockfile.
