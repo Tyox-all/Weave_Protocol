@@ -1,0 +1,48 @@
+name: Dependents
+
+# Each package's CI job resolves its @weave_protocol dependencies from npm,
+# so a change that breaks a dependent would only show up after publishing.
+# On every push and PR, this builds every changed package and runs the tests of every package
+# that depends on it (directly or through another Weave package) against that
+# local build. See scripts/test-dependents.mjs.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      changed:
+        description: 'Packages to treat as changed, comma-separated (e.g. mund,ward)'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  dependents:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Test dependents against the local build
+        env:
+          CHANGED: ${{ inputs.changed }}
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.base_ref }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [ -n "$CHANGED" ]; then
+            node scripts/test-dependents.mjs --changed="$CHANGED"
+          elif [ "$EVENT" = pull_request ]; then
+            node scripts/test-dependents.mjs --base="origin/$PR_BASE"
+          elif [ -n "$BEFORE" ] && [ "$BEFORE" != 0000000000000000000000000000000000000000 ] && git cat-file -e "$BEFORE" 2>/dev/null; then
+            # A push: what this push changed
+            node scripts/test-dependents.mjs --base="$BEFORE"
+          else
+            # A new branch: everything it changed from main
+            node scripts/test-dependents.mjs --base=origin/main
+          fi

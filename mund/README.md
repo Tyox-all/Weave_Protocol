@@ -11,7 +11,7 @@ Mund (Old English: "protection, guardian") is a real-time security scanner for A
 
 ## 🆕 What's new
 
-**0.6.1: findings never echo secrets.** In 0.6.0, a classifier finding could include the text window it scored, secrets and email addresses included. The exfiltration and code-pattern findings could too, from 0.5.x. Every finding's excerpt now has secret and personal values redacted, including a value cut off at the 100-character limit. Secret and PII findings were already masked. Upgrade if you log Mund findings or send them to webhooks.
+**0.6.1: findings never echo secrets.** In 0.6.0, a classifier finding could include the text window it scored, secrets and email addresses included. The exfiltration and code-pattern findings could too, from 0.5.x. Every finding's excerpt now has secret and personal values redacted, including a value cut off at the 100-character limit. Secret and PII findings were already masked. Upgrade if you log Mund findings or send them to webhooks. Why it slipped through, and the CI check that now runs on every commit: [CONTRIBUTING.md](../CONTRIBUTING.md#why-we-test-everything-on-every-commit).
 
 **0.6.0: a local injection classifier.** A small model now backs up the rules. It runs offline in under a millisecond, with no API key or download, and catches paraphrased overrides that no pattern names. Measured on public test sets: Gandalf goes from 65% to 88%, jackhhao jailbreaks from 57% to 77%, and SPML (a source it never trained on) from 24% to 38%. Benign texts flagged rose from 0 to 2 of 2,062 (0.10%), and none of Mund's benign corpus. It warns and never blocks on its own; `MUND_CLASSIFIER=0` turns it off. Method, every number, and what it can't catch: [DETECTION_CLAIMS.md](DETECTION_CLAIMS.md#local-classifier-060).
 
