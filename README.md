@@ -64,6 +64,47 @@ npm install @weave_protocol/full
 
 ### 🗓️ November 2026 update — hardening
 
+#### ✅ How we check every release: before, after, and with our own tools
+Every check below runs in CI. The release workflow itself (`publish-all.yml`) is unchanged.
+
+**On every push and pull request:**
+- **Each package:** a clean `npm ci`, build and full test suite. CI also checks that importing the package starts nothing and prints nothing, and runs `npm audit` on production dependencies.
+- **Its dependents, against the change** ([Dependents](.github/workflows/dependents.yml)). Every changed package is built and packed locally. Then every package that depends on it, directly or through another Weave package, runs its tests against that build. The check fails if any copy of the package in a dependent's tree still comes from npm, so a pass means the change itself was tested.
+- **Our own attack tools** ([self red-team](#️-self-red-team-on-every-push)). The [Adversary](adversary) corpus, the attacks behind [AgentSecBench](agentsecbench), goes through Mund and Ward offline, with no model and no keys. CI fails if detection drops or false positives rise past the committed baseline.
+
+**Before a release:** we run the Dependents check for exactly the packages being published, and publish only if it passes. This is a step in our release routine, not an automated gate.
+
+**After a release** ([Verify release](.github/workflows/verify-release.yml)). Whenever the publish workflow finishes, this checks what actually landed on npm. For each package that was published, it:
+1. waits for the version on the registry;
+2. installs it fresh into an empty project and imports it;
+3. runs every dependent's tests against that exact published version.
+
+A published package can differ from the local build, and this catches it.
+
+**Detection claims on data we didn't write.** Mund's detection numbers come from public datasets it was never trained or tuned on: deepset, Gandalf, jackhhao, SPML, Mosscap, InjecAgent. False positives are measured on 2,062 benign texts and 5,825 MITRE ATT&CK and OWASP texts. The scripts in [`mund/training`](mund/training) fetch the data and reproduce every number, and the shipped model, byte for byte. See [DETECTION_CLAIMS.md](mund/DETECTION_CLAIMS.md#local-classifier-060).
+
+**Why this exists.** We shipped a bug that these checks now catch. Mund 0.6.0's new classifier findings included the text they scored, unmasked, so secrets and email addresses could reach logs and webhooks. Mund's tests covered what it detected, not what it output. `api` already had a test that would have failed, but it only ran against 0.6.0 after release. We fixed it in Mund 0.6.1 and deprecated 0.6.0 on npm. With the fix reverted, the Dependents check now fails on that `api` test; run against the published 0.6.0, so does Verify release. The full account is in [CONTRIBUTING.md](CONTRIBUTING.md#why-we-test-everything-on-every-commit).
+
+#### 🧠 Mund 0.6: a local injection classifier, and every red-team category at 100%
+A small model now backs up Mund's rules: hashed word and character n-grams, 208 KB. It runs offline in under a millisecond, with no API key or download, and catches paraphrased instructions that no pattern names. A hit is a warning; it never blocks on its own. On public test sets it was never trained on:
+
+| Test set | Rules only | Rules + classifier |
+|---|---|---|
+| Gandalf (Lakera) | 65.2% | **88.4%** |
+| jackhhao jailbreaks | 57.0% | **77.0%** |
+| SPML (a source it never saw) | 24.1% | **38.3%** |
+| Benign texts flagged | 0 of 2,062 | 2 of 2,062 |
+
+It does nothing for an attacker's request written as a polite sentence inside data (InjecAgent base, 1.6%). That needs to know what the user asked for, which is Ward's and Hundredmen's job.
+
+Two new rules cover the rest:
+- **guardrail mapping:** asking which tools are allowed and which are denied, or for hidden reasoning plus its rules;
+- **requests for working malware or phishing kits:** descriptions and defensive work stay clean.
+
+That takes every category of our self red-team to 100%: jailbreak was 80%, extraction 60%.
+
+Mund also misfires much less on security writing. Across 5,825 ATT&CK and OWASP texts, the texts it flags fell from 86 to 15, and all 15 quote real injection strings. Use **0.6.1** (see above).
+
 #### ⛓️ Receipts anchored on-chain (Ward 0.3.9, Dōmere 1.7.0)
 A hash chain can't show that its newest entries were cut off. `weave-ward receipts checkpoint` signs a receipt log's current head. Dōmere's `domere_anchor_receipts` batches checkpoints from any number of agents into one Merkle root, and prepares the Solana or Ethereum transaction that stores it. Your wallet signs it; Dōmere never holds keys or broadcasts. `weave-ward receipts verify --checkpoints=bundle.json` then fails if any receipt up to an anchored checkpoint was removed or rewritten.
 
