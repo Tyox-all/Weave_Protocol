@@ -124,11 +124,41 @@ export function parseYAML(yaml: string): Record<string, unknown> {
           j++;
           continue;
         }
-        // Not a list item — abort, treat key as empty
+        // Not a list item: if nothing was listed yet, read a one-level mapping
+        // ("model_jurisdictions:" then "  deny: [cn]"). A child key may hold a
+        // scalar, an inline list, or a list on the lines below it. (Ward 0.3.10)
+        if (items.length === 0 && nextTrim.includes(":")) {
+          const map: Record<string, unknown> = {};
+          while (j < lines.length) {
+            const l = lines[j];
+            const t = l.trim();
+            if (t === "" || t.startsWith("#")) { j++; continue; }
+            const ind = l.length - l.trimStart().length;
+            if (ind === 0 || ind < nextIndent) break;
+            const c = t.indexOf(":");
+            if (c === -1 || t.startsWith("- ")) break;
+            const k = t.slice(0, c).trim();
+            const v = t.slice(c + 1).trim();
+            j++;
+            if (v !== "") { map[k] = coerce(v); continue; }
+            const list: unknown[] = [];
+            while (j < lines.length) {
+              const lt = lines[j].trim();
+              const li = lines[j].length - lines[j].trimStart().length;
+              if (lt === "" || lt.startsWith("#")) { j++; continue; }
+              if (li > ind && lt.startsWith("- ")) { list.push(coerce(lt.slice(2))); j++; continue; }
+              break;
+            }
+            map[k] = list;
+          }
+          result[key] = map;
+          i = j;
+          break;
+        }
         break;
       }
-      result[key] = items;
-      i = j;
+      if (result[key] === undefined) result[key] = items;
+      i = Math.max(i, j);
     } else {
       result[key] = coerce(rest);
       i++;

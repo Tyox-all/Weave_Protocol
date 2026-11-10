@@ -6,6 +6,9 @@
  */
 
 import { splitFrontmatter, parseYAML } from "./yaml.js";
+
+/** Jurisdictions Ward knows model endpoints for (see enforcer/egress.ts) */
+const KNOWN_JURISDICTIONS = ["us", "cn", "eu", "ca"];
 import { parseSpendingLimits } from "./spending.js";
 import { splitSections, extractStructuredBlock, type MarkdownSection } from "./markdown.js";
 import type {
@@ -125,6 +128,21 @@ export function parseAndValidate(source: string): ValidationResult {
       message: "Verification is required but no backend or blockchain is specified.",
       suggestion: "Set `backend: domere` and `blockchain: solana` (or similar).",
     });
+  }
+
+  // A misspelled code in allow would block every model endpoint; in deny, none
+  const mj = policy.network?.model_jurisdictions;
+  for (const list of ["allow", "deny"] as const) {
+    for (const code of mj?.[list] ?? []) {
+      if (!KNOWN_JURISDICTIONS.includes(code)) {
+        warnings.push({
+          level: "warning",
+          section: "network",
+          message: `Unknown jurisdiction "${code}" in model_jurisdictions.${list}.`,
+          suggestion: `Use one of: ${KNOWN_JURISDICTIONS.join(", ")}.`,
+        });
+      }
+    }
   }
 
   if (policy.behavioral?.maxCostUSD === undefined && policy.behavioral?.maxRuntimeSeconds === undefined) {
@@ -255,10 +273,16 @@ function parseNetwork(y: Record<string, unknown>): NetworkPolicy {
       .filter((r): r is { url: string } => r !== null && !!r.url);
   };
 
+  const codes = (raw: unknown) => {
+    const list = Array.isArray(raw) ? raw : typeof raw === "string" ? raw.replace(/^\[|\]$/g, "").split(",") : undefined;
+    return list?.map((c) => String(c).trim().toLowerCase().replace(/^["']|["']$/g, "")).filter(Boolean);
+  };
+  const mj = y.model_jurisdictions as Record<string, unknown> | undefined;
   return {
     allow: toRules(y.allow),
     deny: toRules(y.deny),
     default: y.default as "allow" | "deny" | undefined,
+    ...(mj && typeof mj === "object" ? { model_jurisdictions: { allow: codes(mj.allow), deny: codes(mj.deny) } } : {}),
   };
 }
 
