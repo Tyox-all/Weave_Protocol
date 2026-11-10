@@ -14,6 +14,8 @@ Part of the [Weave Protocol Security Suite](https://github.com/Tyox-all/Weave_Pr
 
 ## 🆕 What's new
 
+**1.6.2: Mund 0.6.1.** The scan endpoints use Mund's new local injection classifier and rules. Results can now include `injection_classifier`, `prompt_injection_policy_probe` and `harmful_artifact_request` findings, all at warn level.
+
 **1.6.0: DNS-rebinding protection.** On its default loopback bind, the API answers only requests addressed to `localhost`, `127.0.0.1` or `[::1]`. A web page that rebinds its domain to your machine gets `421`. Add names with `WEAVE_ALLOWED_HOSTS`.
 
 **1.4.0–1.5.1: a dashboard of real decisions.**
