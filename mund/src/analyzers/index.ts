@@ -3,6 +3,7 @@
  * Analyzers Index - Exports all analyzer modules
  */
 
+import { compileRulePattern } from './regex.js';
 export { SecretScanner } from './secret-scanner.js';
 export { PIIDetector } from './pii-detector.js';
 export { CodeAnalyzer } from './code-analyzer.js';
@@ -37,6 +38,34 @@ export function getAnalyzers(): IAnalyzer[] {
 /**
  * Create analyzer engine that runs all analyzers
  */
+/** Every secret and PII value the content's secret and PII rules match. */
+export function sensitiveValues(content: string, rules: import('../types.js').DetectionRule[]): string[] {
+  const out = new Set<string>();
+  for (const r of rules) {
+    if ((r.type !== 'secret' && r.type !== 'pii') || !r.enabled || !r.pattern) continue;
+    try {
+      const re = compileRulePattern(r.pattern, 'g');
+      for (const m of content.matchAll(re)) if (m[0].length >= 4) out.add(m[0]);
+    } catch { /* invalid custom rule */ }
+  }
+  return [...out].sort((a, b) => b.length - a.length);
+}
+
+/** Replace sensitive values in an excerpt, including one cut off by truncation. */
+export function redactValues(excerpt: string, values: string[]): string {
+  let out = excerpt;
+  for (const v of values) out = out.split(v).join('[REDACTED]');
+  if (out.endsWith('...')) {
+    const body = out.slice(0, -3);
+    for (const v of values) {
+      for (let k = Math.min(v.length - 1, body.length); k >= 4; k--) {
+        if (body.endsWith(v.slice(0, k))) return body.slice(0, body.length - k) + '[REDACTED]...';
+      }
+    }
+  }
+  return out;
+}
+
 export class AnalyzerEngine {
   private analyzers: IAnalyzer[];
 
@@ -53,6 +82,16 @@ export class AnalyzerEngine {
         allIssues.push(...issues);
       } catch (error) {
         console.error(`Error in analyzer ${analyzer.name}:`, error);
+      }
+    }
+
+    // Findings are logged, stored and sent to webhooks. Secret and PII
+    // findings mask their own matches; every other finding's excerpt must not
+    // carry a secret or personal value from the content either.
+    const values = sensitiveValues(content, rules);
+    if (values.length) {
+      for (const issue of allIssues) {
+        if (issue.type !== 'secret' && issue.type !== 'pii' && issue.match) issue.match = redactValues(issue.match, values);
       }
     }
 

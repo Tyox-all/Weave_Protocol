@@ -20,8 +20,17 @@ export class InjectionDetector implements IAnalyzer {
   name = 'InjectionDetector';
   type = 'injection';
 
+  // Secret and PII patterns, so excerpts in findings never carry them
+  private sensitive: RegExp[] = [];
+
   async analyze(content: string, rules: DetectionRule[]): Promise<SecurityIssue[]> {
     const injectionRules = rules.filter(r => r.type === 'injection' && r.enabled);
+    this.sensitive = [];
+    for (const r of rules) {
+      if ((r.type === 'secret' || r.type === 'pii') && r.pattern) {
+        try { this.sensitive.push(compileRulePattern(r.pattern, 'g')); } catch { /* invalid custom rule */ }
+      }
+    }
 
     // The text as written, plus text an agent may see that a person doesn't:
     // base64 that decodes to prose and invisible Unicode "tag" characters.
@@ -282,7 +291,11 @@ export class InjectionDetector implements IAnalyzer {
    * Sanitize match for safe display
    */
   private sanitizeMatch(match: string, maxLength = 100): string {
-    const sanitized = match
+    // Findings are logged, stored and sent to webhooks: an excerpt of the
+    // scanned text must not carry a secret or personal data along with it
+    let redacted = match;
+    for (const re of this.sensitive) { re.lastIndex = 0; redacted = redacted.replace(re, '[REDACTED]'); }
+    const sanitized = redacted
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
