@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/full",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "The complete Weave Protocol security suite for AI agents - 13 packages covering policy (WARD.md), enforcement (4 harness adapters), scanning, encryption, compliance, consensus, supply chain, and observability",
   "type": "module",
   "main": "index.js",
@@ -53,7 +53,7 @@
     "@weave_protocol/hord": "^0.3.2",
     "@weave_protocol/hundredmen": "^1.3.2",
     "@weave_protocol/langchain": "^1.1.1",
-    "@weave_protocol/mund": "^0.5.3",
+    "@weave_protocol/mund": "^0.6.1",
     "@weave_protocol/tollere": "^0.2.5",
     "@weave_protocol/ward": "^0.3.6",
     "@weave_protocol/witan": "^1.2.2"
