@@ -72,16 +72,18 @@ Mund covers the text. Weave's adapters enforce WARD.md on tool calls in China's 
 | Harness | Maker | Adapter | Live check |
 |---|---|---|---|
 | **CodeBuddy Code** | Tencent | [`adapter-codebuddy`](adapter-codebuddy) | ✅ CLI 2.180.0 |
-| **Qoder CLI** | Alibaba | [`adapter-qoder`](adapter-qoder) | ✅ CLI 1.1.83 |
-| **TRAE** | ByteDance | [`adapter-trae`](adapter-trae) | ✅ desktop IDE 3.6.13 |
+| **Qoder CLI** | Alibaba | [`adapter-qoder`](adapter-qoder) | ✅ CLI 1.1.83, desktop app 0.5.11 |
+| **TRAE** | ByteDance | [`adapter-trae`](adapter-trae) | ✅ desktop IDE 3.6.13, project and global hook |
 
 #### 🛡️ WARD.md in CodeBuddy Code, Qoder and TRAE
 Three more harnesses enforce the same WARD.md: Tencent's **CodeBuddy Code**, Alibaba's **Qoder CLI** and ByteDance's **TRAE**, the most widely used Chinese coding agents. Each is its own adapter, built on Ward's shared evaluator, with every Ward check. All three let a call through if a hook crashes, so every adapter answers with an explicit decision and never exits with an error. All three passed live checks on a Mac, each in one form of the product:
 - **CodeBuddy Code CLI 2.180.0**, headless (`-p`) with a local scripted model and no sign-in;
-- **Qoder CLI 1.1.83**, interactive, signed in with a real model;
-- **TRAE desktop IDE 3.6.13**, signed in on the free plan, with a project hook in Run in Sandbox mode.
+- **Qoder CLI 1.1.83**, interactive, signed in with a real model, and the **Qoder desktop app 0.5.11** with Auto approve on;
+- **TRAE desktop IDE 3.6.13**, signed in on the free plan, with a project hook and with the global hook `weave-trae init` installs.
 
-Not checked yet: the CodeBuddy IDE and its editor plugins, the Qoder IDE, TRAE's global hook, its Run Automatically Locally mode and its China build. A web or cloud agent from any vendor is out of reach, because its tool calls run on the vendor's servers, where no local hook runs.
+**In TRAE, use Run Automatically Locally.** In the default Run in Sandbox mode, TRAE's sandbox blocks Ward's writes to `~/.weave` and TRAE drops the hook's answer, so the global hook enforces nothing. The [adapter README](adapter-trae#verified) has the details.
+
+Not checked yet: the CodeBuddy IDE and its editor plugins, the Qoder IDE and JetBrains plugin, and TRAE's China build. A web or cloud agent from any vendor is out of reach, because its tool calls run on the vendor's servers, where no local hook runs.
 
 In each one, Ward blocked a read of `secrets/`, allowed an ordinary read, and blocked `curl` to an unlisted host while allowing a listed one. In CodeBuddy and Qoder, the user's own settings allowed `curl`. One thing we learned: TRAE ignores a `hooks.json` until you switch it on in **Settings > Hooks**. Our first TRAE run enforced nothing until we did. The adapter README says so.
 
@@ -114,7 +116,9 @@ Automated checks run in CI on every push, pull request and release. We also live
 
 A published package can differ from the local build, and this catches it.
 
-**Live checks in the real harness.** Unit tests cover each adapter against the harness's documented hook contract. Before we call an adapter verified, we also run it in the real harness. Each check uses a throwaway workspace with its own WARD.md, a hook scoped to that workspace, and a temporary receipt key, so the user's own configuration is never touched. The agent is asked to read an allowed file, then a file under `secrets/`, then `curl` a listed and an unlisted host, where possible with the harness's own settings allowing `curl`. We trust Ward's signed receipts over the agent's account of what happened: `weave-ward receipts verify` must show each decision, and the chain must verify. The CodeBuddy check used a local scripted model, so no login or key was needed. Qoder only runs signed-in models, so the account owner ran that check, and the TRAE check, themselves.
+**Live checks in the real harness.** Unit tests cover each adapter against the harness's documented hook contract. Before we call an adapter verified, we also run it in the real harness. Each check uses a throwaway workspace with its own WARD.md, a hook scoped to that workspace, and a temporary receipt key, so the user's own configuration isn't touched. The exception is the TRAE global-hook check, which by design installs into the real `~/.trae` and `~/.weave`. The agent is asked to read an allowed file, then a file under `secrets/`, then `curl` a listed and an unlisted host, where possible with the harness's own settings allowing `curl`. We trust Ward's signed receipts over the agent's account of what happened: `weave-ward receipts verify` must show each decision, and the chain must verify. The CodeBuddy check used a local scripted model, so no login or key was needed. Qoder only runs signed-in models, so the account owner ran that check, and the TRAE check, themselves. Two lessons from these runs:
+- **Agents that can read WARD.md often hold back on their own.** For the unlisted `curl`, we keep the policy outside the workspace (`WEAVE_WARD_PATH`), so only Ward can stop the call.
+- **We check the harness's own hook log, not just the result.** That's how we found the TRAE sandbox failing open.
 
 **Detection claims on data we didn't write.** Mund's detection numbers come from public datasets it was never trained or tuned on: deepset, Gandalf, jackhhao, SPML, Mosscap, InjecAgent. False positives are measured on 2,062 benign texts and 5,825 MITRE ATT&CK and OWASP texts. The scripts in [`mund/training`](mund/training) fetch the data and reproduce every number, and the shipped model, byte for byte. See [DETECTION_CLAIMS.md](mund/DETECTION_CLAIMS.md#local-classifier-060).
 
