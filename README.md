@@ -64,7 +64,7 @@ npm install @weave_protocol/full
 
 ### 🗓️ November 2026 update — hardening
 
-#### 🔎 Mund reads Chinese (0.7.0)
+#### 🐉🔥🛡️ Mund reads Chinese (0.7.0)
 Mund now catches prompt injection in Chinese, Simplified or Traditional. It also reads past the usual ways people dodge Chinese keyword filters: separators between characters (忽*略), homophone swaps (蜜码 for 密码), typed or mixed-in pinyin, and acrostics. On held-out Chinese attacks it goes from 0 of 144 to 115 of 144. On Tsinghua's Safety-Prompts goal-hijacking set it goes from 2 to 3,454 of 5,000. It flags 0 of 8,043 benign Chinese texts, and English results are unchanged. Method, robustness tests and limits: [DETECTION_CLAIMS.md](mund/DETECTION_CLAIMS.md#chinese-070).
 
 #### 🛡️ WARD.md in Qwen Code, and model endpoints by jurisdiction (adapter-qwencode 0.1.0, Ward 0.3.10)
