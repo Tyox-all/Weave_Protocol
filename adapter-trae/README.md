@@ -14,7 +14,7 @@ weave-trae init          # adds the hook to ~/.trae/hooks.json
 weave-trae status        # hook installed? which WARD.md is active?
 ```
 
-`init` writes `~/.trae/hooks.json`, and also `~/.trae-cn/hooks.json` if you have TRAE's China build. Then, in TRAE, open **Settings > Hooks**, choose **Global**, and turn on **Configured Hooks**: TRAE ignores the file until you do. For session limits, the spend ledger and receipts in `~/.weave`, set the execution mode to **Run Automatically Locally** (see [Verified](#verified)). Add a `WARD.md` to your project (`npx @weave_protocol/ward init`), or a user-wide one at `~/.trae/WARD.md`.
+`init` writes `~/.trae/hooks.json`, and also `~/.trae-cn/hooks.json` if you have TRAE's China build. Then, in TRAE, open **Settings > Hooks**, choose **Global**, and turn on **Configured Hooks**: TRAE ignores the file until you do. Then set the execution mode to **Run Automatically Locally**. In the default **Run in Sandbox** mode, TRAE blocks Ward's writes to `~/.weave` and ignores its decisions, so nothing is enforced (see [Verified](#verified)). Add a `WARD.md` to your project (`npx @weave_protocol/ward init`), or a user-wide one at `~/.trae/WARD.md`.
 
 ## What it checks
 
@@ -71,7 +71,9 @@ Live-checked in TRAE 3.6.13 (free plan, Agent mode), in a throwaway workspace wi
 - `LS` and allowed `Read`s went through, and a `Read` of `secrets/key` was blocked; the agent reported the WARD reason;
 - `RunCommand` with `curl` to an unlisted host was blocked, and to a listed one it ran.
 
-That run used **Run in Sandbox**, with the receipt directory set to a temp folder. We haven't checked whether the sandbox lets Ward write to `~/.weave`, so use **Run Automatically Locally** if you rely on session limits, the spend ledger or receipts there.
+Also live-checked with the **global hook exactly as `weave-trae init` writes it** (`weave-trae hook pre-tool-use`, installed with `npm i -g`). TRAE found the command on its own PATH. In **Run Automatically Locally** mode, Ward wrote its receipts to `~/.weave/receipts`: 6 verified, 4 allow and 2 deny, covering the `secrets/key` read and the unlisted `curl`.
+
+**Use Run Automatically Locally.** In **Run in Sandbox** mode, the global hook fails open. TRAE's sandbox blocks Ward's write to `~/.weave/receipts` ("Not allow operate files"), so the hook exits 1, and TRAE then ignores its answer, even a deny. The project-hook run above only passed in the sandbox because its receipts went to a temp folder. If you must stay in the sandbox, allow `~/.weave` under **Settings > Conversation > Custom Sandbox Configuration**. We haven't tested that setup. The hook log is under **Settings > Hooks > View Logs**.
 
 **TRAE ignores a `hooks.json` until you switch it on.** Our first run, before that, enforced nothing. Writing the file isn't enough: open **Settings > Hooks**, pick **Global** (for `weave-trae init`) or **Project**, turn on **Configured Hooks** and accept the warning. `weave-trae status` can only see the file, not that switch.
 

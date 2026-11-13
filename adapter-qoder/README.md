@@ -71,6 +71,14 @@ Live-checked in Qoder CLI 1.1.83, signed in to a Qoder account with a real model
 - an allowed `Read` went through, and a `Read` of `secrets/key` was blocked with the WARD reason;
 - with a user rule in `.qoder/settings.json` allowing `Bash(curl:*)`, Ward still blocked `curl` to an unlisted host and allowed it to a listed one.
 
+Also live-checked in the **Qoder desktop app 0.5.11**, signed in, with Auto approve on, using the same project hook. The app reads the hooks in `.qoder/settings.json` and sends the same tool names as the CLI (`Read`, `Bash`). Ward blocked a `Read` of `secrets/key`, a `curl` to an unlisted host, and the agent's attempt to read the policy file, and allowed the rest. The receipt chain verified.
+
+Two things we learned in the app:
+- **It runs each new chat in an empty folder of its own** (`~/Documents/Qoder/…`), where your project's `.qoder/settings.json` and WARD.md aren't present. Add the project with **Workspaces > ＋** and start tasks inside it, or install the hook user-wide with `weave-qoder init`. Restart the app after any hook change.
+- **The agent reads WARD.md and holds back on its own.** That's good, but it means a test where the agent can read the policy proves nothing about Ward. For the curl check, we kept the policy outside the workspace with `WEAVE_WARD_PATH`, so only Ward could stop the call.
+
+Not checked yet: the Qoder IDE and JetBrains plugin, which Qoder's [IDE hooks docs](https://docs.qoder.com/extensions/hooks) cover. Those docs say they also accept native tool names such as `run_in_terminal`, which this adapter doesn't map yet.
+
 ## 🕸️ Part of Weave Protocol
 
 One [WARD.md](https://github.com/Tyox-all/Weave_Protocol) policy for every agent you run, locally or at scale, plus the tools around it.
