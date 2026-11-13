@@ -1,6 +1,8 @@
 # 🛡️ @weave_protocol/adapter-qwencode
 
-> Enforce [WARD.md](https://github.com/Tyox-all/Weave_Protocol/tree/main/ward) in **Qwen Code** with its `PreToolUse` hook. Every tool call the agent makes is checked against your policy before it runs, whichever model drives it: Qwen, DeepSeek, Kimi, GLM or a local model.
+> Enforce [WARD.md](https://github.com/Tyox-all/Weave_Protocol/tree/main/ward) in **Qwen Code**, Alibaba's open-source terminal coding agent, with its `PreToolUse` hook. Every tool call the agent makes is checked against your policy before it runs, whatever model you point Qwen Code at.
+
+This adapter is for Qwen Code only. Other coding agents, including Trae, Qoder, CodeBuddy and Kimi Code, each need their own.
 
 [![npm](https://img.shields.io/npm/v/@weave_protocol/adapter-qwencode?color=000&style=flat-square)](https://www.npmjs.com/package/@weave_protocol/adapter-qwencode)
 

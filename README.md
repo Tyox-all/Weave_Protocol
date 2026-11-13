@@ -64,8 +64,8 @@ npm install @weave_protocol/full
 
 ### 🗓️ November 2026 update — hardening
 
-#### 🀄 Qwen Code, and model endpoints by jurisdiction (adapter-qwencode 0.1.0, Ward 0.3.10)
-WARD.md now runs in **Qwen Code**, the eighth harness. It works whichever model drives the agent: Qwen, DeepSeek, Kimi, GLM or a local model. Deferred tools reached through `tool_call` are decided as the tool they invoke. In a live check with Qwen Code 0.26.6, Ward blocked a `curl` that the user's own settings allowed, and decided the background memory agent's calls too.
+#### 🛡️ WARD.md in Qwen Code, and model endpoints by jurisdiction (adapter-qwencode 0.1.0, Ward 0.3.10)
+WARD.md now runs in **Qwen Code**, Alibaba's open-source terminal coding agent and the eighth harness Weave supports. The adapter covers Qwen Code only. Other coding agents, including Chinese ones such as Trae, Qoder, CodeBuddy and Kimi Code, would each need their own adapter. Deferred tools reached through `tool_call` are decided as the tool they invoke. In a live check with Qwen Code 0.26.6, Ward blocked a `curl` that the user's own settings allowed, and decided the background memory agent's calls too.
 
 Ward also adds **`model_jurisdictions`**, so a policy can say whose model endpoints an agent may call. `deny: [cn]` blocks known endpoints of Chinese companies, in URL arguments and in shell commands; `allow: [us, eu]` admits only those. Ward now knows Tencent Hunyuan, MiniMax, StepFun, Baidu Qianfan, SiliconFlow and ByteDance's Volcengine Ark, alongside DeepSeek, Moonshot (Kimi), Qwen and Zhipu.
 
@@ -504,7 +504,7 @@ The packages that keep your agent within policy: declare it, enforce it across e
 | [🛡️ @weave_protocol/adapter-codex](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-codex) | 0.3.0 | **Codex CLI adapter** — enforces WARD.md via the PreToolUse hook, including apply_patch file edits |
 | [🛡️ @weave_protocol/adapter-opencode](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-opencode) | 0.3.0 | **OpenCode plugin** — enforces WARD.md on every tool call, whatever model OpenCode runs |
 | [🛡️ @weave_protocol/adapter-cursor](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-cursor) | 0.3.0 | **Cursor adapter** — enforces WARD.md via Cursor's agent hooks (shell, file, MCP and tool calls) |
-| [🛡️ @weave_protocol/adapter-qwencode](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-qwencode) | 0.1.0 | **Qwen Code adapter** — enforces WARD.md via Qwen Code's PreToolUse hook, whichever model drives it (Qwen, DeepSeek, Kimi, GLM, local) |
+| [🛡️ @weave_protocol/adapter-qwencode](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-qwencode) | 0.1.0 | **Qwen Code adapter** — enforces WARD.md via Qwen Code's PreToolUse hook (shell, file, web, MCP and deferred tool calls) |
 | [🌐 @weave_protocol/browser](https://github.com/Tyox-all/Weave_Protocol/blob/main/browser) | 0.3.1 | **Browser agent security** — runtime IPI scanner (33 patterns) for headless agents |
 | [🔍 @weave_protocol/hundredmen](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen) | 1.4.0 | **MCP proxy** — intercept, scan, gate tool calls; enforces WARD.md as first gate |
 | [🛡️ @weave_protocol/mund](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund) | 0.6.1 | **Scanner** — secrets, PII, injection, MCP vetting, pre-install checks for skills + MCP (rug pulls), OSV dependency CVEs, SARIF, threat intel |
