@@ -116,6 +116,8 @@ default: deny
 **`url`:** glob pattern matched against the full URL.
 **`methods`:** optional list of HTTP methods this rule applies to. Omit to apply to all.
 
+**`model_jurisdictions`:** optional `allow` and/or `deny` lists of jurisdiction codes (`us`, `cn`, `eu`, `ca`). The enforcing host knows the major model API endpoints and the jurisdiction of the company behind each. It denies a request to a known model endpoint whose jurisdiction is in `deny`, or not in `allow` when `allow` is given, unless an allow rule names that exact host. Hosts it doesn't recognize as model endpoints are unaffected. (Ward 0.3.10)
+
 ### 5.3 `## Capabilities`
 
 ```yaml

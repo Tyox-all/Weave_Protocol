@@ -23,7 +23,8 @@ export type ReportSurface =
   | "gemini-cli"
   | "codex"
   | "opencode"
-  | "cursor";
+  | "cursor"
+  | "qwen-code";
 export type ReportDecision = Decision | "ipi_detected" | "scan";
 
 export interface EnforcementEvent {

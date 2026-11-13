@@ -138,6 +138,7 @@ const SURFACE_INFO: Record<Surface, { name: string; vendor: string; icon: string
   codex: { name: 'adapter-codex', vendor: 'OpenAI', icon: '🛡️' },
   opencode: { name: 'adapter-opencode', vendor: 'OpenCode', icon: '🛡️' },
   cursor: { name: 'adapter-cursor', vendor: 'Cursor', icon: '🛡️' },
+  'qwen-code': { name: 'adapter-qwencode', vendor: 'Alibaba Qwen', icon: '🛡️' },
 };
 
 const MINUTE = 60_000;

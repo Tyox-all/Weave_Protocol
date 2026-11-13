@@ -1,3 +1,4 @@
+import { modelEndpointJurisdiction } from "./egress.js";
 /**
  * Runtime policy checks.
  *
@@ -103,6 +104,25 @@ export function checkNetwork(
     return { decision: "deny", reason: `Unparseable URL: ${url}`, severity: "medium" };
   }
   url = canonical;
+
+  // Model endpoints by jurisdiction (Ward 0.3.10). An allow rule that names the
+  // host exactly (no wildcard in it) is a deliberate choice and still wins.
+  const mj = net.model_jurisdictions;
+  if (mj && (mj.allow?.length || mj.deny?.length)) {
+    const host = new URL(url).hostname;
+    const j = modelEndpointJurisdiction(host);
+    const blocked = j !== undefined && (mj.deny?.includes(j) || (!!mj.allow?.length && !mj.allow.includes(j)));
+    const named = (net.allow ?? []).some((r) => {
+      try { return new URL(canonicalPattern(r.url).replace(/\*\*?$/, "")).hostname === host; } catch { return false; }
+    });
+    if (blocked && !named) {
+      return {
+        decision: "deny",
+        reason: `${host} is a model endpoint under ${j!.toUpperCase()} jurisdiction, which WARD.md's model_jurisdictions doesn't allow`,
+        severity: "high",
+      };
+    }
+  }
 
   const matchesRule = (rule: NetworkRule) => {
     if (!matchGlob(url, canonicalPattern(rule.url))) return false;
