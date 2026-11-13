@@ -37,8 +37,10 @@ test('sends a summary with the key, and strips argument contents', async () => {
   await reportEvent({
     surface: 'claude-code', decision: 'deny', subject: 'Bash',
     reason: 'Denied by filesystem rule: read /workspace/secrets/** (read /workspace/secrets/key)',
-  }, { url, apiKey: 'k' });
-  await reportEvent({ surface: 'browser', decision: 'allow', subject: 'https://docs.example.com/a?token=SECRET#frag' }, { url });
+  }, { url, apiKey: 'k', timeoutMs: 5000 });
+  // A generous timeout: a cold first request on a slow CI runner can exceed the
+  // 250ms default, and a dropped report would make this test flaky
+  await reportEvent({ surface: 'browser', decision: 'allow', subject: 'https://docs.example.com/a?token=SECRET#frag' }, { url, timeoutMs: 5000 });
   assert.equal(received[0].path, '/api/v1/events');
   assert.equal(received[0].key, 'k');
   assert.deepEqual({ ...received[0].body, timestamp: 0 }, {
