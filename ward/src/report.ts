@@ -24,7 +24,10 @@ export type ReportSurface =
   | "codex"
   | "opencode"
   | "cursor"
-  | "qwen-code";
+  | "qwen-code"
+  | "codebuddy"
+  | "qoder"
+  | "trae";
 export type ReportDecision = Decision | "ipi_detected" | "scan";
 
 export interface EnforcementEvent {
