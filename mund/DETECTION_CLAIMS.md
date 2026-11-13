@@ -111,6 +111,62 @@ Five phrase rules also stopped firing on descriptions of what malware or systems
 
 A match is now skipped when the same sentence says what something can, may, will, was designed to or allows. "System command" in prose no longer counts as an authority claim. "AI agents should…" counts only when what follows is an instruction to the agent ("…should recommend our product"), not guidance about agents ("…should undergo security testing"). None of this changed detection on any held-out set or on the red-team corpus.
 
+## Chinese (0.7.0)
+
+Mund now reads Chinese:
+- **Rules** for overriding or voiding instructions, system-prompt extraction, administrator claims and takeovers, jailbreak modes, data harvesting, and sending the conversation or secrets to an outside address.
+- **Traditional is converted to Simplified** first, character by character, using OpenCC's table, so one rule covers both scripts.
+
+People dodge Chinese keyword filters in well-known ways, and Mund now reads past them:
+
+| Trick | How Mund reads it |
+|---|---|
+| Separators between characters (忽*略, 忽 略) | Collapsed before matching |
+| Homophone swaps (蜜码 for 密码) | A **pinyin view**: the text read by sound, toneless, so homophones match |
+| Typed pinyin (hulue zhiling), with or without tones | The same pinyin view |
+| Pinyin mixed into Chinese (忽略之前的zhi令) | The same pinyin view |
+| An acrostic (藏头), first character of each line | An acrostic view, for texts of four or more lines |
+| Full-width letters, variant and radical forms | Unicode NFKC |
+
+**Method.** Rules were written from the Shuangsuo train and validation splits and from general knowledge, never from test rows. "Before" is the published Mund 0.6.1. A hit is a finding at medium severity or higher.
+
+| Test set | 0.6.1 | 0.7.0 |
+|---|---|---|
+| Shuangsuo test, Chinese (Simplified and Traditional, held-out phrasings) | 0/144 | **115/144 (79.9%)** |
+| Shuangsuo test, mixed Chinese-English | 4/73 | **48/73 (65.8%)** |
+| Safety-Prompts goal hijacking (Tsinghua; a source never used) | 2/5000 | **3,454/5,000 (69.1%)** |
+
+The Shuangsuo test split uses override phrases, goals and requests that never appear in its train or validation splits, and none of its rows duplicate a training row.
+
+**Benign Chinese flagged: 0 of 8,043:**
+
+| Benign set | Flagged |
+|---|---|
+| Safety-Prompts questions (Chinese, benign intent) | 0/5,000 |
+| Chinese Wikipedia paragraphs | 0/2,747 |
+| Shuangsuo benign (124 hard negatives with 忽略, 系统, 指示 in normal use) | 0/163 |
+| OpenAssistant Chinese messages | 0/133 |
+
+Shuangsuo rows with zero-width characters are reported separately. Mund flags zero-width characters inside words whatever the sentence says, so 28 of those 55 benign rows are flagged.
+
+**Robustness.** [`training/zh-robustness.mjs`](training/zh-robustness.mjs) applies each trick mechanically to the held-out Shuangsuo Chinese rows, to the benign rows as much as the attacks, so a rule that only flags odd-looking text would show up as false positives:
+
+| Trick | Attacks caught | Benign flagged |
+|---|---|---|
+| As written | 115/144 (79.9%) | 0/163 |
+| Separators, half of character gaps | 111/144 (77.1%) | 0/163 |
+| Homophone swaps, 40% of characters | 98/144 (68.1%) | 0/163 |
+| All pinyin | 102/144 (70.8%) | 0/163 |
+| Pinyin mixed in, 40% of characters | 102/144 (70.8%) | 0/163 |
+
+**Unchanged elsewhere.** Every English and benign set from the 0.6 evaluation gives exactly 0.6.1's numbers. The red-team corpus is still 68 of 68 payloads with 0 of 84 benign texts flagged, and the 5,825 ATT&CK and OWASP texts are still 15.
+
+**Limits:**
+- **Extraction generalizes poorly.** None of the 12 held-out extraction phrasings are caught. Overrides do much better (86 of 98), as do indirect injections in documents (29 of 34).
+- **The classifier was not retrained for Chinese.** A version with Chinese features added nothing on Chinese (79.9% either way). It also lowered the threshold enough to flag benign texts that 0.6.1 doesn't, so it wasn't shipped. That waits for real, non-synthetic Chinese training data.
+- **Not covered:** character splitting (拆字, 弓长 for 张), Martian script (火星文), and new slang coined to dodge filters. None has a mechanical inverse.
+- **Synthetic data.** Shuangsuo is generated from templates in one customer-support domain, so treat its numbers as a lower bar, not a guarantee.
+
 ## Limits
 
 Detection is pattern-based, plus the classifier above. These claims cover the attack shapes listed, not every variant: a paraphrased instruction with no hidden characters, URL or secret won't be caught by these checks. See the [OWASP coverage tables](README.md#️-owasp-coverage) for what is and isn't covered.

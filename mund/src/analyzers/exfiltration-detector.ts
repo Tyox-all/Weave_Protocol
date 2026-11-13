@@ -3,6 +3,7 @@
  * Exfiltration Detector - Detects data exfiltration attempts
  */
 
+import { toSimplified } from './hanzi.js';
 import { 
   type DetectionRule, 
   type SecurityIssue, 
@@ -20,6 +21,10 @@ export class ExfiltrationDetector implements IAnalyzer {
     const issues: SecurityIssue[] = [];
     const exfilRules = rules.filter(r => r.type === 'exfiltration' && r.enabled);
 
+    // Traditional Chinese reads as Simplified (one-to-one characters, so
+    // positions still line up with the original content)
+    const text = toSimplified(content);
+
     // Pattern-based detection
     for (const rule of exfilRules) {
       if (!rule.pattern) continue;
@@ -28,7 +33,7 @@ export class ExfiltrationDetector implements IAnalyzer {
         const regex = compileRulePattern(rule.pattern, 'gi');
         let match: RegExpExecArray | null;
 
-        while ((match = regex.exec(content)) !== null) {
+        while ((match = regex.exec(text)) !== null) {
           const matchText = match[0];
           const location = this.getLocation(content, match.index, matchText.length);
           

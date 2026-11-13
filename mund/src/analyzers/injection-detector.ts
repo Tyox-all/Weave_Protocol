@@ -10,6 +10,7 @@ import {
   type IssueLocation 
 } from '../types.js';
 import { compileRulePattern } from './regex.js';
+import { toSimplified, toPinyin } from './hanzi.js';
 import { decodeModel, scoreInjection, type InjectionModel } from './classifier.js';
 import { INJECTION_MODEL } from './injection-model.js';
 
@@ -38,6 +39,11 @@ export class InjectionDetector implements IAnalyzer {
     for (const decoded of decodeBase64Prose(content)) views.push({ text: decoded, via: 'base64' });
     const tagText = decodeUnicodeTags(content);
     if (tagText) views.push({ text: tagText, via: 'unicode tags' });
+    // Chinese read by sound (homophones, typed or mixed-in pinyin), and the
+    // first character of each line (a hidden acrostic, 藏头)
+    views.push({ text: toPinyin(content), via: 'pinyin' });
+    const acrostic = acrosticOf(content);
+    if (acrostic) views.push({ text: acrostic, via: 'acrostic' });
 
     const issues: SecurityIssue[] = [];
     const seen = new Set<string>();
@@ -58,7 +64,8 @@ export class InjectionDetector implements IAnalyzer {
     if (classifier && process.env.MUND_CLASSIFIER !== '0') {
       const m = loadModel();
       let best: { score: number; window: string; via?: string } = { score: 0, window: '' };
-      for (const view of views) {
+      // The classifier reads text, not the pinyin or acrostic views
+      for (const view of views.filter((v) => v.via !== 'pinyin' && v.via !== 'acrostic')) {
         const r = scoreInjection(view.text, m);
         if (r.score > best.score) best = { ...r, via: view.via };
       }
@@ -79,9 +86,15 @@ export class InjectionDetector implements IAnalyzer {
 
   private applyRules(original: string, text: string, rules: DetectionRule[], via?: string): SecurityIssue[] {
     const issues: SecurityIssue[] = [];
-    const normalizedContent = this.normalizeContent(text);
+    // The pinyin view is matched as is. Rules written for a view run only on
+    // it; the acrostic view also gets every ordinary Chinese and English rule.
+    const phonetic = via === 'pinyin';
+    const normalizedContent = phonetic ? text : this.normalizeContent(text);
     for (const rule of rules) {
       if (!rule.pattern) continue;
+      const only = rule.metadata?.view as string | undefined;
+      if (phonetic ? only !== 'pinyin' : only === 'pinyin') continue;
+      if (only === 'acrostic' && via !== 'acrostic') continue;
       try {
         const regex = compileRulePattern(rule.pattern, 'gi');
         let match: RegExpExecArray | null;
@@ -110,11 +123,14 @@ export class InjectionDetector implements IAnalyzer {
    * Normalize content to detect obfuscated injection attempts
    */
   private normalizeContent(content: string): string {
-    return content
+    // Traditional Chinese reads as Simplified, so one pattern covers both
+    return toSimplified(content)
       // Remove zero-width and invisible formatting characters
       .replace(/[​-‍⁠﻿­]/g, '')
       // Normalize Unicode variations (fullwidth, ligatures)
       .normalize('NFKC')
+      // Separators slipped between Chinese characters to dodge filters (忽*略, 忽 略)
+      .replace(/(\p{Script=Han})[^\p{L}\p{N}]{1,3}(?=\p{Script=Han})/gu, '$1')
       // Curly quotes read as straight ones ("don’t" → "don't")
       .replace(/[‘’‛′]/g, "'")
       .replace(/[“”‟″]/g, '"')
@@ -380,6 +396,19 @@ export function decodeBase64Prose(content: string): string[] {
 }
 
 /** ASCII hidden in Unicode tag characters, or undefined. */
+/**
+ * The first character of each line, when a text of four or more lines
+ * starts most of them with a Chinese character: an acrostic (藏头) hides its
+ * message there.
+ */
+export function acrosticOf(content: string): string | undefined {
+  const lines = content.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length < 4) return undefined;
+  const firsts = lines.map((l) => [...l][0]);
+  if (firsts.filter((c) => /\p{Script=Han}/u.test(c)).length < lines.length * 0.75) return undefined;
+  return firsts.join('');
+}
+
 export function decodeUnicodeTags(content: string): string | undefined {
   let out = '';
   for (const ch of content) {

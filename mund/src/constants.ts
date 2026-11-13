@@ -692,6 +692,126 @@ export const INJECTION_PATTERNS: DetectionRule[] = [
     enabled: true
   },
   {
+    id: 'prompt_injection_zh_override',
+    name: 'Prompt Injection - Ignore Instructions (Chinese)',
+    description: 'Tells the model to ignore, forget or void its instructions or rules, in Simplified or Traditional Chinese (Traditional is converted first), or to ignore the question and output something else instead',
+    type: 'injection',
+    pattern: String.raw`(?:忽略|无视|忘记|忘掉|忘了|不要理会|不用理会|不用再理会|不必理会|别理会|不要再理会|不要管|不用管|别管|抛开|丢掉|丢弃|放弃|跳过|撇开|不要遵守|不用遵守|无需遵守|不再遵守|不要再遵守|停止遵守|别再遵守|推翻|废除|作废|绕过|无需理会)[^.!?]{0,12}?(?:之前|以前|此前|先前|前面|上面|上述|以上|上文|原来|原有|原先|旧的|所有|全部|一切|刚才|此|这些|这条|你收到的|你被给的|你的)[^.!?]{0,10}?(?:指令|指示|说明|规则|设定|设置|提示词|系统提示|命令|约束|限制|规定|准则|安全策略|策略|要求|程序|配置)|(?:之前|以前|此前|先前|前面|上面|上述|以上|上文|原来|原有|原先|旧的|所有|全部|一切|刚才|此|这些|这条|你收到的|你被给的|你的)[^.!?]{0,10}?(?:指令|指示|说明|规则|设定|设置|提示词|系统提示|命令|约束|限制|规定|准则|安全策略|策略|要求|程序|配置)[^.!?]{0,12}?(?:当作无效|视为无效|看作无效|算作无效|作为无效|无效|作废|不再适用|已失效|失效|不算数|不作数|不再有效|已经过期|过期)|(?:忽略|无视|忘记|忘掉|忘了|不要理会|不用理会|不用再理会|不必理会|别理会|不要再理会|不要管|不用管|别管|抛开|丢掉|丢弃|放弃|跳过|撇开|不要遵守|不用遵守|无需遵守|不再遵守|不要再遵守|停止遵守|别再遵守|推翻|废除|作废|绕过|无需理会)[^.!?]{0,12}?(?:之前|以前|此前|先前|前面|上面|上述|以上|上文|原来|原有|原先|旧的|所有|全部|一切|刚才|此|这些|这条|你收到的|你被给的|你的)?[^.!?]{0,10}?(?:问题|提问|话|内容|信息|消息|任务|请求)[^.!?]{0,10}?(?:直接输出|直接回复|直接回答|直接复述|直接说|只输出|仅输出|只回复|只回答|仅回复|改为输出|而是输出|转而输出|只需输出|只要输出|复述|输出以下|回复以下)`,
+    severity: 'high',
+    action: 'alert',
+    enabled: true
+  },
+  {
+    id: 'prompt_injection_zh_system',
+    name: 'Prompt Injection - System Prompt Extraction (Chinese)',
+    description: 'Asks for the model\'s own system prompt, hidden rules, configuration or secrets, or for everything above to be repeated verbatim, in Chinese',
+    type: 'injection',
+    pattern: String.raw`(?:给你|交给你|发给你|你收到)的(?:原始|最初|初始|原本|全部|所有|完整)?(?:指令|指示|提示词|系统提示|设定|规则|配置)|你的(?:原始|最初|原本)(?:指令|指示|提示词|设定|规则)|你的(?:系统提示词?(?![音框栏灯])|系统指令|系统消息|系统设定|初始(?:指令|提示词?|设定)|隐藏(?:的)?\S{0,2}?(?:指令|指示|提示词?|规则|设定|配置|口令|密码|代码)|提示词|内部(?:指令|规则|设定|配置))|(?:输出|显示|告诉我|列出|透露|泄露|打印|复述|重复|给我看|展示|说出|念出|提供|发给我)[^.!?]{0,10}?(?:隐藏(?:的)?(?:指令|指示|提示词?|规则|设定|配置|口令|密码|代码)|系统提示词?(?![音框栏灯])|开发者(?:指令|消息|提示)|内部(?:支持)?(?:代码|口令|密码|指令|配置)|(?:你|系统)(?:能看到|知道|掌握|持有|保存)的(?:所有|全部)?(?:密钥|口令|密码|凭证|令牌|秘密))|(?:逐字|原样|一字不差地?|完整地?)[^.!?]{0,6}?(?:重复|复述|输出|打印|显示)[^.!?]{0,10}?(?:上面|以上|之前|前面|上述)[^.!?]{0,8}?(?:内容|文字|指令|对话|话)|(?:上面|以上|之前|前面|上述)的?(?:所有|全部)?(?:内容|文字|指令)[^.!?]{0,6}?(?:打印|输出|复述|重复)`,
+    severity: 'medium',
+    action: 'alert',
+    enabled: true
+  },
+  {
+    id: 'prompt_injection_zh_authority',
+    name: 'Prompt Injection - Authority Claim or Takeover (Chinese)',
+    description: 'Claims to speak for the administrator, developer or system, or hands the model a new identity or task, in Chinese',
+    type: 'injection',
+    pattern: String.raw`(?:管理员|开发者|开发人员|系统|官方)(?:的)?新?(?:指令|命令|通知|消息|指示)|(?:管理员|开发者|开发人员|系统|官方)[^.!?]{0,6}?(?:说|表示|通知|要求|宣布|规定)[^.!?]{0,20}?(?:规则|设定|指令|限制|约束)[^.!?]{0,6}?(?:不再适用|已失效|作废|无效|取消|解除)|你的新任务是|你现在的任务是|你的任务现在是|从现在(?:开始|起)[^.!?]{0,4}?你(?:是|就是|将是|扮演|不再|不用|无需|只能|只需|必须|要)`,
+    severity: 'medium',
+    action: 'alert',
+    enabled: true
+  },
+  {
+    id: 'prompt_injection_zh_jailbreak',
+    name: 'Prompt Injection - Jailbreak Persona (Chinese)',
+    description: 'Asks the model to act without rules or limits, or to enter a jailbreak or developer mode, in Chinese',
+    type: 'injection',
+    pattern: String.raw`(?:没有|不受|无视|摆脱|解除|不存在)(?:任何)?(?:道德|伦理|安全|内容)?(?:的)?(?:限制|约束|审查|过滤|规则|准则|底线)[^.!?]{0,10}?(?:AI|ai|助手|模型|机器人|角色|模式|版本|人工智能)|(?:开发者模式|越狱模式|DAN模式|无限制模式|上帝模式)`,
+    severity: 'high',
+    action: 'alert',
+    enabled: true
+  },
+  {
+    id: 'prompt_injection_zh_data_harvest',
+    name: 'Prompt Injection - Data Harvest (Chinese)',
+    description: 'Asks the model to collect and hand over other people\'s contact details or private data, in Chinese',
+    type: 'injection',
+    pattern: String.raw`(?:把|将|列出|导出|收集|汇总)[^.!?]{0,8}?(?:客户|用户|别人|他人|所有人|其他人|会员)(?:的)?[^.!?]{0,4}?(?:邮箱地址|邮箱|邮件地址|电话号码|电话|手机号|住址|地址|个人信息|身份证号?|密码|聊天记录|银行卡号?)[^.!?]{0,8}?(?:发给|发到|告诉|列出|导出|给我|交给|提供)`,
+    severity: 'medium',
+    action: 'alert',
+    enabled: true
+  },
+  {
+    id: 'prompt_injection_pinyin_override',
+    name: 'Prompt Injection - Ignore Instructions (Chinese, by sound)',
+    description: 'Chinese instructions to ignore or void the model\'s rules, matched by sound: catches typed pinyin, homophone swaps and pinyin mixed into Chinese',
+    type: 'injection',
+    pattern: String.raw`(?:hulue|wushi|wangji|wangdiao|wangle|buyaolihui|buyonglihui|buyongzailihui|bubilihui|bielihui|buyaozailihui|bieguan|buyaoguan|buyongguan|tiaoguo|fangqi|buzaizunshou|buyaozunshou|buyaozaizunshou|biezaizunshou|buyongzunshou|wuxuzunshou|raoguo|paokai|diudiao|diuqi)[a-z]{0,24}?(?:zhiqian|yiqian|ciqian|xianqian|qianmian|shangmian|shangshu|yishang|shangwen|yuanlai|yuanyou|yuanxian|suoyou|quanbu|yiqie|gangcai|nishoudao|nide|zhexie|ci)[a-z]{0,24}?(?:zhiling|zhishi|shuoming|guize|sheding|shezhi|tishici|xitongtishi|mingling|yueshu|xianzhi|guiding|zhunze|celue|peizhi|yaoqiu)|(?:zhiqian|yiqian|ciqian|xianqian|qianmian|shangmian|shangshu|yishang|shangwen|yuanlai|yuanyou|yuanxian|suoyou|quanbu|yiqie|gangcai|nishoudao|nide|zhexie|ci)[a-z]{0,24}?(?:zhiling|zhishi|shuoming|guize|sheding|shezhi|tishici|xitongtishi|mingling|yueshu|xianzhi|guiding|zhunze|celue|peizhi|yaoqiu)[a-z]{0,24}?(?:dangzuowuxiao|shiweiwuxiao|kanzuowuxiao|wuxiao|zuofei|buzaishiyong|yishixiao|shixiao|busuanshu|buzuoshu|buzaiyouxiao)|(?:hulue|wushi|wangji|wangdiao|wangle|buyaolihui|buyonglihui|buyongzailihui|bubilihui|bielihui|buyaozailihui|bieguan|buyaoguan|buyongguan|tiaoguo|fangqi|buzaizunshou|buyaozunshou|buyaozaizunshou|biezaizunshou|buyongzunshou|wuxuzunshou|raoguo|paokai|diudiao|diuqi)[a-z]{0,24}?(?:wenti|tiwen|neirong|xinxi|xiaoxi|renwu|qingqiu)[a-z]{0,24}?(?:zhijieshuchu|zhijiehuifu|zhijiehuida|zhijiefushu|zhijieshuo|zhishuchu|jinshuchu|zhihuifu|zhihuida|jinhuifu|gaiweishuchu|ershishuchu|zhixushuchu|fushu)`,
+    severity: 'high',
+    action: 'alert',
+    enabled: true,
+    // Runs only on the pinyin view (see InjectionDetector), never on the text itself
+    metadata: { view: 'pinyin' }
+  },
+  {
+    id: 'prompt_injection_pinyin_system',
+    name: 'Prompt Injection - System Prompt Extraction (Chinese, by sound)',
+    description: 'Chinese requests for the model\'s system prompt, hidden rules or secrets, matched by sound',
+    type: 'injection',
+    pattern: String.raw`nide(?:xitongtishici?|xitongzhiling|chushizhiling|chushitishici?|yincang(?:de)?(?:zhiling|zhishi|guize|sheding|peizhi|kouling|mima|daima)|neibu(?:zhiling|guize|sheding|peizhi)|(?:yuanshi|zuichu|yuanben)(?:zhiling|tishici|sheding|guize))|(?:gaosuwo|shuchu|xianshi|liechu|toulu|xielou|dayin|fushu|chongfu|geiwokan|zhanshi|shuochu|tigong)[a-z]{0,20}?(?:yincang(?:de)?(?:zhiling|zhishi|guize|sheding|peizhi|kouling|mima|daima)|xitongtishici|kaifazhe(?:zhiling|xiaoxi|tishi)|neibu(?:zhichi)?(?:daima|kouling|mima|zhiling|peizhi)|(?:ni|xitong)(?:nengkandao|zhidao|zhangwo|chiyou|baocun)de(?:suoyou|quanbu)?(?:miyao|kouling|mima|pingzheng|lingpai|mimi))|(?:geini|jiaogeini|fageini|nishoudao)de(?:yuanshi|zuichu|chushi|yuanben|quanbu|suoyou|wanzheng)?(?:zhiling|zhishi|tishici|xitongtishi|sheding|guize|peizhi)`,
+    severity: 'medium',
+    action: 'alert',
+    enabled: true,
+    // Runs only on the pinyin view (see InjectionDetector), never on the text itself
+    metadata: { view: 'pinyin' }
+  },
+  {
+    id: 'prompt_injection_pinyin_authority',
+    name: 'Prompt Injection - Authority Claim or Takeover (Chinese, by sound)',
+    description: 'Chinese claims to speak for the administrator or developer, or new-task takeovers, matched by sound',
+    type: 'injection',
+    pattern: String.raw`(?:guanliyuan|kaifazhe|kaifarenyuan|guanfang)(?:de)?xin?(?:zhiling|mingling|tongzhi|zhishi)|nidexinrenwushi|nixianzaiderenwushi|congxianzai(?:kaishi|qi)[a-z]{0,6}?ni(?:shi|jiushi|jiangshi|banyan|buzai|buyong|wuxu|zhineng|zhixu|bixu)`,
+    severity: 'medium',
+    action: 'alert',
+    enabled: true,
+    // Runs only on the pinyin view (see InjectionDetector), never on the text itself
+    metadata: { view: 'pinyin' }
+  },
+  {
+    id: 'prompt_injection_pinyin_jailbreak',
+    name: 'Prompt Injection - Jailbreak Persona (Chinese, by sound)',
+    description: 'Chinese requests to act without limits or enter a jailbreak mode, matched by sound',
+    type: 'injection',
+    pattern: String.raw`kaifazhemoshi|yuejiumoshi|wuxianzhimoshi|shangdimoshi|(?:meiyou|bushou|wushi|baituo|jiechu)(?:renhe)?(?:daode|lunli|anquan|neirong)?(?:de)?(?:xianzhi|yueshu|shencha|guolu|guize|zhunze|dixian)[a-z]{0,10}?(?:zhushou|moxing|jiqiren|juese|moshi|banben|rengongzhineng)`,
+    severity: 'high',
+    action: 'alert',
+    enabled: true,
+    // Runs only on the pinyin view (see InjectionDetector), never on the text itself
+    metadata: { view: 'pinyin' }
+  },
+  {
+    id: 'prompt_injection_zh_acrostic',
+    name: 'Prompt Injection - Hidden Acrostic (Chinese)',
+    description: 'The first characters of the lines spell out an instruction to ignore rules or reveal secrets (藏头)',
+    type: 'injection',
+    pattern: String.raw`(?:忽略|无视|忘记|不要理会|别管|跳过|放弃|绕过|推翻)\S{0,2}?(?:指令|指示|规则|设定|提示词?|命令|约束|限制|规定)|(?:告诉我|输出|透露|泄露|给我)\S{0,2}?(?:密码|口令|密钥|提示词|指令)|(?:系统|隐藏)(?:提示词?|指令)`,
+    severity: 'high',
+    action: 'alert',
+    enabled: true,
+    // Runs only on the acrostic view (see InjectionDetector)
+    metadata: { view: 'acrostic' }
+  },
+  {
+    id: 'prompt_injection_rules_void',
+    name: 'Prompt Injection - Rules Declared Void',
+    description: 'Tells the model its own rules or instructions no longer apply',
+    type: 'injection',
+    pattern: String.raw`(?i)\byour\s+(?:(?:old|previous|prior|earlier|original|current|existing)\s+)?(?:rules|instructions|guidelines|restrictions|constraints|directives)\s+(?:no\s+longer|don'?t|do\s+not|now\s+no\s+longer)\s+apply\b|\byour\s+(?:(?:old|previous|prior|original)\s+)?(?:rules|instructions|guidelines)\s+(?:are|have\s+been)\s+(?:void|revoked|cancell?ed|suspended|lifted|deactivated)\b`,
+    severity: 'high',
+    action: 'alert',
+    enabled: true
+  },
+  {
     id: 'harmful_artifact_request',
     name: 'Request for a Working Malicious Artifact',
     description: 'Asks the agent to produce working malware or a phishing kit: an imperative request to write or build a keylogger, ransomware, phishing email, credential harvester or similar, with cues that it should work for real (complete, convincing, undetectable, in full technical detail). Descriptions of such tools, and defensive guidance, are not requests.',
@@ -724,6 +844,16 @@ export const EXFILTRATION_PATTERNS: DetectionRule[] = [
     description: 'A URL with a placeholder for session, token, conversation or other private data in its query or hostname, for an agent to fill in and fetch',
     type: 'exfiltration',
     pattern: String.raw`(?i)https?://[^\s"'<>]*[?&][\w.-]*=\{\s*(?!your_)[A-Za-z_]*(?:session|token|email|context|conversation|secret|api_?key|password|history|cookie|credential|user_data)[A-Za-z_]*\s*\}|\{\s*[A-Za-z_]*(?:email|token|secret|session|password|api_?key|context|conversation|cookie|credential)[A-Za-z_]*\s*\}\.[a-z0-9-]+\.[a-z0-9.-]*[a-z]{2,}`,
+    severity: 'high',
+    action: 'alert',
+    enabled: true
+  },
+  {
+    id: 'exfiltration_directive_zh',
+    name: 'Exfiltration Directive (Chinese)',
+    description: 'Chinese text telling an agent to send the conversation, credentials or personal data to an outside address or URL',
+    type: 'exfiltration',
+    pattern: String.raw`(?:把|将)?[^\n。！？]{0,10}?(?:这段|整段|所有|全部|我们的|本次|之前的)?(?:对话|聊天记录|对话记录|会话记录|聊天历史|对话历史|历史记录|对话内容|会话|用户数据|个人信息|客户信息|密钥|密码|凭证|令牌|cookie)[^\n。！？]{0,12}?(?:转发|发送|发到|发给|上传|提交|寄给|抄送|传到|传给|同步到|备份到)[^\n。！？]{0,10}?(?:[\w.+-]+@[\w-]+\.[\w.-]+|https?://)|(?:转发|发送|发到|发给|上传|提交|抄送|同步到|备份到)[^\n。！？]{0,6}?(?:这段|整段|所有|全部|我们的)?(?:对话|聊天记录|对话记录|会话记录|历史记录|用户数据|个人信息|密钥|密码|凭证|cookie)[^\n。！？]{0,12}?(?:[\w.+-]+@[\w-]+\.[\w.-]+|https?://)`,
     severity: 'high',
     action: 'alert',
     enabled: true
