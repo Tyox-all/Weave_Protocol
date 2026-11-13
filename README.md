@@ -71,17 +71,26 @@ Mund covers the text. Weave's adapters enforce WARD.md on tool calls in China's 
 
 | Harness | Maker | Adapter | Live check |
 |---|---|---|---|
-| **CodeBuddy Code** | Tencent | [`adapter-codebuddy`](adapter-codebuddy) | ✅ 2.180.0 |
-| **Qoder CLI** | Alibaba | [`adapter-qoder`](adapter-qoder) | ✅ 1.1.83 |
-| **TRAE** | ByteDance | [`adapter-trae`](adapter-trae) | ✅ 3.6.13 |
+| **CodeBuddy Code** | Tencent | [`adapter-codebuddy`](adapter-codebuddy) | ✅ CLI 2.180.0 |
+| **Qoder CLI** | Alibaba | [`adapter-qoder`](adapter-qoder) | ✅ CLI 1.1.83 |
+| **TRAE** | ByteDance | [`adapter-trae`](adapter-trae) | ✅ desktop IDE 3.6.13 |
 
 #### 🛡️ WARD.md in CodeBuddy Code, Qoder and TRAE
-Three more harnesses enforce the same WARD.md: Tencent's **CodeBuddy Code**, Alibaba's **Qoder CLI** and ByteDance's **TRAE**, the most widely used Chinese coding agents. Each is its own adapter, built on Ward's shared evaluator, with every Ward check. All three let a call through if a hook crashes, so every adapter answers with an explicit decision and never exits with an error. All three passed live checks in the real harness:
-- **CodeBuddy Code 2.180.0**, headless with a local scripted model;
-- **Qoder CLI 1.1.83**, signed in with a real model;
-- **TRAE 3.6.13**, the desktop IDE on the free plan.
+Three more harnesses enforce the same WARD.md: Tencent's **CodeBuddy Code**, Alibaba's **Qoder CLI** and ByteDance's **TRAE**, the most widely used Chinese coding agents. Each is its own adapter, built on Ward's shared evaluator, with every Ward check. All three let a call through if a hook crashes, so every adapter answers with an explicit decision and never exits with an error. All three passed live checks on a Mac, each in one form of the product:
+- **CodeBuddy Code CLI 2.180.0**, headless (`-p`) with a local scripted model and no sign-in;
+- **Qoder CLI 1.1.83**, interactive, signed in with a real model;
+- **TRAE desktop IDE 3.6.13**, signed in on the free plan, with a project hook in Run in Sandbox mode.
+
+Not checked yet: the CodeBuddy IDE and its editor plugins, the Qoder IDE, TRAE's global hook, its Run Automatically Locally mode and its China build. A web or cloud agent from any vendor is out of reach, because its tool calls run on the vendor's servers, where no local hook runs.
 
 In each one, Ward blocked a read of `secrets/`, allowed an ordinary read, and blocked `curl` to an unlisted host while allowing a listed one. In CodeBuddy and Qoder, the user's own settings allowed `curl`. One thing we learned: TRAE ignores a `hooks.json` until you switch it on in **Settings > Hooks**. Our first TRAE run enforced nothing until we did. The adapter README says so.
+
+**Why it matters that Ward runs locally.** The hook runs on your machine, before the harness executes the tool. That gives you:
+- **Your policy decides, not the vendor's.** WARD.md lives in your repo, and Ward's deny stands even where the harness's own settings allow the call. The CodeBuddy and Qoder live checks confirmed this against a user rule that allowed `curl`.
+- **The model doesn't matter.** It's the same check whether the agent runs Qwen, DeepSeek, Kimi, Claude or a local model, and `model_jurisdictions` can limit which model endpoints the agent may call.
+- **Nothing leaves your machine.** Ward decides offline, from the tool name and arguments. The dashboard, if you turn it on, gets only the decision and the tool name.
+- **Proof you hold.** Each decision is a signed receipt on your disk, and `weave-ward receipts verify` checks the chain without trusting the agent or the vendor.
+- **One policy, every harness.** The same WARD.md works in CodeBuddy, Qoder, TRAE, Qwen Code, Claude Code, Codex, Cursor, Gemini CLI and the rest.
 
 #### 🛡️ WARD.md in Qwen Code, and model endpoints by jurisdiction (adapter-qwencode 0.1.0, Ward 0.3.10)
 WARD.md now runs in **Qwen Code**, Alibaba's open-source terminal coding agent. Deferred tools reached through `tool_call` are decided as the tool they invoke. In a live check with Qwen Code 0.26.6, Ward blocked a `curl` that the user's own settings allowed. It also decided the calls made by Qwen Code's background memory agent.
