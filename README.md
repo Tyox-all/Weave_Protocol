@@ -64,6 +64,9 @@ npm install @weave_protocol/full
 
 ### 🗓️ November 2026 update — hardening
 
+#### 🛡️ WARD.md in CodeBuddy Code, Qoder and TRAE
+Three more harnesses enforce the same WARD.md: Tencent's **CodeBuddy Code**, Alibaba's **Qoder CLI** and ByteDance's **TRAE**, the most widely used Chinese coding agents. Each is its own adapter, built on Ward's shared evaluator, with every Ward check. All three let a call through if a hook crashes, so every adapter answers with an explicit decision and never exits with an error. In a live check with the real CodeBuddy Code CLI, Ward blocked a `curl` that the user's own settings allowed. Qoder and TRAE are built from their official hook references, and live checks there are next.
+
 #### 🐉🔥🛡️ Mund reads Chinese (0.7.0)
 Mund now catches prompt injection in Chinese, Simplified or Traditional. It also reads past the usual ways people dodge Chinese keyword filters: separators between characters (忽*略), homophone swaps (蜜码 for 密码), typed or mixed-in pinyin, and acrostics. On held-out Chinese attacks it goes from 0 of 144 to 115 of 144. On Tsinghua's Safety-Prompts goal-hijacking set it goes from 2 to 3,454 of 5,000. It flags 0 of 8,043 benign Chinese texts, and English results are unchanged. Method, robustness tests and limits: [DETECTION_CLAIMS.md](mund/DETECTION_CLAIMS.md#chinese-070).
 
@@ -499,7 +502,7 @@ The packages that keep your agent within policy: declare it, enforce it across e
 
 | Package | Version | Description |
 |---|---|---|
-| [🛡️ @weave_protocol/ward](https://github.com/Tyox-all/Weave_Protocol/blob/main/ward) | 0.3.10 | **WARD.md** — agent security policy standard (parser, validator, runtime checks, shared tool-call evaluator, dashboard reporting) |
+| [🛡️ @weave_protocol/ward](https://github.com/Tyox-all/Weave_Protocol/blob/main/ward) | 0.3.11 | **WARD.md** — agent security policy standard (parser, validator, runtime checks, shared tool-call evaluator, dashboard reporting) |
 | [🛡️ @weave_protocol/adapter-claudecode](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-claudecode) | 0.5.0 | **Claude Code adapter** — enforces WARD.md via PreToolUse hooks; Mund pre-install hooks for skills + MCP |
 | [🛡️ @weave_protocol/adapter-antigravity](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-antigravity) | 0.5.0 | **Google Antigravity adapter** — enforces WARD.md across desktop, `agy` CLI, and SDK; Mund pre-install hooks |
 | [🛡️ @weave_protocol/adapter-msaf](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-msaf) | 0.4.0 | **Microsoft Agent Framework adapter** — middleware-based WARD enforcement |
@@ -508,6 +511,9 @@ The packages that keep your agent within policy: declare it, enforce it across e
 | [🛡️ @weave_protocol/adapter-opencode](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-opencode) | 0.3.0 | **OpenCode plugin** — enforces WARD.md on every tool call, whatever model OpenCode runs |
 | [🛡️ @weave_protocol/adapter-cursor](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-cursor) | 0.3.0 | **Cursor adapter** — enforces WARD.md via Cursor's agent hooks (shell, file, MCP and tool calls) |
 | [🛡️ @weave_protocol/adapter-qwencode](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-qwencode) | 0.1.0 | **Qwen Code adapter** — enforces WARD.md via Qwen Code's PreToolUse hook (shell, file, web, MCP and deferred tool calls) |
+| [🛡️ @weave_protocol/adapter-codebuddy](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-codebuddy) | 0.1.0 | **CodeBuddy Code adapter** — enforces WARD.md via Tencent CodeBuddy Code's PreToolUse hook |
+| [🛡️ @weave_protocol/adapter-qoder](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-qoder) | 0.1.0 | **Qoder adapter** — enforces WARD.md via Alibaba Qoder CLI's PreToolUse hook |
+| [🛡️ @weave_protocol/adapter-trae](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-trae) | 0.1.0 | **TRAE adapter** — enforces WARD.md via ByteDance TRAE's PreToolUse hook |
 | [🌐 @weave_protocol/browser](https://github.com/Tyox-all/Weave_Protocol/blob/main/browser) | 0.3.1 | **Browser agent security** — runtime IPI scanner (33 patterns) for headless agents |
 | [🔍 @weave_protocol/hundredmen](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen) | 1.4.0 | **MCP proxy** — intercept, scan, gate tool calls; enforces WARD.md as first gate |
 | [🛡️ @weave_protocol/mund](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund) | 0.7.0 | **Scanner** — secrets, PII, injection, MCP vetting, pre-install checks for skills + MCP (rug pulls), OSV dependency CVEs, SARIF, threat intel |
@@ -534,7 +540,7 @@ The front door, the dashboard, the bridges to other frameworks.
 |---|---|---|
 | [🕸️ @weave_protocol/cli](https://github.com/Tyox-all/Weave_Protocol/blob/main/cli) | 0.2.1 | **The `weave` CLI** — `init`, `audit`, `dashboard`, `doctor` |
 | [📦 @weave_protocol/full](https://github.com/Tyox-all/Weave_Protocol/blob/main/full) | 0.5.1 | **Bundle** — installs all packages in one command |
-| [🔌 @weave_protocol/api](https://github.com/Tyox-all/Weave_Protocol/blob/main/api) | 1.6.3 | **REST API + Operator Dashboard** — `npx @weave_protocol/api` → http://localhost:3000/dashboard |
+| [🔌 @weave_protocol/api](https://github.com/Tyox-all/Weave_Protocol/blob/main/api) | 1.6.5 | **REST API + Operator Dashboard** — `npx @weave_protocol/api` → http://localhost:3000/dashboard |
 | [🔗 @weave_protocol/langchain](https://github.com/Tyox-all/Weave_Protocol/blob/main/langchain) | **1.1.1** | **LangChain.js** security callbacks & tool wrappers (0 audit vulnerabilities via npm overrides) |
 | [🐍 weave-protocol-llamaindex](https://github.com/Tyox-all/Weave_Protocol/blob/main/llamaindex-py) | 0.1.0 | **Python/LlamaIndex** security callbacks & tools (on PyPI) |
 

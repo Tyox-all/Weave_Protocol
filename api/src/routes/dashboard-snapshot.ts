@@ -139,6 +139,9 @@ const SURFACE_INFO: Record<Surface, { name: string; vendor: string; icon: string
   opencode: { name: 'adapter-opencode', vendor: 'OpenCode', icon: '🛡️' },
   cursor: { name: 'adapter-cursor', vendor: 'Cursor', icon: '🛡️' },
   'qwen-code': { name: 'adapter-qwencode', vendor: 'Alibaba Qwen', icon: '🛡️' },
+  codebuddy: { name: 'adapter-codebuddy', vendor: 'Tencent', icon: '🛡️' },
+  qoder: { name: 'adapter-qoder', vendor: 'Alibaba Qoder', icon: '🛡️' },
+  trae: { name: 'adapter-trae', vendor: 'ByteDance', icon: '🛡️' },
 };
 
 const MINUTE = 60_000;
