@@ -31,8 +31,8 @@ const post = (call, body) => call('/api/v1/events', { method: 'POST', body: JSON
 test('with nothing reported, every surface is off and nothing is invented', async () => {
   await withServer(async (call) => {
     const snap = await (await call('/api/dashboard/snapshot')).json();
-    assert.equal(snap.surfaces.length, 9);
-    assert.deepEqual(snap.surfaces.slice(5).map((s) => s.id), ['gemini-cli', 'codex', 'opencode', 'cursor']);
+    assert.equal(snap.surfaces.length, 10);
+    assert.deepEqual(snap.surfaces.slice(5).map((s) => s.id), ['gemini-cli', 'codex', 'opencode', 'cursor', 'qwen-code']);
     for (const s of snap.surfaces) {
       assert.equal(s.status, 'off', s.id);
       assert.equal(s.eventsToday, 0, s.id);
