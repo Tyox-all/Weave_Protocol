@@ -18,6 +18,8 @@ npm install @weave_protocol/ward
 
 ## 🆕 What's new
 
+**0.3.10: model endpoints by jurisdiction.** WARD.md can now say whose model endpoints an agent may call. `model_jurisdictions: deny: [cn]` blocks known endpoints of Chinese companies; `allow: [us, eu]` admits only those. This works for URL arguments and for URLs inside shell commands, and an allow rule naming a host exactly still wins. Ward also now knows more Chinese model endpoints: Tencent Hunyuan, MiniMax, StepFun, Baidu Qianfan, SiliconFlow and ByteDance's Volcengine Ark (Doubao). These also count for the model-endpoint guardrail. See [model endpoints by jurisdiction](#model-endpoints-by-jurisdiction-0310).
+
 **0.3.9: receipt checkpoints.** A receipt chain alone can't show that its newest receipts were cut off. `weave-ward receipts checkpoint` signs the log's current head. Keep checkpoints off the machine, or anchor them on-chain with [Dōmere](https://www.npmjs.com/package/@weave_protocol/domere) (`domere_anchor_receipts`). `weave-ward receipts verify --checkpoints=FILE` then fails if any receipt up to a checkpoint was removed or changed. See [checkpoints and anchoring](#checkpoints-and-anchoring-039).
 
 **0.3.8: signed policies.** Sign WARD.md once with `weave-ward sign`, then list the public key in `~/.weave/trusted-policy-keys` on each machine. Every adapter will then refuse a policy that was edited after signing or that a trusted key didn't sign: each call is denied with the reason. A signed policy that was changed is refused even without a trust list. See [signed policies](#signed-policies-038).
@@ -241,6 +243,30 @@ evaluateToolCall(policy, tool, args, { classify: (text) => myFindings(text) }); 
 
 `checkOutboundData`, `classifyData`, `classifyCommandReferences` and `isModelEndpoint` are exported for hosts that don't use `evaluateToolCall`.
 
+### Model endpoints by jurisdiction (0.3.10+)
+
+Ward knows the API hosts of the major model providers, and the jurisdiction of the company behind each:
+
+| Code | Providers |
+|---|---|
+| `us` | Anthropic, OpenAI and Azure OpenAI, Google, AWS Bedrock, OpenRouter, Groq, Together, Fireworks, Perplexity, xAI, Cerebras, Hugging Face, Replicate |
+| `cn` | DeepSeek, Moonshot (Kimi), Alibaba DashScope (Qwen), Zhipu (GLM), Tencent Hunyuan, MiniMax, StepFun, Baidu Qianfan, SiliconFlow, ByteDance Volcengine Ark (Doubao) |
+| `eu` | Mistral |
+| `ca` | Cohere |
+
+That's where the company is incorporated, not where a server sits: an international host of a Chinese company (`api.moonshot.ai`, `dashscope-intl.aliyuncs.com`, `api.minimax.io`) is still `cn`.
+
+```yaml
+## Network
+
+allow:
+  - url: "https://**"
+model_jurisdictions:
+  deny: [cn]          # or allow: [us, eu]
+```
+
+A call to a model endpoint in a blocked jurisdiction is denied, whether its URL is an argument or appears in a shell command. To use one such provider anyway, name its host in an allow rule (`https://api.deepseek.com/**`); a wildcard host doesn't count. `weave-ward validate` warns about codes it doesn't know. A typo in `allow` would block every model endpoint. Local and self-hosted models (Ollama, LM Studio, vLLM) aren't on the list, so this never blocks them.
+
 ### Payments and spend limits (0.3.6+)
 
 **Payment guard.** `evaluateToolCall` asks for approval before any call that moves money. It recognizes:
@@ -368,7 +394,7 @@ Checkpoints help only if they are stored where the log's machine can't rewrite t
 
 ### Reporting decisions to the dashboard (0.3.0+)
 
-`reportEvent()` sends an enforcement decision to a local Weave API (`@weave_protocol/api`), which shows it on its dashboard. The Weave adapters, browser guard and Hundredmen call it for you. Its surfaces are `mcp`, `claude-code`, `antigravity`, `msaf`, `browser`, `gemini-cli`, `codex`, `opencode` and `cursor` (the last four from 0.3.1).
+`reportEvent()` sends an enforcement decision to a local Weave API (`@weave_protocol/api`), which shows it on its dashboard. The Weave adapters, browser guard and Hundredmen call it for you. Its surfaces are `mcp`, `claude-code`, `antigravity`, `msaf`, `browser`, `gemini-cli`, `codex`, `opencode` and `cursor` (the last four from 0.3.1), and `qwen-code` (0.3.10).
 
 ```bash
 export WEAVE_DASHBOARD_URL=http://localhost:3000   # where the API runs

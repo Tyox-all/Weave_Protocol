@@ -143,19 +143,38 @@ export function classifyCommandReferences(command: string): DataFinding[] {
 // ─────────────────────────────────────────────────────────
 
 /** Hosts of LLM APIs. Data sent here goes into someone's model. */
-const MODEL_HOSTS = [
-  "api.anthropic.com", "api.openai.com", "generativelanguage.googleapis.com", "aiplatform.googleapis.com",
-  "api.deepseek.com", "api.moonshot.ai", "api.moonshot.cn", "dashscope.aliyuncs.com", "dashscope-intl.aliyuncs.com",
-  "open.bigmodel.cn", "api.z.ai", "openrouter.ai", "api.groq.com", "api.together.xyz", "api.mistral.ai",
-  "api.cohere.com", "api.cohere.ai", "api.fireworks.ai", "api.perplexity.ai", "api.x.ai", "api.cerebras.ai",
-  "inference.huggingface.co", "api-inference.huggingface.co", "api.replicate.com",
+/**
+ * Known model API endpoints and the jurisdiction of the company behind each
+ * (where it is incorporated, not where a server sits): "us", "cn", "eu", "ca".
+ */
+const MODEL_HOST_JURISDICTION: Record<string, string> = {
+  "api.anthropic.com": "us", "api.openai.com": "us", "generativelanguage.googleapis.com": "us", "aiplatform.googleapis.com": "us",
+  "openrouter.ai": "us", "api.groq.com": "us", "api.together.xyz": "us", "api.fireworks.ai": "us", "api.perplexity.ai": "us",
+  "api.x.ai": "us", "api.cerebras.ai": "us", "inference.huggingface.co": "us", "api-inference.huggingface.co": "us", "api.replicate.com": "us",
+  "api.mistral.ai": "eu",
+  "api.cohere.com": "ca", "api.cohere.ai": "ca",
+  // China: DeepSeek, Moonshot (Kimi), Alibaba (Qwen), Zhipu (GLM), Tencent, MiniMax, StepFun, Baidu, SiliconFlow.
+  // International hosts of Chinese companies are still under Chinese jurisdiction.
+  "api.deepseek.com": "cn", "api.moonshot.ai": "cn", "api.moonshot.cn": "cn", "dashscope.aliyuncs.com": "cn", "dashscope-intl.aliyuncs.com": "cn",
+  "open.bigmodel.cn": "cn", "api.z.ai": "cn", "api.hunyuan.cloud.tencent.com": "cn", "api.minimaxi.com": "cn", "api.minimax.io": "cn",
+  "api.minimax.chat": "cn", "api.stepfun.com": "cn", "qianfan.baidubce.com": "cn", "api.siliconflow.cn": "cn", "api.siliconflow.com": "cn",
+};
+const MODEL_HOST_PATTERNS: Array<[RegExp, string]> = [
+  [/\.openai\.azure\.com$|\.services\.ai\.azure\.com$|\.cognitiveservices\.azure\.com$/, "us"],
+  [/^bedrock-runtime\.[a-z0-9-]+\.amazonaws\.com$/, "us"],
+  [/^ark\.[a-z0-9-]+\.volces\.com$/, "cn"], // ByteDance Volcengine Ark (Doubao)
 ];
-const MODEL_HOST_SUFFIXES = [".openai.azure.com", ".services.ai.azure.com", ".cognitiveservices.azure.com"];
+
+/** The jurisdiction of a known model endpoint ("us", "cn", "eu", "ca"), or undefined if it isn't one. */
+export function modelEndpointJurisdiction(host: string): string | undefined {
+  host = host.toLowerCase();
+  if (MODEL_HOST_JURISDICTION[host]) return MODEL_HOST_JURISDICTION[host];
+  for (const [re, j] of MODEL_HOST_PATTERNS) if (re.test(host)) return j;
+  return undefined;
+}
 
 export function isModelEndpoint(host: string): boolean {
-  host = host.toLowerCase();
-  if (MODEL_HOSTS.includes(host) || MODEL_HOST_SUFFIXES.some((s) => host.endsWith(s))) return true;
-  return /^bedrock-runtime\.[a-z0-9-]+\.amazonaws\.com$/.test(host);
+  return modelEndpointJurisdiction(host) !== undefined;
 }
 
 const hostOf = (url: string): string | undefined => {

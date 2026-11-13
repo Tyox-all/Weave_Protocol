@@ -82,6 +82,12 @@ export interface NetworkPolicy {
   allow?: NetworkRule[];
   deny?: NetworkRule[];
   default?: "allow" | "deny";
+  /**
+   * Which jurisdictions' model endpoints the agent may call ("us", "cn", "eu",
+   * "ca"): by the company behind each known endpoint. An allow rule naming a
+   * host exactly still lifts it. (Ward 0.3.10)
+   */
+  model_jurisdictions?: { allow?: string[]; deny?: string[] };
 }
 
 export interface NetworkRule {

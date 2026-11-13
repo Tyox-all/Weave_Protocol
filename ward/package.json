@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/ward",
-  "version": "0.3.9",
+  "version": "0.3.10",
   "description": "WARD.md \u2014 the agent security policy standard. Define what your agents can and cannot do, version-controlled alongside AGENTS.md and SKILL.md.",
   "type": "module",
   "main": "dist/index.js",
