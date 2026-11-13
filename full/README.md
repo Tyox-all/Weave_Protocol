@@ -25,11 +25,13 @@ That's it. You now have every Weave Protocol package installed:
 | 📜 [@weave_protocol/ward](https://www.npmjs.com/package/@weave_protocol/ward) | WARD.md policy standard and the shared tool-call evaluator |
 | 🌐 [@weave_protocol/browser](https://www.npmjs.com/package/@weave_protocol/browser) | Browser-agent guard: navigation, downloads, prompt-injection scanning |
 | 🕸️ [@weave_protocol/cli](https://www.npmjs.com/package/@weave_protocol/cli) | `weave init`, audit and dashboard commands |
-| 🛡️ Harness adapters | WARD.md enforcement in [Claude Code](https://www.npmjs.com/package/@weave_protocol/adapter-claudecode), [Antigravity](https://www.npmjs.com/package/@weave_protocol/adapter-antigravity), [Microsoft Agent Framework](https://www.npmjs.com/package/@weave_protocol/adapter-msaf), [Gemini CLI](https://www.npmjs.com/package/@weave_protocol/adapter-geminicli), [Codex CLI](https://www.npmjs.com/package/@weave_protocol/adapter-codex), [OpenCode](https://www.npmjs.com/package/@weave_protocol/adapter-opencode) and [Cursor](https://www.npmjs.com/package/@weave_protocol/adapter-cursor). Installing them doesn't turn them on; run each adapter's `init`. |
+| 🛡️ Harness adapters | WARD.md enforcement in [Claude Code](https://www.npmjs.com/package/@weave_protocol/adapter-claudecode), [Antigravity](https://www.npmjs.com/package/@weave_protocol/adapter-antigravity), [Microsoft Agent Framework](https://www.npmjs.com/package/@weave_protocol/adapter-msaf), [Gemini CLI](https://www.npmjs.com/package/@weave_protocol/adapter-geminicli), [Codex CLI](https://www.npmjs.com/package/@weave_protocol/adapter-codex), [OpenCode](https://www.npmjs.com/package/@weave_protocol/adapter-opencode), [Cursor](https://www.npmjs.com/package/@weave_protocol/adapter-cursor) and [Qwen Code](https://www.npmjs.com/package/@weave_protocol/adapter-qwencode). Installing them doesn't turn them on; run each adapter's `init`. |
 
 ---
 
 ## 🆕 What's new
+
+**0.5.2** brings in Mund 0.7.0, which reads Chinese injections and the usual ways people dodge Chinese keyword filters, and adds the Qwen Code adapter.
 
 **0.5.1** brings in Mund 0.6.1. A local classifier backs up the injection rules and raises detection on public test sets (Gandalf 65% → 88%, jackhhao 57% → 77%). New rules catch guardrail mapping and requests for working malware. Mund also misfires far less on security writing.
 
@@ -91,7 +93,7 @@ One [WARD.md](https://github.com/Tyox-all/Weave_Protocol) policy for every agent
 | [Hundredmen](https://www.npmjs.com/package/@weave_protocol/hundredmen) | MCP proxy that enforces WARD.md on tool calls |
 | [Tollere](https://www.npmjs.com/package/@weave_protocol/tollere) | Supply-chain checks: typosquats, CVEs, suspicious version diffs |
 | [Browser](https://www.npmjs.com/package/@weave_protocol/browser) | WARD.md and injection scanning for Playwright browser agents |
-| Adapters | WARD.md in [Claude Code](https://www.npmjs.com/package/@weave_protocol/adapter-claudecode), [Antigravity](https://www.npmjs.com/package/@weave_protocol/adapter-antigravity), [MSAF](https://www.npmjs.com/package/@weave_protocol/adapter-msaf), [Gemini CLI](https://www.npmjs.com/package/@weave_protocol/adapter-geminicli), [Codex](https://www.npmjs.com/package/@weave_protocol/adapter-codex), [OpenCode](https://www.npmjs.com/package/@weave_protocol/adapter-opencode) and [Cursor](https://www.npmjs.com/package/@weave_protocol/adapter-cursor) |
+| Adapters | WARD.md in [Claude Code](https://www.npmjs.com/package/@weave_protocol/adapter-claudecode), [Antigravity](https://www.npmjs.com/package/@weave_protocol/adapter-antigravity), [MSAF](https://www.npmjs.com/package/@weave_protocol/adapter-msaf), [Gemini CLI](https://www.npmjs.com/package/@weave_protocol/adapter-geminicli), [Codex](https://www.npmjs.com/package/@weave_protocol/adapter-codex), [OpenCode](https://www.npmjs.com/package/@weave_protocol/adapter-opencode), [Cursor](https://www.npmjs.com/package/@weave_protocol/adapter-cursor) and [Qwen Code](https://www.npmjs.com/package/@weave_protocol/adapter-qwencode) |
 | [Adversary](https://www.npmjs.com/package/@weave_protocol/adversary) · [AgentSecBench](https://www.npmjs.com/package/@weave_protocol/agentsecbench) | Red-team engine and locked benchmark |
 | [API](https://www.npmjs.com/package/@weave_protocol/api) · [CLI](https://www.npmjs.com/package/@weave_protocol/cli) · [LangChain](https://www.npmjs.com/package/@weave_protocol/langchain) | REST API and dashboard, setup CLI, LangChain.js integration |
 | [full](https://www.npmjs.com/package/@weave_protocol/full) | Every defensive package in one install |

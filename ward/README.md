@@ -18,6 +18,8 @@ npm install @weave_protocol/ward
 
 ## 🆕 What's new
 
+**0.3.11: dashboard surfaces for CodeBuddy Code, Qoder and TRAE.** `reportEvent()` accepts `codebuddy`, `qoder` and `trae`, for the adapters for those three harnesses.
+
 **0.3.10: model endpoints by jurisdiction.** WARD.md can now say whose model endpoints an agent may call. `model_jurisdictions: deny: [cn]` blocks known endpoints of Chinese companies; `allow: [us, eu]` admits only those. This works for URL arguments and for URLs inside shell commands, and an allow rule naming a host exactly still wins. Ward also now knows more Chinese model endpoints: Tencent Hunyuan, MiniMax, StepFun, Baidu Qianfan, SiliconFlow and ByteDance's Volcengine Ark (Doubao). These also count for the model-endpoint guardrail. See [model endpoints by jurisdiction](#model-endpoints-by-jurisdiction-0310).
 
 **0.3.9: receipt checkpoints.** A receipt chain alone can't show that its newest receipts were cut off. `weave-ward receipts checkpoint` signs the log's current head. Keep checkpoints off the machine, or anchor them on-chain with [Dōmere](https://www.npmjs.com/package/@weave_protocol/domere) (`domere_anchor_receipts`). `weave-ward receipts verify --checkpoints=FILE` then fails if any receipt up to a checkpoint was removed or changed. See [checkpoints and anchoring](#checkpoints-and-anchoring-039).
@@ -394,7 +396,7 @@ Checkpoints help only if they are stored where the log's machine can't rewrite t
 
 ### Reporting decisions to the dashboard (0.3.0+)
 
-`reportEvent()` sends an enforcement decision to a local Weave API (`@weave_protocol/api`), which shows it on its dashboard. The Weave adapters, browser guard and Hundredmen call it for you. Its surfaces are `mcp`, `claude-code`, `antigravity`, `msaf`, `browser`, `gemini-cli`, `codex`, `opencode` and `cursor` (the last four from 0.3.1), and `qwen-code` (0.3.10).
+`reportEvent()` sends an enforcement decision to a local Weave API (`@weave_protocol/api`), which shows it on its dashboard. The Weave adapters, browser guard and Hundredmen call it for you. Its surfaces are `mcp`, `claude-code`, `antigravity`, `msaf`, `browser`, `gemini-cli`, `codex`, `opencode` and `cursor` (the last four from 0.3.1), `qwen-code` (0.3.10), and `codebuddy`, `qoder` and `trae` (0.3.11).
 
 ```bash
 export WEAVE_DASHBOARD_URL=http://localhost:3000   # where the API runs
