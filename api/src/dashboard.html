@@ -242,7 +242,7 @@
   <section>
     <div class="section-label">Architecture &middot; live state</div>
     <div class="hierarchy">
-      <svg class="hierarchy-svg" viewBox="0 0 1180 530" xmlns="http://www.w3.org/2000/svg">
+      <svg class="hierarchy-svg" viewBox="0 0 1180 720" xmlns="http://www.w3.org/2000/svg">
 
         <!-- WARD policy node -->
         <g transform="translate(450, 16)" id="ward-node">
@@ -269,9 +269,12 @@
           <path id="conn-opencode" d="M 590 96 L 590 335 L 570 335 L 570 350" stroke="#404040" stroke-width="1" stroke-linejoin="round"/>
           <path id="conn-cursor" d="M 590 96 L 590 335 L 790 335 L 790 350" stroke="#404040" stroke-width="1" stroke-linejoin="round"/>
           <path id="conn-qwen-code" d="M 590 96 L 590 335 L 1010 335 L 1010 350" stroke="#404040" stroke-width="1" stroke-linejoin="round"/>
+          <path id="conn-codebuddy" d="M 590 96 L 590 525 L 350 525 L 350 540" stroke="#404040" stroke-width="1" stroke-linejoin="round"/>
+          <path id="conn-qoder" d="M 590 96 L 590 525 L 570 525 L 570 540" stroke="#404040" stroke-width="1" stroke-linejoin="round"/>
+          <path id="conn-trae" d="M 590 96 L 590 525 L 790 525 L 790 540" stroke="#404040" stroke-width="1" stroke-linejoin="round"/>
         </g>
 
-        <!-- 10 surface cards in two rows (positions hardcoded; values updated by JS) -->
+        <!-- 13 surface cards in three rows (positions hardcoded; values updated by JS) -->
         <g id="card-mcp" transform="translate(30, 160)">
           <rect class="card-bg" width="200" height="160" rx="8" fill="#0e0e0e" stroke="#2e2e2e" stroke-width="1"/>
           <g transform="translate(16, 16)">
@@ -414,6 +417,48 @@
           <text x="184" y="124" class="card-delta" text-anchor="end" font-family="-apple-system, system-ui, sans-serif" font-size="11" fill="#fafafa" style="font-variant-numeric: tabular-nums;"></text>
           <text x="184" y="140" class="card-delta-label" text-anchor="end" font-family="-apple-system, system-ui, sans-serif" font-size="9" fill="#525252"></text>
         </g>
+
+        <g id="card-codebuddy" transform="translate(250, 540)">
+          <rect class="card-bg" width="200" height="160" rx="8" fill="#0e0e0e" stroke="#2e2e2e" stroke-width="1"/>
+          <g transform="translate(16, 16)">
+            <path d="M9 0 L18 4 L18 12 C18 16 14 19 9 20 C4 19 0 16 0 12 L0 4 Z" fill="none" stroke="#fafafa" stroke-width="1.5"/>
+          </g>
+          <g class="status-badge"></g>
+          <text x="16" y="68" class="card-name" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#fafafa">adapter-codebuddy</text>
+          <text x="16" y="84" class="card-vendor" font-family="-apple-system, system-ui, sans-serif" font-size="11" fill="#a3a3a3">Tencent</text>
+          <text x="16" y="124" class="card-count" font-family="-apple-system, system-ui, sans-serif" font-size="28" font-weight="700" fill="#fafafa" style="font-variant-numeric: tabular-nums; letter-spacing: -0.02em;">—</text>
+          <text x="16" y="140" class="card-count-label" font-family="-apple-system, system-ui, sans-serif" font-size="9" font-weight="600" letter-spacing="0.08em" fill="#525252">EVENTS TODAY</text>
+          <text x="184" y="124" class="card-delta" text-anchor="end" font-family="-apple-system, system-ui, sans-serif" font-size="11" fill="#fafafa" style="font-variant-numeric: tabular-nums;"></text>
+          <text x="184" y="140" class="card-delta-label" text-anchor="end" font-family="-apple-system, system-ui, sans-serif" font-size="9" fill="#525252"></text>
+        </g>
+
+        <g id="card-qoder" transform="translate(470, 540)">
+          <rect class="card-bg" width="200" height="160" rx="8" fill="#0e0e0e" stroke="#2e2e2e" stroke-width="1"/>
+          <g transform="translate(16, 16)">
+            <path d="M9 0 L18 4 L18 12 C18 16 14 19 9 20 C4 19 0 16 0 12 L0 4 Z" fill="none" stroke="#fafafa" stroke-width="1.5"/>
+          </g>
+          <g class="status-badge"></g>
+          <text x="16" y="68" class="card-name" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#fafafa">adapter-qoder</text>
+          <text x="16" y="84" class="card-vendor" font-family="-apple-system, system-ui, sans-serif" font-size="11" fill="#a3a3a3">Alibaba Qoder</text>
+          <text x="16" y="124" class="card-count" font-family="-apple-system, system-ui, sans-serif" font-size="28" font-weight="700" fill="#fafafa" style="font-variant-numeric: tabular-nums; letter-spacing: -0.02em;">—</text>
+          <text x="16" y="140" class="card-count-label" font-family="-apple-system, system-ui, sans-serif" font-size="9" font-weight="600" letter-spacing="0.08em" fill="#525252">EVENTS TODAY</text>
+          <text x="184" y="124" class="card-delta" text-anchor="end" font-family="-apple-system, system-ui, sans-serif" font-size="11" fill="#fafafa" style="font-variant-numeric: tabular-nums;"></text>
+          <text x="184" y="140" class="card-delta-label" text-anchor="end" font-family="-apple-system, system-ui, sans-serif" font-size="9" fill="#525252"></text>
+        </g>
+
+        <g id="card-trae" transform="translate(690, 540)">
+          <rect class="card-bg" width="200" height="160" rx="8" fill="#0e0e0e" stroke="#2e2e2e" stroke-width="1"/>
+          <g transform="translate(16, 16)">
+            <path d="M9 0 L18 4 L18 12 C18 16 14 19 9 20 C4 19 0 16 0 12 L0 4 Z" fill="none" stroke="#fafafa" stroke-width="1.5"/>
+          </g>
+          <g class="status-badge"></g>
+          <text x="16" y="68" class="card-name" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#fafafa">adapter-trae</text>
+          <text x="16" y="84" class="card-vendor" font-family="-apple-system, system-ui, sans-serif" font-size="11" fill="#a3a3a3">ByteDance</text>
+          <text x="16" y="124" class="card-count" font-family="-apple-system, system-ui, sans-serif" font-size="28" font-weight="700" fill="#fafafa" style="font-variant-numeric: tabular-nums; letter-spacing: -0.02em;">—</text>
+          <text x="16" y="140" class="card-count-label" font-family="-apple-system, system-ui, sans-serif" font-size="9" font-weight="600" letter-spacing="0.08em" fill="#525252">EVENTS TODAY</text>
+          <text x="184" y="124" class="card-delta" text-anchor="end" font-family="-apple-system, system-ui, sans-serif" font-size="11" fill="#fafafa" style="font-variant-numeric: tabular-nums;"></text>
+          <text x="184" y="140" class="card-delta-label" text-anchor="end" font-family="-apple-system, system-ui, sans-serif" font-size="9" fill="#525252"></text>
+        </g>
       </svg>
     </div>
   </section>
@@ -454,7 +499,7 @@
 
 <script type="module">
   const POLL_INTERVAL_MS = 5000;
-  const SURFACE_ORDER = ['mcp', 'claude-code', 'antigravity', 'msaf', 'browser', 'gemini-cli', 'codex', 'opencode', 'cursor', 'qwen-code'];
+  const SURFACE_ORDER = ['mcp', 'claude-code', 'antigravity', 'msaf', 'browser', 'gemini-cli', 'codex', 'opencode', 'cursor', 'qwen-code', 'codebuddy', 'qoder', 'trae'];
 
   const escapeHtml = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   const rel = ts => {

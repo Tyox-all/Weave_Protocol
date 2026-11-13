@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [mund, hord, domere, witan, hundredmen, tollere, ward, langchain, api, cli, full, browser, adversary, agentsecbench, yoxallismus, adapter-claudecode, adapter-antigravity, adapter-msaf, adapter-geminicli, adapter-codex, adapter-opencode, adapter-cursor, adapter-qwencode]
+        package: [mund, hord, domere, witan, hundredmen, tollere, ward, langchain, api, cli, full, browser, adversary, agentsecbench, yoxallismus, adapter-claudecode, adapter-antigravity, adapter-msaf, adapter-geminicli, adapter-codex, adapter-opencode, adapter-cursor, adapter-qwencode, adapter-codebuddy, adapter-qoder, adapter-trae]
     defaults:
       run:
         working-directory: ${{ matrix.package }}

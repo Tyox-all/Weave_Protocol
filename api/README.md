@@ -14,6 +14,8 @@ Part of the [Weave Protocol Security Suite](https://github.com/Tyox-all/Weave_Pr
 
 ## 🆕 What's new
 
+**1.6.5: CodeBuddy Code, Qoder and TRAE on the dashboard.** The new adapters report as `codebuddy`, `qoder` and `trae`, in a third row.
+
 **1.6.4: Mund 0.7.0.** The scan endpoints use Mund 0.7.0, so they catch Chinese prompt injections, including homophone, pinyin and separator tricks.
 
 **1.6.3: Qwen Code on the dashboard.** The new [Qwen Code adapter](https://www.npmjs.com/package/@weave_protocol/adapter-qwencode) reports as `qwen-code`, and the dashboard's second row now holds five harness adapters.
