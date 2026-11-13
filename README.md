@@ -75,17 +75,27 @@ Mund covers the text. Weave's adapters enforce WARD.md on tool calls in China's 
 | **Qoder CLI** | Alibaba | [`adapter-qoder`](adapter-qoder) | ✅ CLI 1.1.83, desktop app 0.5.11 |
 | **TRAE** | ByteDance | [`adapter-trae`](adapter-trae) | ✅ desktop IDE 3.6.13, project and global hook |
 
-#### 🛡️ WARD.md in CodeBuddy Code, Qoder and TRAE
-Three more harnesses enforce the same WARD.md: Tencent's **CodeBuddy Code**, Alibaba's **Qoder CLI** and ByteDance's **TRAE**, the most widely used Chinese coding agents. Each is its own adapter, built on Ward's shared evaluator, with every Ward check. All three let a call through if a hook crashes, so every adapter answers with an explicit decision and never exits with an error. All three passed live checks on a Mac, each in one form of the product:
+#### 🛡️ WARD.md in CodeBuddy Code, Qoder and TRAE (adapter-trae 0.1.1, Ward 0.3.12)
+Three more harnesses enforce the same WARD.md: Tencent's **CodeBuddy Code**, Alibaba's **Qoder** and ByteDance's **TRAE**, the most widely used Chinese coding agents. Each has its own adapter, built on Ward's shared evaluator, with every Ward check. All three let a call through if a hook crashes, so every adapter answers with an explicit decision and never exits with an error.
+
+**What we live-checked**, on a Mac, in the real product:
 - **CodeBuddy Code CLI 2.180.0**, headless (`-p`) with a local scripted model and no sign-in;
-- **Qoder CLI 1.1.83**, interactive, signed in with a real model, and the **Qoder desktop app 0.5.11** with Auto approve on;
-- **TRAE desktop IDE 3.6.13**, signed in on the free plan, with a project hook and with the global hook `weave-trae init` installs.
+- **Qoder CLI 1.1.83**, signed in with a real model, and the **Qoder desktop app 0.5.11** with Auto approve on;
+- **TRAE desktop IDE 3.6.13** on the free plan, with a project hook and with the global hook `weave-trae init` installs, in both **Run in Sandbox** and **Run Automatically Locally** modes.
 
-**TRAE's Run in Sandbox mode, found and fixed.** Under adapter-trae 0.1.0, TRAE's default sandbox blocked Ward's writes to `~/.weave`, and TRAE then ignored the hook's answer. We found it in TRAE's hook log. From adapter-trae 0.1.1 and Ward 0.3.12, the hook keeps its state in a temp folder inside the sandbox and never hangs, and a live check in sandbox mode blocked every test call. Run Automatically Locally keeps receipts and limits in `~/.weave`. The [adapter README](adapter-trae#verified) has the details.
+In each, Ward blocked a read of `secrets/` and a `curl` to an unlisted host, and allowed an ordinary read. In CodeBuddy and Qoder, the user's own settings allowed `curl`, and Ward still blocked it. Every result was confirmed by Ward's signed receipts, not by the agent's account.
 
-Not checked yet: the CodeBuddy IDE and its editor plugins, the Qoder IDE and JetBrains plugin, and TRAE's China build. A web or cloud agent from any vendor is out of reach, because its tool calls run on the vendor's servers, where no local hook runs.
+**What the live checks found:**
+- **TRAE's sandbox made the hook fail open, now fixed.** In TRAE's default **Run in Sandbox** mode, adapter-trae 0.1.0 tried to write to `~/.weave`. The sandbox forbids that, and TRAE then ignored the hook's answer, even a deny. A bug in Ward's lock could also make the hook hang until it timed out, which TRAE treats as allow too. adapter-trae 0.1.1 detects the sandbox and keeps its state in a temp folder, and Ward 0.3.12 no longer hangs. Re-checked in sandbox mode: every hook run exited cleanly, and every test call was blocked.
+- **TRAE ignores a `hooks.json` until you switch it on** in **Settings > Hooks**. Our first TRAE run enforced nothing until we did.
+- **The Qoder desktop app starts each chat in an empty folder of its own.** Add your project under **Workspaces** so its hook and WARD.md apply.
+- **Agents that can read WARD.md often hold back on their own.** That's good, but it hides whether Ward works. For the unlisted `curl`, we kept the policy outside the workspace, so only Ward could stop the call.
 
-In each one, Ward blocked a read of `secrets/`, allowed an ordinary read, and blocked `curl` to an unlisted host while allowing a listed one. In CodeBuddy and Qoder, the user's own settings allowed `curl`. One thing we learned: TRAE ignores a `hooks.json` until you switch it on in **Settings > Hooks**. Our first TRAE run enforced nothing until we did. The adapter README says so.
+**Not covered yet:**
+- **CodeBuddy IDE and its editor plugins:** we found no documented hooks.
+- **Qoder IDE and JetBrains plugin:** they read the same `.qoder/settings.json`, but they may send their own tool names (such as `run_in_terminal`), which adapter-qoder doesn't map yet.
+- **TRAE's China build:** `weave-trae init` installs into `~/.trae-cn` too, but we haven't run it.
+- **Web and cloud agents, from any vendor:** their tool calls run on the vendor's servers, where no local hook runs.
 
 **Why it matters that Ward runs locally.** The hook runs on your machine, before the harness executes the tool. That gives you:
 - **Your policy decides, not the vendor's.** WARD.md lives in your repo, and Ward's deny stands even where the harness's own settings allow the call. The CodeBuddy and Qoder live checks confirmed this against a user rule that allowed `curl`.
