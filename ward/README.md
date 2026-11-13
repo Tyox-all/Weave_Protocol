@@ -18,6 +18,8 @@ npm install @weave_protocol/ward
 
 ## 🆕 What's new
 
+**0.3.12: no hang when Ward can't write its state.** If the receipt or ledger folder isn't writable, for example inside a harness's sandbox or with a read-only home, Ward used to retry its lock file forever. The hook then timed out, and harnesses that treat a timeout as allow let the call through. Now Ward gives up on the lock at once, and the decision stands. A receipt that can't be written is skipped, as before.
+
 **0.3.11: dashboard surfaces for CodeBuddy Code, Qoder and TRAE.** `reportEvent()` accepts `codebuddy`, `qoder` and `trae`, for the adapters for those three harnesses.
 
 **0.3.10: model endpoints by jurisdiction.** WARD.md can now say whose model endpoints an agent may call. `model_jurisdictions: deny: [cn]` blocks known endpoints of Chinese companies; `allow: [us, eu]` admits only those. This works for URL arguments and for URLs inside shell commands, and an allow rule naming a host exactly still wins. Ward also now knows more Chinese model endpoints: Tencent Hunyuan, MiniMax, StepFun, Baidu Qianfan, SiliconFlow and ByteDance's Volcengine Ark (Doubao). These also count for the model-endpoint guardrail. See [model endpoints by jurisdiction](#model-endpoints-by-jurisdiction-0310).

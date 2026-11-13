@@ -103,11 +103,15 @@ export class FileLedger {
       try {
         closeSync(openSync(this.lockPath, "wx", 0o600));
         return true;
-      } catch {
+      } catch (err) {
+        // Only another process holding the lock is worth waiting for. Any other
+        // error (a read-only or sandboxed folder) won't clear by retrying, and
+        // spinning here would time the hook out, which harnesses treat as allow.
+        if ((err as NodeJS.ErrnoException).code !== "EEXIST") return false;
+        if (Date.now() > deadline) return false; // proceed unlocked rather than hang the agent
         try {
           if (Date.now() - statSync(this.lockPath).mtimeMs > LOCK_STALE_MS) { rmSync(this.lockPath, { force: true }); continue; }
         } catch { continue; }
-        if (Date.now() > deadline) return false; // proceed unlocked rather than hang the agent
         Atomics.wait(SLEEP, 0, 0, 10); // hooks are synchronous; sleep 10ms without spinning
       }
     }

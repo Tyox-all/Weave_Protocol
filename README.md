@@ -81,7 +81,7 @@ Three more harnesses enforce the same WARD.md: Tencent's **CodeBuddy Code**, Ali
 - **Qoder CLI 1.1.83**, interactive, signed in with a real model, and the **Qoder desktop app 0.5.11** with Auto approve on;
 - **TRAE desktop IDE 3.6.13**, signed in on the free plan, with a project hook and with the global hook `weave-trae init` installs.
 
-**In TRAE, use Run Automatically Locally.** In the default Run in Sandbox mode, TRAE's sandbox blocks Ward's writes to `~/.weave` and TRAE drops the hook's answer, so the global hook enforces nothing. The [adapter README](adapter-trae#verified) has the details.
+**TRAE's Run in Sandbox mode, found and fixed.** Under adapter-trae 0.1.0, TRAE's default sandbox blocked Ward's writes to `~/.weave`, and TRAE then ignored the hook's answer. We found it in TRAE's hook log. From adapter-trae 0.1.1 and Ward 0.3.12, the hook keeps its state in a temp folder inside the sandbox and never hangs, and a live check in sandbox mode blocked every test call. Run Automatically Locally keeps receipts and limits in `~/.weave`. The [adapter README](adapter-trae#verified) has the details.
 
 Not checked yet: the CodeBuddy IDE and its editor plugins, the Qoder IDE and JetBrains plugin, and TRAE's China build. A web or cloud agent from any vendor is out of reach, because its tool calls run on the vendor's servers, where no local hook runs.
 
@@ -530,7 +530,7 @@ The packages that keep your agent within policy: declare it, enforce it across e
 
 | Package | Version | Description |
 |---|---|---|
-| [🛡️ @weave_protocol/ward](https://github.com/Tyox-all/Weave_Protocol/blob/main/ward) | 0.3.11 | **WARD.md** — agent security policy standard (parser, validator, runtime checks, shared tool-call evaluator, dashboard reporting) |
+| [🛡️ @weave_protocol/ward](https://github.com/Tyox-all/Weave_Protocol/blob/main/ward) | 0.3.12 | **WARD.md** — agent security policy standard (parser, validator, runtime checks, shared tool-call evaluator, dashboard reporting) |
 | [🛡️ @weave_protocol/adapter-claudecode](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-claudecode) | 0.5.0 | **Claude Code adapter** — enforces WARD.md via PreToolUse hooks; Mund pre-install hooks for skills + MCP |
 | [🛡️ @weave_protocol/adapter-antigravity](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-antigravity) | 0.5.0 | **Google Antigravity adapter** — enforces WARD.md across desktop, `agy` CLI, and SDK; Mund pre-install hooks |
 | [🛡️ @weave_protocol/adapter-msaf](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-msaf) | 0.4.0 | **Microsoft Agent Framework adapter** — middleware-based WARD enforcement |
@@ -541,7 +541,7 @@ The packages that keep your agent within policy: declare it, enforce it across e
 | [🛡️ @weave_protocol/adapter-qwencode](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-qwencode) | 0.1.0 | **Qwen Code adapter** — enforces WARD.md via Qwen Code's PreToolUse hook (shell, file, web, MCP and deferred tool calls) |
 | [🛡️ @weave_protocol/adapter-codebuddy](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-codebuddy) | 0.1.0 | **CodeBuddy Code adapter** — enforces WARD.md via Tencent CodeBuddy Code's PreToolUse hook |
 | [🛡️ @weave_protocol/adapter-qoder](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-qoder) | 0.1.0 | **Qoder adapter** — enforces WARD.md via Alibaba Qoder CLI's PreToolUse hook |
-| [🛡️ @weave_protocol/adapter-trae](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-trae) | 0.1.0 | **TRAE adapter** — enforces WARD.md via ByteDance TRAE's PreToolUse hook |
+| [🛡️ @weave_protocol/adapter-trae](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-trae) | 0.1.1 | **TRAE adapter** — enforces WARD.md via ByteDance TRAE's PreToolUse hook |
 | [🌐 @weave_protocol/browser](https://github.com/Tyox-all/Weave_Protocol/blob/main/browser) | 0.3.1 | **Browser agent security** — runtime IPI scanner (33 patterns) for headless agents |
 | [🔍 @weave_protocol/hundredmen](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen) | 1.4.0 | **MCP proxy** — intercept, scan, gate tool calls; enforces WARD.md as first gate |
 | [🛡️ @weave_protocol/mund](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund) | 0.7.0 | **Scanner** — secrets, PII, injection, MCP vetting, pre-install checks for skills + MCP (rug pulls), OSV dependency CVEs, SARIF, threat intel |

@@ -21,10 +21,64 @@
  *     silently switch enforcement off.
  *   - Malformed payloads and evaluator errors allow by default (with a note
  *     on stderr), like Weave's other adapters; --fail-closed denies instead.
+ *
+ * In TRAE's "Run in Sandbox" mode, writing to a folder the sandbox forbids
+ * makes TRAE discard the hook's answer, even a deny. So inside the sandbox,
+ * Ward's state goes to a folder the sandbox allows (see sandboxStateDirs).
  */
 
-import { readFileSync, existsSync } from 'node:fs';
-import { isAbsolute, join, resolve } from 'node:path';
+/** TRAE runs sandboxed hooks with TRAE_SANDBOX_* variables set. */
+export const inTraeSandbox = (env: NodeJS.ProcessEnv = process.env) =>
+  Object.keys(env).some((k) => k.startsWith('TRAE_SANDBOX_'));
+
+/**
+ * Can this path be written, or created? Checks the nearest existing folder
+ * with access(2), which the sandbox answers without counting it as a
+ * violation (unlike an actual write).
+ */
+function canWrite(path: string): boolean {
+  let p = path;
+  while (!existsSync(p)) {
+    const up = dirname(p);
+    if (up === p) return false;
+    p = up;
+  }
+  try { accessSync(p, constants.W_OK); return true; } catch { return false; }
+}
+
+/**
+ * Inside TRAE's sandbox, point Ward's receipts, ledger and (if it doesn't exist
+ * yet) receipt key at a temp folder when ~/.weave can't be written. Settings
+ * already given by WEAVE_* variables are left alone. Returns the folder used,
+ * or undefined if nothing was moved.
+ */
+export function sandboxStateDirs(env: NodeJS.ProcessEnv = process.env): string | undefined {
+  if (!inTraeSandbox(env)) return undefined;
+  const weave = join(homedir(), '.weave');
+  const key = join(weave, 'keys', 'ward-receipts.pem');
+  const moves = {
+    WEAVE_RECEIPT_DIR: !env.WEAVE_RECEIPT_DIR && !canWrite(join(weave, 'receipts')),
+    WEAVE_LEDGER_DIR: !env.WEAVE_LEDGER_DIR && !canWrite(join(weave, 'ledger')),
+    // An existing key is only read, which the sandbox allows
+    WEAVE_RECEIPT_KEY_FILE: !env.WEAVE_RECEIPT_KEY_FILE && !existsSync(key) && !canWrite(dirname(key)),
+  };
+  if (!Object.values(moves).some(Boolean)) return undefined;
+  const base = [tmpdir(), '/tmp'].find(canWrite);
+  if (!base) {
+    // Nowhere to keep state: skip receipts rather than have TRAE drop the decision
+    if (moves.WEAVE_RECEIPT_DIR) env.WEAVE_RECEIPTS = '0';
+    return undefined;
+  }
+  const dir = join(base, `weave-trae-${process.getuid?.() ?? 'user'}`);
+  if (moves.WEAVE_RECEIPT_DIR) env.WEAVE_RECEIPT_DIR = join(dir, 'receipts');
+  if (moves.WEAVE_LEDGER_DIR) env.WEAVE_LEDGER_DIR = join(dir, 'ledger');
+  if (moves.WEAVE_RECEIPT_KEY_FILE) env.WEAVE_RECEIPT_KEY_FILE = join(dir, 'keys', 'ward-receipts.pem');
+  return dir;
+}
+
+import { readFileSync, existsSync, accessSync, constants } from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { parseAndValidate, reportEvent, type WardPolicy } from '@weave_protocol/ward';
 import { evaluateWithLedger } from '@weave_protocol/ward/ledger';
 import { TOOL_MAPPINGS, type HookInput, type HookOutput } from './types.js';
@@ -132,6 +186,8 @@ async function handle(failClosed: boolean): Promise<never> {
     emit({});
   }
   if (!payload.tool_name) emit({});
+
+  sandboxStateDirs();
 
   const cwd = payload.cwd || process.env.TRAE_PROJECT_DIR || payload.workspace_roots?.[0] || process.cwd();
 

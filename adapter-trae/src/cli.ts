@@ -45,7 +45,7 @@ function init(args: string[]): number {
   if (!ward) {
     say(`${c.yellow}!${c.reset} No WARD.md found here or at ${userWardPath()}; calls are allowed until you add one.`);
   }
-  say(`${c.gray}In TRAE, open Settings > Hooks, enable the Weave hook, and set its execution mode to \"Run Automatically Locally\": in the sandbox, Ward can't keep session limits or receipts in ~/.weave.${c.reset}`);
+  say(`${c.gray}In TRAE, open Settings > Hooks and turn on Configured Hooks: TRAE ignores hooks.json until you do. \"Run Automatically Locally\" keeps receipts and limits in ~/.weave; in the sandbox they go to a temp folder.${c.reset}`);
   return 0;
 }
 

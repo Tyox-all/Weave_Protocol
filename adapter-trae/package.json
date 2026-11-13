@@ -1,6 +1,6 @@
 {
   "name": "@weave_protocol/adapter-trae",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Weave Protocol adapter for TRAE - enforces WARD.md policies via TRAE's PreToolUse hook",
   "type": "module",
   "main": "dist/index.js",

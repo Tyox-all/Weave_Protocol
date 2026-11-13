@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, statSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { parseWard, evaluateToolCall, detectPayment, checkSessionLimits } from '../dist/index.js';
 import { evaluateWithLedger, FileLedger } from '../dist/ledger/index.js';
 
@@ -164,5 +164,30 @@ describe('ledger across hook processes', () => {
     })));
     const data = JSON.parse(readFileSync(new FileLedger('race', { dir }).path, 'utf8'));
     assert.equal(data.events.length, 60);
+  });
+});
+
+// Ward 0.3.12: the ledger lock no longer retries forever when its folder isn't
+// writable; it gives up straight away instead of timing the hook out.
+describe('unwritable ledger folder', () => {
+  test('the lock gives up at once', { skip: process.getuid?.() === 0 && 'root ignores permissions' }, async () => {
+    const { mkdirSync, chmodSync } = await import('node:fs');
+    const ro = join(mkdtempSync(join(tmpdir(), 'ward-ledger-ro-')), 'ledger');
+    mkdirSync(ro, { recursive: true });
+    chmodSync(ro, 0o500);
+    const script = `
+      import { FileLedger } from ${JSON.stringify(new URL('../dist/ledger/index.js', import.meta.url).pathname)};
+      const t = Date.now();
+      let err = '';
+      try { new FileLedger('ro', { dir: ${JSON.stringify(ro)} }).transact(() => ({ result: 1 })); } catch (e) { err = e.code || 'error'; }
+      process.stdout.write(JSON.stringify({ ms: Date.now() - t, err }));`;
+    try {
+      const r = spawnSync(process.execPath, ['--input-type=module', '-e', script], { encoding: 'utf8', timeout: 8000 });
+      assert.equal(r.signal, null, 'the ledger must not hang');
+      const out = JSON.parse(r.stdout);
+      assert.ok(out.ms < 1500, `took ${out.ms}ms`);
+    } finally {
+      chmodSync(ro, 0o700);
+    }
   });
 });
