@@ -64,6 +64,9 @@ npm install @weave_protocol/full
 
 ### 🗓️ November 2026 update — hardening
 
+#### 🔎 Mund reads Chinese (0.7.0)
+Mund now catches prompt injection in Chinese, Simplified or Traditional. It also reads past the usual ways people dodge Chinese keyword filters: separators between characters (忽*略), homophone swaps (蜜码 for 密码), typed or mixed-in pinyin, and acrostics. On held-out Chinese attacks it goes from 0 of 144 to 115 of 144. On Tsinghua's Safety-Prompts goal-hijacking set it goes from 2 to 3,454 of 5,000. It flags 0 of 8,043 benign Chinese texts, and English results are unchanged. Method, robustness tests and limits: [DETECTION_CLAIMS.md](mund/DETECTION_CLAIMS.md#chinese-070).
+
 #### 🛡️ WARD.md in Qwen Code, and model endpoints by jurisdiction (adapter-qwencode 0.1.0, Ward 0.3.10)
 WARD.md now runs in **Qwen Code**, Alibaba's open-source terminal coding agent and the eighth harness Weave supports. The adapter covers Qwen Code only. Other coding agents, including Chinese ones such as Trae, Qoder, CodeBuddy and Kimi Code, would each need their own adapter. Deferred tools reached through `tool_call` are decided as the tool they invoke. In a live check with Qwen Code 0.26.6, Ward blocked a `curl` that the user's own settings allowed, and decided the background memory agent's calls too.
 
@@ -507,7 +510,7 @@ The packages that keep your agent within policy: declare it, enforce it across e
 | [🛡️ @weave_protocol/adapter-qwencode](https://github.com/Tyox-all/Weave_Protocol/blob/main/adapter-qwencode) | 0.1.0 | **Qwen Code adapter** — enforces WARD.md via Qwen Code's PreToolUse hook (shell, file, web, MCP and deferred tool calls) |
 | [🌐 @weave_protocol/browser](https://github.com/Tyox-all/Weave_Protocol/blob/main/browser) | 0.3.1 | **Browser agent security** — runtime IPI scanner (33 patterns) for headless agents |
 | [🔍 @weave_protocol/hundredmen](https://github.com/Tyox-all/Weave_Protocol/blob/main/hundredmen) | 1.4.0 | **MCP proxy** — intercept, scan, gate tool calls; enforces WARD.md as first gate |
-| [🛡️ @weave_protocol/mund](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund) | 0.6.1 | **Scanner** — secrets, PII, injection, MCP vetting, pre-install checks for skills + MCP (rug pulls), OSV dependency CVEs, SARIF, threat intel |
+| [🛡️ @weave_protocol/mund](https://github.com/Tyox-all/Weave_Protocol/blob/main/mund) | 0.7.0 | **Scanner** — secrets, PII, injection, MCP vetting, pre-install checks for skills + MCP (rug pulls), OSV dependency CVEs, SARIF, threat intel |
 | [🏛️ @weave_protocol/hord](https://github.com/Tyox-all/Weave_Protocol/blob/main/hord) | 0.3.2 | **Vault** — encrypted storage, sandboxing, capability tokens, attestation |
 | [🔐 @weave_protocol/yoxallismus](https://github.com/Tyox-all/Weave_Protocol/blob/main/yoxallismus) | **0.2.0-beta.1** | **Post-quantum cipher** — X25519 + ML-KEM-768 hybrid KEM · sealed boxes · cascade AEAD · Double Ratchet · locked `yoxall/2` format · ⚠️ NOT AUDITED |
 | [⚖️ @weave_protocol/domere](https://github.com/Tyox-all/Weave_Protocol/blob/main/domere) | 1.7.0 | **Judge** — compliance (PCI-DSS, ISO27001, SOC2, HIPAA, GDPR, CCPA), blockchain anchoring |
