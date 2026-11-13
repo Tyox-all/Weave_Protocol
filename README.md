@@ -65,7 +65,9 @@ npm install @weave_protocol/full
 ### 🗓️ November 2026 update — hardening
 
 #### 🐉🔥🛡️ Mund reads Chinese (0.7.0)
-Mund now catches prompt injection in Chinese, Simplified or Traditional. It also reads past the usual ways people dodge Chinese keyword filters: separators between characters (忽*略), homophone swaps (蜜码 for 密码), typed or mixed-in pinyin, and acrostics. On held-out Chinese attacks it goes from 0 of 144 to 115 of 144. On Tsinghua's Safety-Prompts goal-hijacking set it goes from 2 to 3,454 of 5,000. It flags 0 of 8,043 benign Chinese texts, and English results are unchanged. Method, robustness tests and limits: [DETECTION_CLAIMS.md](mund/DETECTION_CLAIMS.md#chinese-070).
+**What Mund does:** it scans text, such as prompts, web pages, files and tool results, for prompt injection, secrets and personal data.
+
+Mund now catches prompt injection in Chinese, Simplified or Traditional. It also reads past the usual ways people dodge Chinese keyword filters: separators between characters (忽*略), homophone swaps (蜜码 for 密码), typed or mixed-in pinyin, and acrostics. On held-out Chinese attacks it goes from 0 of 144 to 115 of 144. On Tsinghua's Safety-Prompts goal-hijacking set it goes from 2 to 3,454 of 5,000. It raised no false alarms on 8,043 harmless Chinese texts (0 false positives), and English results are unchanged. Method, robustness tests and limits: [DETECTION_CLAIMS.md](mund/DETECTION_CLAIMS.md#chinese-070).
 
 Mund covers the text. Weave's adapters enforce WARD.md on tool calls in China's three most widely used coding agents. Each agent has its own adapter, and each adapter passed a live check in the real harness:
 
@@ -76,6 +78,8 @@ Mund covers the text. Weave's adapters enforce WARD.md on tool calls in China's 
 | **TRAE** | ByteDance | [`adapter-trae`](adapter-trae) | ✅ desktop IDE 3.6.13, project and global hook |
 
 #### 🛡️ WARD.md in CodeBuddy Code, Qoder and TRAE (adapter-trae 0.1.1, Ward 0.3.12)
+**What the adapters do:** each one plugs into its harness's hook and has Ward decide every tool call before it runs: file reads and writes, shell commands, web requests. Mund checks what the agent reads; the adapter checks what it does.
+
 Three more harnesses enforce the same WARD.md: Tencent's **CodeBuddy Code**, Alibaba's **Qoder** and ByteDance's **TRAE**, the most widely used Chinese coding agents. Each has its own adapter, built on Ward's shared evaluator, with every Ward check. All three let a call through if a hook crashes, so every adapter answers with an explicit decision and never exits with an error.
 
 **What we live-checked**, on a Mac, in the real product:
@@ -105,6 +109,8 @@ In each, Ward blocked a read of `secrets/` and a `curl` to an unlisted host, and
 - **One policy, every harness.** The same WARD.md works in CodeBuddy, Qoder, TRAE, Qwen Code, Claude Code, Codex, Cursor, Gemini CLI and the rest.
 
 #### 🛡️ WARD.md in Qwen Code, and model endpoints by jurisdiction (adapter-qwencode 0.1.0, Ward 0.3.10)
+**What the adapter does:** adapter-qwencode has Ward decide each of Qwen Code's tool calls before it runs. **What Ward adds:** `model_jurisdictions`, so a policy can choose whose model providers an agent may call.
+
 WARD.md now runs in **Qwen Code**, Alibaba's open-source terminal coding agent. Deferred tools reached through `tool_call` are decided as the tool they invoke. In a live check with Qwen Code 0.26.6, Ward blocked a `curl` that the user's own settings allowed. It also decided the calls made by Qwen Code's background memory agent.
 
 Ward also adds **`model_jurisdictions`**, so a policy can say whose model endpoints an agent may call. `deny: [cn]` blocks known endpoints of Chinese companies, in URL arguments and in shell commands; `allow: [us, eu]` admits only those. Ward now knows Tencent Hunyuan, MiniMax, StepFun, Baidu Qianfan, SiliconFlow and ByteDance's Volcengine Ark, alongside DeepSeek, Moonshot (Kimi), Qwen and Zhipu.
