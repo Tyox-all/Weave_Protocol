@@ -22,6 +22,15 @@ before(async () => {
 });
 after(() => server.close());
 
+/** Resolve once `check()` is true; fail the test if it isn't within `ms`. */
+async function waitFor(check, ms = 5000) {
+  const deadline = Date.now() + ms;
+  while (!check()) {
+    if (Date.now() > deadline) throw new Error(`condition not met within ${ms}ms`);
+    await new Promise((r) => setTimeout(r, 10));
+  }
+}
+
 test('off unless a dashboard URL is configured', async () => {
   const prev = process.env.WEAVE_DASHBOARD_URL;
   delete process.env.WEAVE_DASHBOARD_URL;
@@ -41,13 +50,18 @@ test('sends a summary with the key, and strips argument contents', async () => {
   // A generous timeout: a cold first request on a slow CI runner can exceed the
   // 250ms default, and a dropped report would make this test flaky
   await reportEvent({ surface: 'browser', decision: 'allow', subject: 'https://docs.example.com/a?token=SECRET#frag' }, { url, timeoutMs: 5000 });
-  assert.equal(received[0].path, '/api/v1/events');
-  assert.equal(received[0].key, 'k');
-  assert.deepEqual({ ...received[0].body, timestamp: 0 }, {
+  // Wait explicitly until the server has both reports, then find each by surface:
+  // the test doesn't depend on timing or arrival order
+  await waitFor(() => received.length >= 2);
+  const deny = received.find((r) => r.body.surface === 'claude-code');
+  const allow = received.find((r) => r.body.surface === 'browser');
+  assert.equal(deny.path, '/api/v1/events');
+  assert.equal(deny.key, 'k');
+  assert.deepEqual({ ...deny.body, timestamp: 0 }, {
     surface: 'claude-code', decision: 'deny', subject: 'Bash',
     reason: 'Denied by filesystem rule: read /workspace/secrets/**', timestamp: 0,
   });
-  assert.equal(received[1].body.subject, 'https://docs.example.com/a', 'query string and fragment dropped');
+  assert.equal(allow.body.subject, 'https://docs.example.com/a', 'query string and fragment dropped');
 });
 
 test('a slow or missing dashboard costs at most the timeout and never throws', async () => {
