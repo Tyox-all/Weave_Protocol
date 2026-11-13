@@ -219,3 +219,67 @@ test('reports the decision to the dashboard as trae when WEAVE_DASHBOARD_URL is 
     server.close();
   }
 });
+
+// 0.1.1: in TRAE's "Run in Sandbox" mode a write to ~/.weave is a sandbox
+// violation, and TRAE then ignores the hook's answer, even a deny. Inside the
+// sandbox the hook keeps Ward's state in a temp folder instead.
+describe("TRAE's sandbox", () => {
+  const cli = resolve('dist/cli.js');
+  const setup = () => {
+    const home = mkdtempSync(join(tmpdir(), 'trae-sbx-home-'));
+    const tmp = mkdtempSync(join(tmpdir(), 'trae-sbx-tmp-'));
+    const ws = mkdtempSync(join(tmpdir(), 'trae-sbx-ws-'));
+    writeFileSync(join(ws, 'WARD.md'), WARD(ws).replace('agent: trae-test', 'agent: trae-sbx') + '\n## Verification\n\nrequired: true\n');
+    mkdirSync(join(home, '.weave', 'receipts'), { recursive: true });
+    const env = { PATH: process.env.PATH, HOME: home, TMPDIR: tmp };
+    const hook = (extra = {}) => spawnSync(process.execPath, [cli, 'hook', 'pre-tool-use'], {
+      input: JSON.stringify({ cwd: ws, session_id: 's', tool_name: 'Read', tool_input: { file_path: join(ws, 'secrets', 'key') } }),
+      env: { ...env, ...extra }, encoding: 'utf8', timeout: 8000,
+    });
+    return { home, tmp, hook };
+  };
+  const ro = process.getuid?.() === 0 && 'root ignores permissions';
+
+  test('with ~/.weave read-only, it still denies and keeps receipts in temp', { skip: ro }, async () => {
+    const { chmodSync, readdirSync } = await import('node:fs');
+    const { home, tmp, hook } = setup();
+    chmodSync(join(home, '.weave', 'receipts'), 0o500);
+    chmodSync(join(home, '.weave'), 0o500);
+    try {
+      const r = hook({ TRAE_SANDBOX_SBOX_ID: 'test' });
+      assert.equal(r.status, 0);
+      assert.equal(JSON.parse(r.stdout).hookSpecificOutput.permissionDecision, 'deny');
+      const dir = join(tmp, `weave-trae-${process.getuid?.() ?? 'user'}`);
+      assert.ok(existsSync(join(dir, 'receipts', 'trae-sbx.jsonl')), 'receipt written to temp');
+      assert.ok(existsSync(join(dir, 'keys', 'ward-receipts.pem')), 'key created in temp');
+      assert.deepEqual(readdirSync(join(home, '.weave', 'receipts')), [], 'nothing written to ~/.weave');
+    } finally {
+      chmodSync(join(home, '.weave'), 0o700);
+      chmodSync(join(home, '.weave', 'receipts'), 0o700);
+    }
+  });
+
+  test('a writable ~/.weave, or no sandbox, keeps using ~/.weave', () => {
+    const { home, tmp, hook } = setup();
+    for (const extra of [{ TRAE_SANDBOX_SBOX_ID: 'test' }, {}]) {
+      const r = hook(extra);
+      assert.equal(JSON.parse(r.stdout).hookSpecificOutput.permissionDecision, 'deny');
+    }
+    assert.ok(existsSync(join(home, '.weave', 'receipts', 'trae-sbx.jsonl')));
+    assert.ok(!existsSync(join(tmp, `weave-trae-${process.getuid?.() ?? 'user'}`)));
+  });
+
+  test('WEAVE_* settings are never overridden', { skip: ro }, async () => {
+    const { chmodSync } = await import('node:fs');
+    const { home, tmp, hook } = setup();
+    const mine = mkdtempSync(join(tmpdir(), 'trae-sbx-mine-'));
+    chmodSync(join(home, '.weave'), 0o500);
+    try {
+      hook({ TRAE_SANDBOX_SBOX_ID: 'test', WEAVE_RECEIPT_DIR: mine, WEAVE_RECEIPT_KEY_FILE: join(mine, 'k.pem'), WEAVE_LEDGER_DIR: join(mine, 'ledger') });
+      assert.ok(existsSync(join(mine, 'trae-sbx.jsonl')));
+      assert.ok(!existsSync(join(tmp, `weave-trae-${process.getuid?.() ?? 'user'}`)));
+    } finally {
+      chmodSync(join(home, '.weave'), 0o700);
+    }
+  });
+});

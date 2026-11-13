@@ -203,9 +203,11 @@ function withLock<T>(path: string, fn: () => T): T {
   const deadline = Date.now() + 2_000;
   let locked = false;
   for (;;) {
-    try { closeSync(openSync(lock, "wx", 0o600)); locked = true; break; } catch {
+    try { closeSync(openSync(lock, "wx", 0o600)); locked = true; break; } catch (err) {
+      // Wait only for another writer's lock; a folder we can't write to won't
+      // change by retrying (and spinning would time the hook out)
+      if ((err as NodeJS.ErrnoException).code !== "EEXIST" || Date.now() > deadline) break;
       try { if (Date.now() - statSync(lock).mtimeMs > 5_000) { rmSync(lock, { force: true }); continue; } } catch { continue; }
-      if (Date.now() > deadline) break;
       Atomics.wait(SLEEP, 0, 0, 10);
     }
   }
