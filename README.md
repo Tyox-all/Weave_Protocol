@@ -71,25 +71,34 @@ Mund covers the text. Weave's adapters enforce WARD.md on tool calls in China's 
 
 | Harness | Maker | Adapter | Live check |
 |---|---|---|---|
-| **CodeBuddy Code** | Tencent | [`adapter-codebuddy`](adapter-codebuddy) | ✅ 2.180.0 |
-| **Qoder CLI** | Alibaba | [`adapter-qoder`](adapter-qoder) | ✅ 1.1.83 |
-| **TRAE** | ByteDance | [`adapter-trae`](adapter-trae) | ✅ 3.6.13 |
+| **CodeBuddy Code** | Tencent | [`adapter-codebuddy`](adapter-codebuddy) | ✅ CLI 2.180.0 |
+| **Qoder CLI** | Alibaba | [`adapter-qoder`](adapter-qoder) | ✅ CLI 1.1.83 |
+| **TRAE** | ByteDance | [`adapter-trae`](adapter-trae) | ✅ desktop IDE 3.6.13 |
 
 #### 🛡️ WARD.md in CodeBuddy Code, Qoder and TRAE
-Three more harnesses enforce the same WARD.md: Tencent's **CodeBuddy Code**, Alibaba's **Qoder CLI** and ByteDance's **TRAE**, the most widely used Chinese coding agents. Each is its own adapter, built on Ward's shared evaluator, with every Ward check. All three let a call through if a hook crashes, so every adapter answers with an explicit decision and never exits with an error. All three passed live checks in the real harness:
-- **CodeBuddy Code 2.180.0**, headless with a local scripted model;
-- **Qoder CLI 1.1.83**, signed in with a real model;
-- **TRAE 3.6.13**, the desktop IDE on the free plan.
+Three more harnesses enforce the same WARD.md: Tencent's **CodeBuddy Code**, Alibaba's **Qoder CLI** and ByteDance's **TRAE**, the most widely used Chinese coding agents. Each is its own adapter, built on Ward's shared evaluator, with every Ward check. All three let a call through if a hook crashes, so every adapter answers with an explicit decision and never exits with an error. All three passed live checks on a Mac, each in one form of the product:
+- **CodeBuddy Code CLI 2.180.0**, headless (`-p`) with a local scripted model and no sign-in;
+- **Qoder CLI 1.1.83**, interactive, signed in with a real model;
+- **TRAE desktop IDE 3.6.13**, signed in on the free plan, with a project hook in Run in Sandbox mode.
+
+Not checked yet: the CodeBuddy IDE and its editor plugins, the Qoder IDE, TRAE's global hook, its Run Automatically Locally mode and its China build. A web or cloud agent from any vendor is out of reach, because its tool calls run on the vendor's servers, where no local hook runs.
 
 In each one, Ward blocked a read of `secrets/`, allowed an ordinary read, and blocked `curl` to an unlisted host while allowing a listed one. In CodeBuddy and Qoder, the user's own settings allowed `curl`. One thing we learned: TRAE ignores a `hooks.json` until you switch it on in **Settings > Hooks**. Our first TRAE run enforced nothing until we did. The adapter README says so.
 
+**Why it matters that Ward runs locally.** The hook runs on your machine, before the harness executes the tool. That gives you:
+- **Your policy decides, not the vendor's.** WARD.md lives in your repo, and Ward's deny stands even where the harness's own settings allow the call. The CodeBuddy and Qoder live checks confirmed this against a user rule that allowed `curl`.
+- **The model doesn't matter.** It's the same check whether the agent runs Qwen, DeepSeek, Kimi, Claude or a local model, and `model_jurisdictions` can limit which model endpoints the agent may call.
+- **Nothing leaves your machine.** Ward decides offline, from the tool name and arguments. The dashboard, if you turn it on, gets only the decision and the tool name.
+- **Proof you hold.** Each decision is a signed receipt on your disk, and `weave-ward receipts verify` checks the chain without trusting the agent or the vendor.
+- **One policy, every harness.** The same WARD.md works in CodeBuddy, Qoder, TRAE, Qwen Code, Claude Code, Codex, Cursor, Gemini CLI and the rest.
+
 #### 🛡️ WARD.md in Qwen Code, and model endpoints by jurisdiction (adapter-qwencode 0.1.0, Ward 0.3.10)
-WARD.md now runs in **Qwen Code**, Alibaba's open-source terminal coding agent and the eighth harness Weave supports. The adapter covers Qwen Code only. Other coding agents each need their own adapter: TRAE, Qoder and CodeBuddy now have one (above), and Kimi Code doesn't yet. Deferred tools reached through `tool_call` are decided as the tool they invoke. In a live check with Qwen Code 0.26.6, Ward blocked a `curl` that the user's own settings allowed, and decided the background memory agent's calls too.
+WARD.md now runs in **Qwen Code**, Alibaba's open-source terminal coding agent. Deferred tools reached through `tool_call` are decided as the tool they invoke. In a live check with Qwen Code 0.26.6, Ward blocked a `curl` that the user's own settings allowed. It also decided the calls made by Qwen Code's background memory agent.
 
 Ward also adds **`model_jurisdictions`**, so a policy can say whose model endpoints an agent may call. `deny: [cn]` blocks known endpoints of Chinese companies, in URL arguments and in shell commands; `allow: [us, eu]` admits only those. Ward now knows Tencent Hunyuan, MiniMax, StepFun, Baidu Qianfan, SiliconFlow and ByteDance's Volcengine Ark, alongside DeepSeek, Moonshot (Kimi), Qwen and Zhipu.
 
 #### ✅ How we check every release: before, after, and with our own tools
-Every check below runs in CI, except the live harness checks. The release workflow itself (`publish-all.yml`) is unchanged.
+Automated checks run in CI on every push, pull request and release. We also live-check adapters by hand in the real harness. Qwen Code, CodeBuddy Code, Qoder and TRAE have all passed. The release workflow itself (`publish-all.yml`) is unchanged.
 
 **On every push and pull request:**
 - **Each package:** a clean `npm ci`, build and full test suite. CI also checks that importing the package starts nothing and prints nothing, and runs `npm audit` on production dependencies.
@@ -105,7 +114,7 @@ Every check below runs in CI, except the live harness checks. The release workfl
 
 A published package can differ from the local build, and this catches it.
 
-**Live checks in the real harness** (by hand, not in CI). Unit tests cover each adapter against the harness's documented hook contract. Before we call an adapter verified, we also run it in the real harness. Each check uses a throwaway workspace with its own WARD.md, a hook scoped to that workspace, and a temporary receipt key, so the user's own configuration is never touched. The agent is asked to read an allowed file, then a file under `secrets/`, then `curl` a listed and an unlisted host, where possible with the harness's own settings allowing `curl`. We trust Ward's signed receipts over the agent's account of what happened: `weave-ward receipts verify` must show each decision, and the chain must verify. The CodeBuddy check used a local scripted model, so no login or key was needed. Qoder only runs signed-in models, so the account owner ran that check, and the TRAE check, themselves.
+**Live checks in the real harness.** Unit tests cover each adapter against the harness's documented hook contract. Before we call an adapter verified, we also run it in the real harness. Each check uses a throwaway workspace with its own WARD.md, a hook scoped to that workspace, and a temporary receipt key, so the user's own configuration is never touched. The agent is asked to read an allowed file, then a file under `secrets/`, then `curl` a listed and an unlisted host, where possible with the harness's own settings allowing `curl`. We trust Ward's signed receipts over the agent's account of what happened: `weave-ward receipts verify` must show each decision, and the chain must verify. The CodeBuddy check used a local scripted model, so no login or key was needed. Qoder only runs signed-in models, so the account owner ran that check, and the TRAE check, themselves.
 
 **Detection claims on data we didn't write.** Mund's detection numbers come from public datasets it was never trained or tuned on: deepset, Gandalf, jackhhao, SPML, Mosscap, InjecAgent. False positives are measured on 2,062 benign texts and 5,825 MITRE ATT&CK and OWASP texts. The scripts in [`mund/training`](mund/training) fetch the data and reproduce every number, and the shipped model, byte for byte. See [DETECTION_CLAIMS.md](mund/DETECTION_CLAIMS.md#local-classifier-060).
 
