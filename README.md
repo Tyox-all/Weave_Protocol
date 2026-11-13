@@ -64,19 +64,32 @@ npm install @weave_protocol/full
 
 ### 🗓️ November 2026 update — hardening
 
-#### 🛡️ WARD.md in CodeBuddy Code, Qoder and TRAE
-Three more harnesses enforce the same WARD.md: Tencent's **CodeBuddy Code**, Alibaba's **Qoder CLI** and ByteDance's **TRAE**, the most widely used Chinese coding agents. Each is its own adapter, built on Ward's shared evaluator, with every Ward check. All three let a call through if a hook crashes, so every adapter answers with an explicit decision and never exits with an error. In a live check with the real CodeBuddy Code CLI, Ward blocked a `curl` that the user's own settings allowed. Qoder and TRAE are built from their official hook references, and live checks there are next.
-
 #### 🐉🔥🛡️ Mund reads Chinese (0.7.0)
 Mund now catches prompt injection in Chinese, Simplified or Traditional. It also reads past the usual ways people dodge Chinese keyword filters: separators between characters (忽*略), homophone swaps (蜜码 for 密码), typed or mixed-in pinyin, and acrostics. On held-out Chinese attacks it goes from 0 of 144 to 115 of 144. On Tsinghua's Safety-Prompts goal-hijacking set it goes from 2 to 3,454 of 5,000. It flags 0 of 8,043 benign Chinese texts, and English results are unchanged. Method, robustness tests and limits: [DETECTION_CLAIMS.md](mund/DETECTION_CLAIMS.md#chinese-070).
 
+Mund covers the text. Weave's adapters enforce WARD.md on tool calls in China's three most widely used coding agents. Each agent has its own adapter, and each adapter passed a live check in the real harness:
+
+| Harness | Maker | Adapter | Live check |
+|---|---|---|---|
+| **CodeBuddy Code** | Tencent | [`adapter-codebuddy`](adapter-codebuddy) | ✅ 2.180.0 |
+| **Qoder CLI** | Alibaba | [`adapter-qoder`](adapter-qoder) | ✅ 1.1.83 |
+| **TRAE** | ByteDance | [`adapter-trae`](adapter-trae) | ✅ 3.6.13 |
+
+#### 🛡️ WARD.md in CodeBuddy Code, Qoder and TRAE
+Three more harnesses enforce the same WARD.md: Tencent's **CodeBuddy Code**, Alibaba's **Qoder CLI** and ByteDance's **TRAE**, the most widely used Chinese coding agents. Each is its own adapter, built on Ward's shared evaluator, with every Ward check. All three let a call through if a hook crashes, so every adapter answers with an explicit decision and never exits with an error. All three passed live checks in the real harness:
+- **CodeBuddy Code 2.180.0**, headless with a local scripted model;
+- **Qoder CLI 1.1.83**, signed in with a real model;
+- **TRAE 3.6.13**, the desktop IDE on the free plan.
+
+In each one, Ward blocked a read of `secrets/`, allowed an ordinary read, and blocked `curl` to an unlisted host while allowing a listed one. In CodeBuddy and Qoder, the user's own settings allowed `curl`. One thing we learned: TRAE ignores a `hooks.json` until you switch it on in **Settings > Hooks**. Our first TRAE run enforced nothing until we did. The adapter README says so.
+
 #### 🛡️ WARD.md in Qwen Code, and model endpoints by jurisdiction (adapter-qwencode 0.1.0, Ward 0.3.10)
-WARD.md now runs in **Qwen Code**, Alibaba's open-source terminal coding agent and the eighth harness Weave supports. The adapter covers Qwen Code only. Other coding agents, including Chinese ones such as Trae, Qoder, CodeBuddy and Kimi Code, would each need their own adapter. Deferred tools reached through `tool_call` are decided as the tool they invoke. In a live check with Qwen Code 0.26.6, Ward blocked a `curl` that the user's own settings allowed, and decided the background memory agent's calls too.
+WARD.md now runs in **Qwen Code**, Alibaba's open-source terminal coding agent and the eighth harness Weave supports. The adapter covers Qwen Code only. Other coding agents each need their own adapter: TRAE, Qoder and CodeBuddy now have one (above), and Kimi Code doesn't yet. Deferred tools reached through `tool_call` are decided as the tool they invoke. In a live check with Qwen Code 0.26.6, Ward blocked a `curl` that the user's own settings allowed, and decided the background memory agent's calls too.
 
 Ward also adds **`model_jurisdictions`**, so a policy can say whose model endpoints an agent may call. `deny: [cn]` blocks known endpoints of Chinese companies, in URL arguments and in shell commands; `allow: [us, eu]` admits only those. Ward now knows Tencent Hunyuan, MiniMax, StepFun, Baidu Qianfan, SiliconFlow and ByteDance's Volcengine Ark, alongside DeepSeek, Moonshot (Kimi), Qwen and Zhipu.
 
 #### ✅ How we check every release: before, after, and with our own tools
-Every check below runs in CI. The release workflow itself (`publish-all.yml`) is unchanged.
+Every check below runs in CI, except the live harness checks. The release workflow itself (`publish-all.yml`) is unchanged.
 
 **On every push and pull request:**
 - **Each package:** a clean `npm ci`, build and full test suite. CI also checks that importing the package starts nothing and prints nothing, and runs `npm audit` on production dependencies.
@@ -91,6 +104,8 @@ Every check below runs in CI. The release workflow itself (`publish-all.yml`) is
 3. runs every dependent's tests against that exact published version.
 
 A published package can differ from the local build, and this catches it.
+
+**Live checks in the real harness** (by hand, not in CI). Unit tests cover each adapter against the harness's documented hook contract. Before we call an adapter verified, we also run it in the real harness. Each check uses a throwaway workspace with its own WARD.md, a hook scoped to that workspace, and a temporary receipt key, so the user's own configuration is never touched. The agent is asked to read an allowed file, then a file under `secrets/`, then `curl` a listed and an unlisted host, where possible with the harness's own settings allowing `curl`. We trust Ward's signed receipts over the agent's account of what happened: `weave-ward receipts verify` must show each decision, and the chain must verify. The CodeBuddy check used a local scripted model, so no login or key was needed. Qoder only runs signed-in models, so the account owner ran that check, and the TRAE check, themselves.
 
 **Detection claims on data we didn't write.** Mund's detection numbers come from public datasets it was never trained or tuned on: deepset, Gandalf, jackhhao, SPML, Mosscap, InjecAgent. False positives are measured on 2,062 benign texts and 5,825 MITRE ATT&CK and OWASP texts. The scripts in [`mund/training`](mund/training) fetch the data and reproduce every number, and the shipped model, byte for byte. See [DETECTION_CLAIMS.md](mund/DETECTION_CLAIMS.md#local-classifier-060).
 

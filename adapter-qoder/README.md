@@ -67,7 +67,9 @@ Set `WEAVE_DASHBOARD_URL` (and `WEAVE_API_KEY`) where you run the agent, and eac
 
 Built against Qoder CLI's [hooks guide](https://docs.qoder.com/cli/hooks) and [reference](https://docs.qoder.com/cli/hooks-reference).
 
-Not yet live-checked: Qoder CLI only runs models through a signed-in Qoder account, so it can't be pointed at a local scripted model the way the other adapters were tested. The adapter's tests cover the documented contract, and a live check with a Qoder account is the next step.
+Live-checked in Qoder CLI 1.1.83, signed in to a Qoder account with a real model, in a throwaway workspace with its own WARD.md and a project-level hook. Every decision was confirmed by Ward's signed receipts (4 verified: 2 allow, 2 deny):
+- an allowed `Read` went through, and a `Read` of `secrets/key` was blocked with the WARD reason;
+- with a user rule in `.qoder/settings.json` allowing `Bash(curl:*)`, Ward still blocked `curl` to an unlisted host and allowed it to a listed one.
 
 ## 🕸️ Part of Weave Protocol
 

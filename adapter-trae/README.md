@@ -14,7 +14,7 @@ weave-trae init          # adds the hook to ~/.trae/hooks.json
 weave-trae status        # hook installed? which WARD.md is active?
 ```
 
-`init` writes `~/.trae/hooks.json`, and also `~/.trae-cn/hooks.json` if you have TRAE's China build. Then, in TRAE, open **Settings > Hooks**, enable the Weave hook, and set its execution mode to **Run Automatically Locally**. In the sandbox, Ward can't keep session limits, the spend ledger or receipts in `~/.weave`. Add a `WARD.md` to your project (`npx @weave_protocol/ward init`), or a user-wide one at `~/.trae/WARD.md`.
+`init` writes `~/.trae/hooks.json`, and also `~/.trae-cn/hooks.json` if you have TRAE's China build. Then, in TRAE, open **Settings > Hooks**, choose **Global**, and turn on **Configured Hooks**: TRAE ignores the file until you do. For session limits, the spend ledger and receipts in `~/.weave`, set the execution mode to **Run Automatically Locally** (see [Verified](#verified)). Add a `WARD.md` to your project (`npx @weave_protocol/ward init`), or a user-wide one at `~/.trae/WARD.md`.
 
 ## What it checks
 
@@ -67,7 +67,13 @@ Set `WEAVE_DASHBOARD_URL` (and `WEAVE_API_KEY`) where you run the agent, and eac
 
 Built against TRAE's [hook configuration reference](https://docs.trae.ai/ide/hook-configuration-reference).
 
-Not yet live-checked: TRAE is a desktop IDE, so a live check needs it installed. TRAE documents the tool names but not each tool's argument names, except `RunCommand`'s `command`. Ward checks every path- and URL-named argument whatever it's called, so a differently named path argument is still checked.
+Live-checked in TRAE 3.6.13 (free plan, Agent mode), in a throwaway workspace with its own WARD.md and a project hook in `.trae/hooks.json`. Every decision was confirmed by Ward's signed receipts (8 verified: 6 allow, 2 deny):
+- `LS` and allowed `Read`s went through, and a `Read` of `secrets/key` was blocked; the agent reported the WARD reason;
+- `RunCommand` with `curl` to an unlisted host was blocked, and to a listed one it ran.
+
+That run used **Run in Sandbox**, with the receipt directory set to a temp folder. We haven't checked whether the sandbox lets Ward write to `~/.weave`, so use **Run Automatically Locally** if you rely on session limits, the spend ledger or receipts there.
+
+**TRAE ignores a `hooks.json` until you switch it on.** Our first run, before that, enforced nothing. Writing the file isn't enough: open **Settings > Hooks**, pick **Global** (for `weave-trae init`) or **Project**, turn on **Configured Hooks** and accept the warning. `weave-trae status` can only see the file, not that switch.
 
 ## 🕸️ Part of Weave Protocol
 
