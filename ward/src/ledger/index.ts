@@ -14,13 +14,13 @@
  */
 
 import { mkdirSync, openSync, closeSync, readFileSync, writeFileSync, renameSync, rmSync, statSync, chmodSync } from "node:fs";
-import { homedir } from "node:os";
 import { join } from "node:path";
 import type { WardPolicy } from "../types.js";
 import { evaluateToolCall, aggregate, type EvaluateOptions, type ToolCallEvaluation, type ToolCallCheck } from "../enforcer/toolcall.js";
 import { checkSessionLimits, needsLedger, type LedgerEvent, type LedgerSnapshot } from "../enforcer/limits.js";
 import { appendReceipt, receiptsEnabled } from "../receipts/index.js";
 import { checkPolicy } from "../signing/index.js";
+import { stateDir } from "../statedir.js";
 
 const KEEP_MS = 31 * 86_400_000;
 const LOCK_STALE_MS = 5_000;
@@ -39,7 +39,7 @@ export interface LedgerOptions {
 }
 
 export function ledgerDir(opts: LedgerOptions = {}): string {
-  return opts.dir ?? process.env.WEAVE_LEDGER_DIR ?? join(homedir(), ".weave", "ledger");
+  return opts.dir ?? process.env.WEAVE_LEDGER_DIR ?? stateDir("ledger");
 }
 
 const fileName = (agent: string) => `${(agent || "default").replace(/[^A-Za-z0-9._-]/g, "_").slice(0, 80) || "default"}.json`;
@@ -150,7 +150,7 @@ export function evaluateWithLedger(
   const signature = checkPolicy(policy);
   const result: ToolCallEvaluation = !signature.ok
     ? { decision: "deny", reasons: [`${signature.reason}. Re-sign it with 'weave-ward sign' or restore the signed copy.`], checks: [{ type: "capability", decision: "deny", reason: signature.reason, severity: "critical" }] }
-    : needsLedger(policy) ? withLimits(policy, toolName, args, opts, session, capability) : evaluateToolCall(policy, toolName, args, opts);
+    : needsLedger(policy) ? limitsOrDeny(policy, toolName, args, opts, session, capability) : evaluateToolCall(policy, toolName, args, opts);
 
   // Signed, hash-chained receipt of the decision (Ward 0.3.7), when WARD.md's
   // Verification section or WEAVE_RECEIPTS asks for one. Never changes the decision.
@@ -161,6 +161,32 @@ export function evaluateWithLedger(
     });
   }
   return result;
+}
+
+/**
+ * withLimits, but if the ledger can't be used (no writable folder for it, even
+ * in temp), never fall back to "allow": a call the rules deny stays denied,
+ * and any other call is denied too, because a limit Ward can't count must not
+ * silently become no limit. (Ward 0.3.13; before, the error escaped, and
+ * adapters that allow on evaluator errors let every call through.)
+ */
+function limitsOrDeny(
+  policy: WardPolicy,
+  toolName: string,
+  args: Record<string, unknown> | undefined,
+  opts: LedgerEvaluateOptions,
+  session: string,
+  capability: string,
+): ToolCallEvaluation {
+  try {
+    return withLimits(policy, toolName, args, opts, session, capability);
+  } catch (err) {
+    const base = evaluateToolCall(policy, toolName, args, opts);
+    if (base.decision === "deny") return base;
+    const why = err instanceof Error ? err.message : String(err);
+    const reason = `WARD.md sets limits, but Ward can't record calls to check them (${why}). Denied until it can: make ${ledgerDir(opts)} writable, or set WEAVE_LEDGER_DIR.`;
+    return { ...base, decision: "deny", reasons: [reason, ...base.reasons], checks: [...base.checks, { type: "limits", decision: "deny", reason, severity: "high" } as ToolCallCheck] };
+  }
 }
 
 function withLimits(

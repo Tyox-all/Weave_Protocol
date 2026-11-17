@@ -28,10 +28,10 @@ import {
   type KeyObject,
 } from "node:crypto";
 import { closeSync, existsSync, fstatSync, mkdirSync, openSync, readFileSync, readSync, rmSync, statSync, writeFileSync, appendFileSync, chmodSync } from "node:fs";
-import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import type { WardPolicy } from "../types.js";
 import type { Decision } from "../enforcer/index.js";
+import { stateDir, stateFile } from "../statedir.js";
 
 const SLEEP = new Int32Array(new SharedArrayBuffer(4));
 
@@ -73,7 +73,7 @@ export interface ReceiptKeys {
 }
 
 export function receiptKeyPath(): string {
-  return process.env.WEAVE_RECEIPT_KEY_FILE ?? join(homedir(), ".weave", "keys", "ward-receipts.pem");
+  return process.env.WEAVE_RECEIPT_KEY_FILE ?? stateFile(join("keys", "ward-receipts.pem"));
 }
 
 /** Load the signing key, creating one (0600) on first use. */
@@ -157,7 +157,7 @@ export interface DecisionToRecord {
 }
 
 export function receiptDir(): string {
-  return process.env.WEAVE_RECEIPT_DIR ?? join(homedir(), ".weave", "receipts");
+  return process.env.WEAVE_RECEIPT_DIR ?? stateDir("receipts");
 }
 
 const fileName = (agent: string) => `${(agent || "default").replace(/[^A-Za-z0-9._-]/g, "_").slice(0, 80) || "default"}.jsonl`;

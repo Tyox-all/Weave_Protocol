@@ -18,6 +18,8 @@ npm install @weave_protocol/ward
 
 ## 🆕 What's new
 
+**0.3.13: works where `~/.weave` is read-only, and never turns a ledger error into allow.** Harness sandboxes such as Gemini CLI's and Qwen Code's on macOS make the home folder read-only for hooks. Before, if WARD.md set Behavioral Limits, Ward couldn't write its ledger there. It threw an error, and adapters that allow on errors let every call through, even ones the rules deny. Now Ward keeps its receipts, ledger and (if it doesn't exist yet) receipt key under the temp folder (`$TMPDIR/weave-<uid>`) when `~/.weave` can't be written. Paths set with `WEAVE_*` are used as given. If no folder can be written at all, a call the rules deny is still denied, and any other call is denied with the reason, because a limit Ward can't count must not become no limit.
+
 **0.3.12: no hang when Ward can't write its state.** If the receipt or ledger folder isn't writable, for example inside a harness's sandbox or with a read-only home, Ward used to retry its lock file forever. The hook then timed out, and harnesses that treat a timeout as allow let the call through. Now Ward gives up on the lock at once, and the decision stands. A receipt that can't be written is skipped, as before.
 
 **0.3.11: dashboard surfaces for CodeBuddy Code, Qoder and TRAE.** `reportEvent()` accepts `codebuddy`, `qoder` and `trae`, for the adapters for those three harnesses.
