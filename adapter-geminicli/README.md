@@ -76,6 +76,13 @@ weave-gemini hook before-tool                                        # what Gemi
 
 `init` backs up `settings.json`, edits it atomically, and finds its own entry by the hook name `weave-ward`, so your other hooks are untouched. It installs at user level. Gemini CLI fingerprints project-level hooks and warns when one changes, but a user-level hook covers every project.
 
+## Sandbox mode
+
+Gemini CLI's sandbox doesn't wrap single tools: it re-launches the whole CLI inside it, so this hook runs inside too.
+
+- **macOS Seatbelt** (the default sandbox on a Mac): the hook can read anything but write only to the project and temp folders, so `~/.weave` is read-only. From Ward 0.3.13, Ward keeps its receipts and limits ledger in the sandbox's temp folder. That folder is cleared when the session ends, so limits count per session there. An existing receipt key in `~/.weave/keys` is still used. Under earlier Ward versions, a WARD.md with Behavioral Limits failed open in this mode: Ward couldn't write its ledger, and the hook allowed every call. Check with `npm ls @weave_protocol/ward`.
+- **Docker or Podman:** the CLI runs in a container, where `weave-gemini` isn't installed unless you add it to the sandbox image. If the hook can't start, Gemini CLI lets every call through. We haven't tested this mode. Run without the container sandbox, or install the adapter in the image.
+
 ## Dashboard
 
 Set `WEAVE_DASHBOARD_URL` (and `WEAVE_API_KEY`) where you run the agent, and each decision is reported to a local [Weave API](https://github.com/Tyox-all/Weave_Protocol/tree/main/api) dashboard (0.2.0+). Only the decision and the tool name are sent, never command or argument contents. Reporting never changes a decision and gives up after 250 ms.
