@@ -2,13 +2,13 @@
 
 This document captures the high-level direction of the Weave Protocol monorepo. For shipped features, see the [Roadmap section in README.md](./README.md#-roadmap).
 
-Last updated: April 22, 2026
+Last updated: November 18, 2026
 
 ---
 
-## Current state (H1 2026)
+## Current state (November 2026)
 
-Weave Protocol consists of nine published packages spanning JavaScript/TypeScript and Python ecosystems, providing defense-in-depth security across the full lifecycle of an AI agent system. Each package addresses a distinct layer of the security model and ships with a Claude Agent Skill for AI-native integration.
+Weave Protocol now consists of 26 npm packages and a PyPI package, spanning the JavaScript/TypeScript and Python ecosystems, providing defense-in-depth security across the full lifecycle of an AI agent system. Each package addresses a distinct layer of the security model and ships with a Claude Agent Skill for AI-native integration.
 
 For the package inventory and what each one does, see [README.md](./README.md).
 
@@ -36,6 +36,16 @@ Deepen technical capability and unlock more enterprise-level features for the co
 - **Open security benchmark.** Industry-standard evaluation framework.
 
 Specific implementation details, threat models, and design decisions are intentionally not published here.
+
+### Status (November 2026)
+
+- **Shipped:** the bundle package and init tooling (`full`, `cli`), browser agent security (`browser` and the browser extension), the public [Q3 2026 report](https://tyox-all.github.io/Weave_Protocol/q3-2026.html), adversarial testing (`adversary`) and the open benchmark (`agentsecbench`).
+- **Also shipped this half:** one WARD.md policy enforced in 11 agent harnesses, including Tencent's, Alibaba's and ByteDance's coding agents, plus Chinese-language detection in Mund, signed policies and decision receipts, and fail-open hardening across every adapter.
+- **Yoxallismus and Witan:** see each package's README for where they stand.
+
+## Q1 2027 — Planned
+
+The working list is the [Roadmap section in README.md](./README.md#-roadmap): the Q4 2026 report, container sandboxes for Gemini CLI and Qwen Code, Qoder IDE support, and adapters for more Chinese coding agents.
 
 ---
 
